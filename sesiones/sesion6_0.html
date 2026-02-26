@@ -1,0 +1,993 @@
+<!-- Sesion-6.html -->
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 6: Planificación de CPU (FCFS, SJF, RR)</title>
+
+  <style>
+    :root{
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+
+      --pad: clamp(18px, 2.2vw, 44px);
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+    }
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:#ffffff;
+    }
+
+    /* IMPORTANTE: respeta márgenes del ejemplo */
+    .deck{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(10px, 2vw, 22px);
+      box-sizing:border-box;
+      background:#ffffff;
+    }
+
+    .stage{
+      width:min(96vw, calc(92vh * (16/9)));
+      aspect-ratio:16/9;
+      position:relative;
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:none;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+      /* Swipe sin “scroll” horizontal accidental */
+      touch-action: pan-y;
+    }
+    .slide.active{ display:block; }
+
+    /* Fondos */
+    .slide.cover{
+      background:url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+    .slide.content-slide{
+      background:
+        url("./Contenido.png") top left/contain no-repeat,
+        #ffffff;
+      color:var(--texto);
+    }
+
+    .inner{
+      height:100%;
+      box-sizing:border-box;
+      padding:var(--pad);
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 18px);
+    }
+
+    .header{
+      color:var(--azul-medio);
+      font-size:clamp(18px, 1.6vw, 22px);
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+
+    h1{
+      margin:0;
+      font-size:var(--h1);
+      line-height:1.08;
+      letter-spacing:-.2px;
+    }
+
+    h2{
+      margin:0;
+      font-size:var(--h2);
+      line-height:1.12;
+    }
+
+    p{
+      margin:0;
+      font-size:var(--p);
+      line-height:1.35;
+      color:var(--texto);
+    }
+
+    ul, ol{
+      margin:0;
+      padding-left:1.2em;
+      font-size:var(--li);
+      line-height:1.35;
+    }
+    li{ margin:.25em 0; }
+
+    .pill{
+      display:inline-block;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(5,173,188,.22);
+      color:#ffffff;
+      font-weight:700;
+      font-size:clamp(14px, 1.2vw, 16px);
+      letter-spacing:.2px;
+    }
+
+    .subtitle{
+      font-size:clamp(16px, 1.6vw, 22px);
+      opacity:.95;
+      margin-top:6px;
+      max-width:82%;
+      line-height:1.25;
+    }
+
+    .content{
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.2vw, 18px);
+      height:100%;
+    }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:12px;
+      margin-top:auto;
+      font-size:clamp(12px, 1.1vw, 14px);
+      color:#1f2a44;
+      opacity:.9;
+    }
+
+    .counter{
+      font-variant-numeric: tabular-nums;
+      font-weight:700;
+      color:var(--azul-medio);
+    }
+
+    .note{
+      color:rgba(255,255,255,.9);
+      font-size:clamp(13px, 1.1vw, 15px);
+      line-height:1.25;
+    }
+
+    .kbd{
+      display:inline-block;
+      padding:2px 8px;
+      border-radius:8px;
+      background:rgba(255,255,255,.18);
+      border:1px solid rgba(255,255,255,.28);
+      margin:0 2px;
+      font-weight:700;
+    }
+
+    .callout{
+      border-left:6px solid var(--turquesa);
+      background:rgba(5,173,188,.08);
+      padding:12px 14px;
+      border-radius:10px;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      align-items:start;
+    }
+
+    .box{
+      border:1px solid rgba(1,85,131,.22);
+      border-radius:12px;
+      padding:12px 14px;
+      background:#ffffff;
+    }
+
+    .muted{ color:var(--muted); }
+
+    .tag{
+      display:inline-block;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(1,85,131,.25);
+      color:var(--azul-medio);
+      font-weight:700;
+      font-size:clamp(12px, 1.05vw, 14px);
+      background:rgba(1,85,131,.04);
+    }
+
+    .big{
+      font-size:clamp(16px, 1.5vw, 20px);
+      line-height:1.35;
+    }
+
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:clamp(13px, 1.1vw, 15px);
+      background:rgba(31,41,55,.06);
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(31,41,55,.12);
+      overflow:auto;
+      white-space:pre;
+    }
+
+    /* Extra: tablas / diagramas (sin tocar márgenes) */
+    .tbl{
+      width:100%;
+      border-collapse:collapse;
+      font-size:clamp(13px, 1.1vw, 15px);
+      overflow:hidden;
+      border:1px solid rgba(1,85,131,.18);
+      border-radius:12px;
+    }
+    .tbl th, .tbl td{
+      padding:8px 10px;
+      border-bottom:1px solid rgba(1,85,131,.12);
+      text-align:left;
+      vertical-align:top;
+    }
+    .tbl th{
+      background:rgba(1,85,131,.06);
+      color:var(--azul-medio);
+      font-weight:700;
+    }
+    .tbl tr:last-child td{ border-bottom:none; }
+
+    .svg-wrap{
+      border:1px solid rgba(1,85,131,.18);
+      background:#ffffff;
+      border-radius:12px;
+      padding:10px 12px;
+    }
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:8px;
+      font-size:clamp(12px, 1vw, 14px);
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(1,85,131,.18);
+      background:rgba(1,85,131,.03);
+      color:var(--texto);
+      font-weight:700;
+    }
+    .dot{
+      width:12px; height:12px; border-radius:3px;
+      display:inline-block;
+    }
+  </style>
+</head>
+
+<body>
+<div class="deck">
+  <div class="stage">
+
+    <!-- SLIDE 1: PORTADA -->
+    <section class="slide cover active" data-title="Portada">
+      <div class="inner">
+        <div class="content">
+          <span class="pill">Sistemas Operativos</span>
+          <h1>Sesión 6: Planificación de CPU</h1>
+          <div class="subtitle">
+            FCFS (FIFO), SJF y Round Robin: cómo construir el Gantt, cómo medir y cómo justificar una elección.
+          </div>
+
+          <div class="callout" style="max-width:74%; margin-top:clamp(14px, 1.8vw, 22px);">
+            <p>
+              Hoy pasamos de “sé que existe un scheduler” a “puedo demostrar con números y con una línea de tiempo
+              qué algoritmo favorece respuesta, espera promedio, equidad o throughput”.
+            </p>
+          </div>
+
+          <p class="note" style="margin-top:auto;">
+            Navegación: <span class="kbd">←</span> <span class="kbd">→</span> |
+            <span class="kbd">Home</span> <span class="kbd">End</span> |
+            <span class="kbd">F</span> pantalla completa |
+            Táctil: desliza la página actual <span class="kbd">←</span>/<span class="kbd">→</span>
+          </p>
+        </div>
+
+        <div class="footer">
+          <span style="color:#e5edf8;">I.U. Pascual Bravo · Sistemas Operativos</span>
+          <span class="counter" style="color:#e5edf8;"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Agenda -->
+    <section class="slide content-slide" data-title="Agenda">
+      <div class="inner">
+        <div class="header">Plan de trabajo (150 min)</div>
+        <div class="content">
+          <h2>¿Qué haremos y por qué?</h2>
+          <ul>
+            <li><b>0–10</b>: Activación: conectamos estados (Ready/Running/Blocked) con “selección de CPU”.</li>
+            <li><b>10–35</b>: Métricas: definimos (sin ambigüedad) espera, retorno y respuesta, y cómo leerlas desde un Gantt.</li>
+            <li><b>35–60</b>: Algoritmos: FCFS, SJF (no expropiativo) y RR (con quantum).</li>
+            <li><b>60–70</b>: Pausa.</li>
+            <li><b>70–130</b>: Actividad guiada: caso único → 3 Gantt → tabla completa → conclusión argumentada.</li>
+            <li><b>130–150</b>: Socialización + mini evaluación individual (exit ticket).</li>
+          </ul>
+
+          <div class="callout">
+            <p class="big">
+              Resultado esperado: al final tendrás una “plantilla mental” reutilizable para ejercicios y para el proyecto:
+              (1) Gantt, (2) FirstRun/Finish, (3) T/W/R, (4) argumento de decisión.
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Tip: puedes ir a una diapositiva con #n (por ejemplo: #7).</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: Puente conceptual -->
+    <section class="slide content-slide" data-title="Puente">
+      <div class="inner">
+        <div class="header">Puente con la sesión anterior</div>
+        <div class="content">
+          <h2>¿Dónde “vive” la planificación?</h2>
+          <p class="big">
+            En el modelo de estados, un proceso que está en <b>Ready</b> está “listo para correr” pero no tiene CPU.
+            El scheduler decide cuál Ready pasa a Running (y, si hay preempción, cuándo vuelve a Ready).
+          </p>
+
+          <div class="grid-2">
+            <div class="box">
+              <span class="tag">No expropiativo</span>
+              <p class="big">El proceso mantiene CPU hasta que termina o se bloquea (no se le quita a la fuerza).</p>
+              <p class="muted">Ejemplo típico: FCFS clásico y SJF clásico (versión simple).</p>
+            </div>
+            <div class="box">
+              <span class="tag">Expropiativo</span>
+              <p class="big">Un evento (como el timer) puede quitarle la CPU y devolverlo a Ready.</p>
+              <p class="muted">Ejemplo típico: Round Robin.</p>
+            </div>
+          </div>
+
+          <div class="callout">
+            <p class="big">
+              Idea clave: el algoritmo cambia el “orden de paso” por Running, y eso cambia tiempos medibles.
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Pregunta: ¿qué evento hace que RR “funcione” como reparto por turnos?</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Métricas -->
+    <section class="slide content-slide" data-title="Metricas">
+      <div class="inner">
+        <div class="header">Métricas: medir para decidir</div>
+        <div class="content">
+          <h2>Definiciones operativas (las que usaremos hoy)</h2>
+
+          <div class="box">
+            <p class="big">
+              Para cada proceso i:
+              <br/>• <b>FirstRun</b>: primer instante en que recibe CPU.
+              <br/>• <b>Finish</b>: instante en que termina su burst total (en este ejercicio, todo es CPU).
+            </p>
+          </div>
+
+          <div class="grid-2">
+            <div class="box">
+              <span class="tag">Retorno / Turnaround (T)</span>
+              <p class="big">Tiempo total en el sistema: desde llegada hasta fin.</p>
+              <div class="mono">T = Finish - Arrival</div>
+            </div>
+            <div class="box">
+              <span class="tag">Espera (W)</span>
+              <p class="big">Tiempo total “listo pero sin CPU”.</p>
+              <div class="mono">W = T - Burst</div>
+            </div>
+          </div>
+
+          <div class="box">
+            <span class="tag">Respuesta (R)</span>
+            <p class="big">Tiempo hasta la primera vez que corre (clave para interactividad).</p>
+            <div class="mono">R = FirstRun - Arrival</div>
+          </div>
+
+          <div class="callout">
+            <p class="big">
+              Lo importante no es memorizar fórmulas: es saber “de dónde salen” mirando el Gantt.
+              Si el Gantt es correcto, la tabla sale casi sola.
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Consejo: calcula primero FirstRun y Finish, luego T, luego W, y al final R.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: FCFS -->
+    <section class="slide content-slide" data-title="FCFS">
+      <div class="inner">
+        <div class="header">Algoritmo 1</div>
+        <div class="content">
+          <h2>FCFS / FIFO (First Come, First Served)</h2>
+          <p class="big">
+            FCFS es la política más simple: se ejecutan en el orden de llegada a la cola Ready.
+            Funciona bien cuando quieres minimizar complejidad y la carga es “parecida” (procesos de tamaño similar),
+            pero puede ser mala para interactividad cuando hay procesos largos que “arrastran” a muchos cortos.
+          </p>
+
+          <div class="grid-2">
+            <div class="box">
+              <span class="tag">Ventajas</span>
+              <ul>
+                <li>Implementación simple.</li>
+                <li>Baja sobrecarga de decisión.</li>
+                <li>Se entiende fácil y se depura fácil.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <span class="tag">Problema típico</span>
+              <p class="big">
+                <b>Convoy effect</b>: un trabajo largo al frente hace que los cortos esperen demasiado,
+                incluso si el sistema podría “atender rápido” varias tareas pequeñas.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Regla: en FCFS clásico no se quita CPU por timer (no expropiativo).</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: SJF -->
+    <section class="slide content-slide" data-title="SJF">
+      <div class="inner">
+        <div class="header">Algoritmo 2</div>
+        <div class="content">
+          <h2>SJF (Shortest Job First) — versión no expropiativa</h2>
+          <p class="big">
+            SJF elige, entre los procesos que ya llegaron y están listos, el que tiene menor burst de CPU.
+            En escenarios “ideales” tiende a reducir la espera promedio, pero plantea una pregunta práctica:
+            ¿cómo sabe el sistema cuál será el burst real? En la vida real se estima y se controla equidad.
+          </p>
+
+          <div class="grid-2">
+            <div class="box">
+              <span class="tag">Qué suele mejorar</span>
+              <ul>
+                <li>Espera promedio (W) en cargas batch.</li>
+                <li>Tiempo de retorno (T) promedio en muchos casos.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <span class="tag">Riesgo</span>
+              <p class="big">
+                <b>Starvation</b>: si siguen llegando trabajos cortos, los largos pueden esperar “demasiado”.
+                La solución real suele incluir envejecimiento (aging) o políticas híbridas.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout">
+            <p class="big">
+              Hoy lo usamos como herramienta didáctica: si entiendes SJF, entiendes por qué “ordenar por tamaño”
+              cambia drásticamente W y T.
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">En esta sesión no usaremos SRTF; solo SJF no expropiativo.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: RR -->
+    <section class="slide content-slide" data-title="RR">
+      <div class="inner">
+        <div class="header">Algoritmo 3</div>
+        <div class="content">
+          <h2>Round Robin (RR)</h2>
+          <p class="big">
+            Round Robin reparte CPU por turnos: cada proceso recibe un quantum fijo (por ejemplo, 2 ms),
+            y si no termina, el timer lo preempta y vuelve al final de la cola Ready.
+            Es una política natural para sistemas interactivos: busca que “todos avancen” y que la respuesta sea rápida.
+          </p>
+
+          <div class="grid-2">
+            <div class="box">
+              <span class="tag">Qué suele mejorar</span>
+              <ul>
+                <li>Tiempo de respuesta (R) promedio (mejor percepción de fluidez).</li>
+                <li>Equidad (todos reciben CPU periódicamente).</li>
+              </ul>
+            </div>
+            <div class="box">
+              <span class="tag">Costo</span>
+              <p class="big">
+                Si el quantum es muy pequeño, el número de cambios de contexto aumenta, y con él la sobrecarga.
+                Si es muy grande, RR se parece a FCFS.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout">
+            <p class="big">
+              El “arte” de RR no es la idea, es el quantum: balancea interactividad vs overhead.
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Recordatorio: sin timer, RR no puede forzar turnos.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Actividad (qué entregar) -->
+    <section class="slide content-slide" data-title="Actividad">
+      <div class="inner">
+        <div class="header">Actividad guiada (60 min)</div>
+        <div class="content">
+          <h2>Qué vas a construir (y qué vamos a evaluar)</h2>
+          <p class="big">
+            Vas a resolver un caso único con tres políticas (FCFS, SJF, RR) y vas a entregar evidencia de proceso:
+            tu Gantt, tu tabla de métricas y tu conclusión argumentada.
+          </p>
+
+          <div class="grid-2">
+            <div class="box">
+              <span class="tag">Entregable</span>
+              <ul>
+                <li>3 Gantt (uno por algoritmo).</li>
+                <li>1 tabla completa con Arrival, Burst, FirstRun, Finish, T, W, R.</li>
+                <li>Conclusión (5–8 líneas): “en un sistema ___ prefiero ___ porque optimiza ___; acepto ___”.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <span class="tag">Criterio rápido</span>
+              <ul>
+                <li>Gantt consistente con llegadas y reglas del algoritmo.</li>
+                <li>Cálculos coherentes (W = T - Burst).</li>
+                <li>Conclusión con métrica + escenario (no solo “promedio menor”).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="callout">
+            <p class="big">
+              En la siguiente diapositiva verás un ejemplo completo (formato “exacto”) de lo que se espera.
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Trabajo en parejas. Si algo difiere, justifica mostrando el estado de la cola.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: Ejemplo resuelto (FCFS) -->
+    <section class="slide content-slide" data-title="EjemploFCFS">
+      <div class="inner">
+        <div class="header">Ejemplo (lo que debes entregar)</div>
+        <div class="content">
+          <h2>Ejemplo resuelto: FCFS</h2>
+
+          <div class="box">
+            <p class="big"><span class="tag">Caso</span> Procesos con llegada (A) y ráfaga CPU (Burst)</p>
+            <div class="mono">P1: A=0, Burst=5
+P2: A=1, Burst=3
+P3: A=2, Burst=1
+P4: A=3, Burst=2</div>
+          </div>
+
+          <div class="svg-wrap">
+            <svg viewBox="0 0 980 160" width="100%" height="160" role="img" aria-label="Diagrama de Gantt FCFS">
+              <!-- eje -->
+              <line x1="40" y1="120" x2="940" y2="120" stroke="#1f2a44" stroke-width="2"/>
+              <!-- bloques (escala: 1 unidad = 70px) -->
+              <rect x="40"  y="60" width="350" height="50" rx="10" fill="#015583" opacity="0.92"/>
+              <rect x="390" y="60" width="210" height="50" rx="10" fill="#05ADBC" opacity="0.92"/>
+              <rect x="600" y="60" width="70"  height="50" rx="10" fill="#552CB7" opacity="0.72"/>
+              <rect x="670" y="60" width="140" height="50" rx="10" fill="#F7DF00" opacity="0.82"/>
+
+              <text x="215" y="92" fill="#ffffff" font-size="18" text-anchor="middle" font-weight="700">P1</text>
+              <text x="495" y="92" fill="#ffffff" font-size="18" text-anchor="middle" font-weight="700">P2</text>
+              <text x="635" y="92" fill="#ffffff" font-size="18" text-anchor="middle" font-weight="700">P3</text>
+              <text x="740" y="92" fill="#201F4B" font-size="18" text-anchor="middle" font-weight="700">P4</text>
+
+              <!-- marcas de tiempo -->
+              <g fill="#1f2a44" font-size="14" font-weight="700">
+                <text x="40"  y="145" text-anchor="middle">0</text>
+                <text x="390" y="145" text-anchor="middle">5</text>
+                <text x="600" y="145" text-anchor="middle">8</text>
+                <text x="670" y="145" text-anchor="middle">9</text>
+                <text x="810" y="145" text-anchor="middle">11</text>
+              </g>
+            </svg>
+
+            <div class="legend">
+              <span class="chip"><span class="dot" style="background:#015583;"></span>P1</span>
+              <span class="chip"><span class="dot" style="background:#05ADBC;"></span>P2</span>
+              <span class="chip"><span class="dot" style="background:#552CB7; opacity:.72;"></span>P3</span>
+              <span class="chip"><span class="dot" style="background:#F7DF00;"></span>P4</span>
+            </div>
+          </div>
+
+          <table class="tbl" style="margin-top:10px;">
+            <thead>
+              <tr>
+                <th>Proceso</th>
+                <th>A</th>
+                <th>Burst</th>
+                <th>FirstRun</th>
+                <th>Finish</th>
+                <th>T = Finish-A</th>
+                <th>W = T-Burst</th>
+                <th>R = FirstRun-A</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>P1</b></td><td>0</td><td>5</td><td>0</td><td>5</td><td>5</td><td>0</td><td>0</td>
+              </tr>
+              <tr>
+                <td><b>P2</b></td><td>1</td><td>3</td><td>5</td><td>8</td><td>7</td><td>4</td><td>4</td>
+              </tr>
+              <tr>
+                <td><b>P3</b></td><td>2</td><td>1</td><td>8</td><td>9</td><td>7</td><td>6</td><td>6</td>
+              </tr>
+              <tr>
+                <td><b>P4</b></td><td>3</td><td>2</td><td>9</td><td>11</td><td>8</td><td>6</td><td>6</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout">
+            <p class="big">
+              Observa el procedimiento: el Gantt te “regala” FirstRun y Finish. De ahí salen T, W y R.
+              En tu entrega, escribe al menos dos frases de interpretación (por ejemplo: “P3 espera mucho en FCFS
+              porque llega temprano pero queda detrás de P1 y P2”).
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Este ejemplo es el formato mínimo esperado (Gantt + tabla + interpretación).</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: RR (explicación con cola) -->
+    <section class="slide content-slide" data-title="EjemploRR">
+      <div class="inner">
+        <div class="header">Ejemplo (enfoque de RR)</div>
+        <div class="content">
+          <h2>RR: cómo justificar un Gantt distinto (si lo tienes)</h2>
+
+          <div class="box">
+            <p class="big">
+              En Round Robin, dos personas pueden terminar con Gantt diferentes si aplican reglas distintas sin notarlo
+              (por ejemplo, “¿re-encolo primero al que fue preemptado o primero a los que llegaron durante el quantum?”).
+              Para que tu solución sea válida, debes poder mostrar el estado de la cola en cada corte de quantum.
+            </p>
+          </div>
+
+          <div class="grid-2">
+            <div class="box">
+              <span class="tag">Regla que usaremos hoy</span>
+              <ul>
+                <li>Quantum = 2.</li>
+                <li>Si un proceso no termina, vuelve al final de la cola.</li>
+                <li>Los que llegan se encolan cuando llegan.</li>
+                <li>La cola es FIFO.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <span class="tag">Mini-traza de cola (inicio)</span>
+              <div class="mono">t=0: cola = [P1]
+0–2: corre P1 (resta 3)
+t=2: llegan P2 y P3 → cola = [P2, P3, P1]
+2–4: corre P2 (resta 1)
+t=4: llega P4 → cola = [P3, P1, P4, P2]</div>
+            </div>
+          </div>
+
+          <div class="callout">
+            <p class="big">
+              En tu entrega, si tu RR difiere del de otro grupo, no “pelees el dibujo”: comparen la cola en cada corte.
+              Si la cola está bien, el Gantt está bien.
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Tip: RR se audita mejor con cola que con intuición.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: Actividad (tu turno) -->
+    <section class="slide content-slide" data-title="TuTurno">
+      <div class="inner">
+        <div class="header">Actividad (tu turno)</div>
+        <div class="content">
+          <h2>Resuelve el caso con 3 algoritmos</h2>
+
+          <div class="box">
+            <p class="big">
+              Caso (mismo del ejemplo): P1(A=0,B=5), P2(A=1,B=3), P3(A=2,B=1), P4(A=3,B=2).
+              <br/><span class="muted">RR: quantum=2.</span>
+            </p>
+          </div>
+
+          <div class="grid-2">
+            <div class="box">
+              <span class="tag">Plantilla de entrega</span>
+              <div class="mono">1) Gantt FCFS:  [dibujo]
+2) Gantt SJF:   [dibujo]
+3) Gantt RR(q=2):[dibujo]
+
+Tabla por algoritmo:
+Proceso | A | Burst | FirstRun | Finish | T | W | R
+
+Conclusión:
+- Algoritmo recomendado para un sistema interactivo:
+- Algoritmo recomendado para un sistema batch:
+- Trade-off aceptado:</div>
+            </div>
+            <div class="box">
+              <span class="tag">Checklist (antes de entregar)</span>
+              <ul>
+                <li>¿FirstRun está claro en tu Gantt?</li>
+                <li>¿Finish coincide con el final del último bloque del proceso?</li>
+                <li>¿W = T - Burst para todos?</li>
+                <li>¿Tu conclusión menciona una métrica concreta (W/T/R) y un tipo de sistema?</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="callout">
+            <p class="big">
+              Si terminas: discute con tu pareja qué pasaría si quantum=5 y escribe una frase de predicción
+              (“RR se acerca a FCFS porque…”).
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Tiempo sugerido: 20 min Gantt + 20 min tabla + 20 min discusión y conclusión.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12: Errores comunes -->
+    <section class="slide content-slide" data-title="Errores">
+      <div class="inner">
+        <div class="header">Errores comunes (y cómo evitarlos)</div>
+        <div class="content">
+          <h2>Si te equivocas, casi siempre es por esto</h2>
+          <ul>
+            <li><b>Confundir respuesta con retorno</b>: R es “primera vez que corre”, T es “cuando termina”.</li>
+            <li><b>Olvidar llegadas</b>: SJF y RR solo pueden elegir entre los que ya llegaron.</li>
+            <li><b>En RR, perder el orden de la cola</b>: audítalo con una traza simple (cola por cortes).</li>
+            <li><b>Recalcular “a ojo”</b>: si cambias el Gantt, recalcula FirstRun/Finish y luego todo lo demás.</li>
+          </ul>
+
+          <div class="callout">
+            <p class="big">
+              Regla de oro: si tu tabla no “cierra” con W = T - Burst, tu Gantt o tus tiempos están mal.
+              Esa ecuación funciona como prueba de consistencia.
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Objetivo docente: que aprendas a auditar tu propia solución.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 13: Exit ticket -->
+    <section class="slide content-slide" data-title="ExitTicket">
+      <div class="inner">
+        <div class="header">Preguntas individuales (exit ticket)</div>
+        <div class="content">
+          <h2>Responde en 5–7 minutos</h2>
+          <ol>
+            <li>Define W, T y R en una línea cada una (sin ejemplos).</li>
+            <li>Explica por qué RR necesita un timer (una frase y un ejemplo mental).</li>
+            <li>Describe un escenario donde SJF no sea buena idea aunque baje la espera promedio.</li>
+            <li>¿Qué sucede con RR si el quantum es muy grande? (comparación con FCFS).</li>
+          </ol>
+
+          <div class="box">
+            <p class="big"><span class="tag">Criterio</span> claridad + precisión + coherencia con lo trabajado hoy.</p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Entrega según la indicación del docente (foto o transcripción corta).</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 14: Próxima sesión -->
+    <section class="slide content-slide" data-title="Proxima">
+      <div class="inner">
+        <div class="header">Próxima sesión</div>
+        <div class="content">
+          <h2>Sesión 7: Hilos (threads) y concurrencia</h2>
+          <p class="big">
+            Vamos a ampliar el modelo: ya no basta con “procesos”,
+            porque los hilos cambian el costo de alternancia y la forma de pensar la planificación.
+          </p>
+
+          <div class="grid-2">
+            <div class="box">
+              <span class="tag">Veremos</span>
+              <ul>
+                <li>Proceso vs hilo: qué comparten y qué no.</li>
+                <li>Por qué los hilos aumentan concurrencia “percibida”.</li>
+                <li>Puente hacia sincronización y bloqueos.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <span class="tag">Trae</span>
+              <ul>
+                <li>Tu tabla de métricas (plantilla).</li>
+                <li>Tus 3 Gantt (aunque no estén perfectos).</li>
+                <li>Tu conclusión escrita (para refinarla).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="callout">
+            <p class="big">
+              Recuerda: el objetivo del curso no es “dibujar bonito”, es argumentar decisiones de sistema.
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="muted">Fin.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    let idx = 0;
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+    function show(i){
+      idx = clamp(i, 0, slides.length - 1);
+      slides.forEach((s,k) => s.classList.toggle('active', k === idx));
+      const label = (idx+1) + " / " + slides.length;
+      counters.forEach(el => el.textContent = label);
+      history.replaceState(null, "", "#" + (idx+1));
+    }
+
+    // Start from hash if provided
+    const m = (location.hash || "").match(/^#(\d+)$/);
+    if(m){
+      const start = parseInt(m[1], 10);
+      if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1);
+    }
+    show(idx);
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      const k = e.key;
+
+      if(k === 'f' || k === 'F'){
+        if(!document.fullscreenElement){
+          document.documentElement.requestFullscreen?.();
+        }else{
+          document.exitFullscreen?.();
+        }
+        return;
+      }
+
+      if(k === 'ArrowRight' || k === 'PageDown' || k === ' '){
+        e.preventDefault(); show(idx+1);
+      }else if(k === 'ArrowLeft' || k === 'PageUp'){
+        e.preventDefault(); show(idx-1);
+      }else if(k === 'Home'){
+        e.preventDefault(); show(0);
+      }else if(k === 'End'){
+        e.preventDefault(); show(slides.length-1);
+      }
+    });
+
+    // Touch / swipe navigation
+    let startX = null, startY = null, startT = null;
+
+    function onStart(x,y){
+      startX = x; startY = y; startT = Date.now();
+    }
+
+    function onEnd(x,y){
+      if(startX === null || startY === null) return;
+      const dx = x - startX;
+      const dy = y - startY;
+      const dt = Date.now() - startT;
+
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      if(absX > 60 && absX > absY * 1.3 && dt < 700){
+        if(dx < 0) show(idx+1);
+        else show(idx-1);
+      }
+
+      startX = startY = startT = null;
+    }
+
+    document.addEventListener('touchstart', (e) => {
+      if(!e.touches || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      onStart(t.clientX, t.clientY);
+    }, {passive:true});
+
+    document.addEventListener('touchend', (e) => {
+      if(!e.changedTouches || e.changedTouches.length !== 1) return;
+      const t = e.changedTouches[0];
+      onEnd(t.clientX, t.clientY);
+    }, {passive:true});
+
+    document.addEventListener('pointerdown', (e) => {
+      if(e.pointerType === 'mouse') return;
+      onStart(e.clientX, e.clientY);
+    });
+
+    document.addEventListener('pointerup', (e) => {
+      if(e.pointerType === 'mouse') return;
+      onEnd(e.clientX, e.clientY);
+    });
+
+  })();
+</script>
+</body>
+</html>

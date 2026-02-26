@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 5: Definición, control y estados de un proceso</title>
+
+  <style>
+    :root{
+      /* Paleta alineada a la plantilla institucional (aprox.) */
+      --texto:#201F4B;
+      --azul:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --bg:#ffffff;
+
+      /* Tipografía */
+      --h1: clamp(30px, 3.2vw, 48px);
+      --h2: clamp(22px, 2.2vw, 34px);
+      --p:  clamp(15px, 1.25vw, 19px);
+      --li: clamp(15px, 1.25vw, 19px);
+
+      /* Safe margins (evitan tapar logos y elementos del fondo) */
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+
+      /* UI */
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --radius: 0px; /* PPT suele ser sin bordes redondeados */
+    }
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:var(--bg);
+    }
+
+    .deck{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(10px, 2vw, 22px);
+      box-sizing:border-box;
+      background:var(--bg);
+    }
+
+    .stage{
+      width:min(96vw, calc(92vh * (16/9)));
+      aspect-ratio:16/9;
+      position:relative;
+      background:var(--bg);
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:none;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+      border-radius:var(--radius);
+      background:var(--bg);
+      color:var(--texto);
+    }
+    .slide.active{ display:block; }
+
+    /* Fondos */
+    .slide.cover{
+      background: url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+
+    /* Contenido: imagen con transparencia + fondo blanco */
+    .slide.content-slide{
+      background-color:#ffffff;
+      background-image: url("./Contenido.png");
+      background-repeat:no-repeat;
+      background-size: cover;
+      background-position:center;
+      color:var(--texto);
+    }
+
+    /* Safe area: padding diferente según slide */
+    .slide.cover .inner{
+    padding: var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);
+    }
+    .slide.content-slide .inner{
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom);
+    }
+
+    .inner{
+      height:100%;
+      box-sizing:border-box;
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 18px);
+    }
+
+    .header{
+      color:var(--azul);
+      font-size:clamp(18px, 1.5vw, 22px);
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    h1{
+      margin:0;
+      font-size:var(--h1);
+      line-height:1.08;
+      color:var(--texto);
+    }
+    h2{
+      margin:0;
+      font-size:var(--h2);
+      line-height:1.15;
+      color:var(--azul);
+    }
+
+    p{
+      margin:0;
+      font-size:var(--p);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    li{
+      font-size:var(--li);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    ul,ol{ margin:0; padding-left:1.2em; }
+
+    .subtitle{
+      color:var(--turquesa);
+      font-weight:800;
+      font-size:clamp(18px, 1.7vw, 24px);
+      margin-top:clamp(6px, 1vw, 10px);
+    }
+
+    .note{
+      color:var(--muted);
+      font-size:clamp(12px, 1.0vw, 14px);
+      line-height:1.35;
+    }
+
+    .pill{
+      display:inline-block;
+      padding:4px 12px;
+      border-radius:999px;
+      border:2px solid var(--turquesa);
+      color:var(--turquesa);
+      background:rgba(255,255,255,0.92);
+      font-size:clamp(12px, 1.0vw, 14px);
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      width:fit-content;
+    }
+
+    .callout{
+      background:rgba(255,255,255,0.96);
+      border-left:6px solid var(--turquesa);
+      padding:clamp(10px, 1.1vw, 14px);
+      border-radius:6px;
+    }
+
+    .content{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 16px);
+      min-height:0;
+    }
+
+    .two-col{
+      display:grid;
+      grid-template-columns:1.15fr 0.9fr;
+      gap:clamp(12px, 1.6vw, 22px);
+      align-items:flex-start;
+      min-height:0;
+    }
+    @media(max-width:980px){
+      .two-col{ grid-template-columns:1fr; }
+    }
+
+    pre{
+      margin:0;
+      background:#0f172a;
+      color:#e5e7eb;
+      padding:clamp(10px, 1.1vw, 14px);
+      border-radius:10px;
+      overflow:auto;
+      font-size:clamp(13px, 1.1vw, 16px);
+      line-height:1.35;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:rgba(255,255,255,0.97);
+    }
+    th,td{
+      border:1px solid #dde2f1;
+      padding:clamp(8px, 1vw, 12px);
+      font-size:clamp(14px, 1.15vw, 18px);
+      color:var(--texto);
+      vertical-align:top;
+    }
+    th{
+      background:#f3f6fb;
+      text-transform:uppercase;
+      font-size:clamp(12px, 1.05vw, 14px);
+      letter-spacing:.06em;
+      color:var(--azul);
+    }
+
+    .media{
+      background:rgba(255,255,255,0.96);
+      border-radius:10px;
+      padding:clamp(8px, 1vw, 12px);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-height:0;
+    }
+    .media-viewport{
+      height: clamp(230px, 34vh, 360px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:8px;
+      overflow:hidden;
+      background:#ffffff;
+      border:1px solid #e8ecf7;
+    }
+    .media img{
+      max-width:100%;
+      max-height:100%;
+      object-fit:contain;
+      display:block;
+    }
+    .caption{
+      font-size:clamp(12px, 1.0vw, 13px);
+      color:#374151;
+      line-height:1.25;
+    }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-size:clamp(12px, 1.0vw, 14px);
+      gap:14px;
+    }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background:#111827;
+      color:#e5e7eb;
+      padding:2px 8px;
+      border-radius:7px;
+      font-size:clamp(11px, 1.0vw, 13px);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    /* Portada: textos blancos + caja con contraste */
+    .cover h1{ color:#ffffff; }
+    .cover .subtitle{ color:#f7df00; }
+    .cover p{ color:#eaf2fb; }
+    .cover .callout p{ color:#111827; }
+  </style>
+</head>
+
+<body>
+<div class="deck">
+  <div class="stage">
+
+    <!-- SLIDE 1: PORTADA -->
+    <section class="slide cover active" data-title="Portada">
+      <div class="inner">
+        <div class="content">
+          <span class="pill">Sistemas Operativos</span>
+          <h1>Sesión 5: Definición, control y estados de un proceso</h1>
+          <div class="subtitle">Cómo el kernel “ve” y gestiona la ejecución</div>
+
+         
+
+          <p class="note" style="margin-top:auto;">
+            Navegación: <span class="kbd">←</span> <span class="kbd">→</span> |
+            <span class="kbd">Home</span> <span class="kbd">End</span> |
+            <span class="kbd">F</span> pantalla completa
+          </p>
+        </div>
+
+        <div class="footer">
+          <span style="color:#eaf2fb;">I.U. Pascual Bravo · Sistemas Operativos</span>
+          <span class="counter" style="color:#eaf2fb;"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Agenda -->
+    <section class="slide content-slide" data-title="Agenda">
+      <div class="inner">
+        <div class="header">Agenda (120 min)</div>
+        <div class="content">
+          <h2>Plan de trabajo</h2>
+          <ul>
+            <li>0–10: Puente con Sesión 4 (RR, CS, Ready/Running/Blocked usados en la actividad).</li>
+            <li>10–30: Proceso vs programa: qué “instancia” el SO y por qué.</li>
+            <li>30–55: Control del proceso: PCB y contexto de CPU.</li>
+            <li>55–65: Pausa.</li>
+            <li>65–85: Estados y transiciones: modelo canónico + eventos que lo disparan.</li>
+            <li>85–105: Recorridos guiados (trazas) y casos: I/O, timer, excepciones, exit().</li>
+            <li>105–120: Actividad corta + socialización + exit ticket.</li>
+          </ul>
+ <div class="callout" style="max-width:78%; margin-top:clamp(14px, 1.8vw, 22px);">
+            <p>
+              Propósito: formalizar qué es un proceso (vs programa), cómo se representa en el kernel (PCB),
+              y cómo cambia de estado (New/Ready/Running/Blocked/Exit) ante eventos como interrupciones,
+              excepciones y llamadas al sistema.
+            </p>
+          </div>
+
+          <div class="callout" style="max-width:78%;">
+            <p>
+              Al final podrás: (1) explicar por qué el SO necesita estados, (2) mapear eventos → transiciones,
+              y (3) relacionar el diagrama de estados con lo que ya hiciste en scheduling (RR y context switch).
+            </p>
+          </div>
+          <div class="callout">
+            <p>
+              Nota de enfoque: hoy no “vemos código del kernel”; modelamos lo esencial para entender
+              cómo el SO controla ejecución y cómo eso impacta scheduling y rendimiento.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Sesión 5 · Agenda</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: Resultados y evaluación -->
+    <section class="slide content-slide" data-title="Resultados">
+      <div class="inner">
+        <div class="header">Resultados esperados</div>
+        <div class="content two-col">
+          <div>
+            <h2>Qué debe quedar claro hoy</h2>
+            <ul>
+              <li>Un proceso es una ejecución “con identidad” y contexto: no es solo el código.</li>
+              <li>El kernel necesita una estructura por proceso (PCB) para pausar y reanudar.</li>
+              <li>Los estados existen para decidir: “¿puede competir por CPU o no?”</li>
+              <li>Los eventos (timer, I/O, syscall, excepción) explican las transiciones.</li>
+            </ul>
+            <div class="callout">
+              <p>
+                Si entiendes esto, después FIFO/SJF/RR se vuelven “reglas sobre Ready” y no una lista
+                de fórmulas sin sentido.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Evidencias</h2>
+            <ul>
+              <li>Completar una tabla de traza (estado → evento → estado) para 2 casos.</li>
+              <li>Explicar una transición usando el nombre correcto del evento (syscall/interrupt/exception).</li>
+              <li>Conectar “preempción” con Running → Ready y “I/O” con Running → Blocked.</li>
+            </ul>
+            <p class="note">
+              Esto prepara la “Definición, control y estados de un proceso” y el puente con
+              “Interrupciones, excepciones y llamadas” dentro de la unidad.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Resultados</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Proceso vs Programa -->
+    <section class="slide content-slide" data-title="Programa vs Proceso">
+      <div class="inner">
+        <div class="header">Concepto base</div>
+        <div class="content two-col">
+          <div>
+            <h2>Programa ≠ Proceso</h2>
+            <p>
+              Un <strong>programa</strong> es el archivo en disco (código + recursos). Un <strong>proceso</strong> es la
+              ejecución en memoria con contexto y recursos controlados por el sistema operativo.
+            </p>
+            <div class="callout">
+              <p>
+                Un mismo programa puede generar muchos procesos: por ejemplo, abrir dos veces el navegador
+                crea dos ejecuciones distintas (dos “vidas”), aunque el archivo ejecutable sea el mismo.
+              </p>
+            </div>
+            <p class="note">
+              Pregunta clave: ¿qué necesita el kernel para que dos ejecuciones no se “pisen”?
+            </p>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Ejemplo mental</h2>
+            <pre>
+Programa:  /usr/bin/python
+Proceso A: python script1.py   (PID 1201)
+Proceso B: python script2.py   (PID 1207)
+
+Los dos comparten el "mismo programa",
+pero NO comparten:
+- PC / registros
+- stack/heap
+- archivos abiertos
+- estado de ejecución
+            </pre>
+          </div>
+        </div>
+        <div class="footer"><span>Programa vs Proceso</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: Qué compone un proceso -->
+    <section class="slide content-slide" data-title="Componentes">
+      <div class="inner">
+        <div class="header">Qué “incluye” un proceso</div>
+        <div class="content two-col">
+          <div>
+            <h2>Componentes lógicos y recursos</h2>
+            <ul>
+              <li><strong>Espacio de direcciones:</strong> código, datos, heap, stack.</li>
+              <li><strong>Contexto de CPU:</strong> PC/IP, SP, registros, flags.</li>
+              <li><strong>Recursos:</strong> archivos/sockets abiertos, permisos, credenciales.</li>
+              <li><strong>Relación con el SO:</strong> estado actual, colas, contabilidad.</li>
+            </ul>
+            <div class="callout">
+              <p>
+                Si el kernel no separa estos componentes por proceso, cualquier multitarea sería inestable:
+                un proceso podría continuar donde iba otro.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Qué “no es” un proceso</h2>
+            <ul>
+              <li>No es solo una ventana o una app visible (hay procesos en segundo plano).</li>
+              <li>No es solo “un hilo” (un proceso puede tener múltiples hilos).</li>
+              <li>No es el CPU: compite por CPU, pero no “lo contiene”.</li>
+            </ul>
+            <p class="note">
+              En próximas sesiones se separará proceso vs hilo. Hoy nos quedamos en el proceso.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Componentes</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: PCB -->
+    <section class="slide content-slide" data-title="PCB">
+      <div class="inner">
+        <div class="header">Control del proceso</div>
+        <div class="content two-col">
+          <div>
+            <h2>PCB: la ficha del proceso en el kernel</h2>
+            <p>
+              El <strong>PCB</strong> (Process Control Block) es la estructura de datos que el SO mantiene por proceso
+              para poder gestionarlo: planificarlo, bloquearlo, reanudarlo, y finalmente terminarlo.
+            </p>
+            <ul>
+              <li><strong>Identidad:</strong> PID, usuario, permisos.</li>
+              <li><strong>Estado:</strong> New/Ready/Running/Blocked/Exit.</li>
+              <li><strong>Contexto CPU:</strong> PC, SP, registros (lo mínimo para reanudar).</li>
+              <li><strong>Scheduling:</strong> prioridad, punteros a colas, tiempos acumulados.</li>
+              <li><strong>Memoria y archivos:</strong> mapas de memoria, descriptores abiertos.</li>
+            </ul>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Relación con “context switch”</h2>
+            <pre>
+Cambio de contexto (alto nivel):
+1) save(Pactual.cpu_state)  -> PCB(Pactual)
+2) select_next(Ready)       -> Pnext
+3) load(PCB(Pnext))         -> CPU
+4) return_to_user(Pnext)
+            </pre>
+            <div class="callout">
+              <p>
+                En la sesión anterior modelaste el “costo” del cambio. Hoy entiendes qué se guarda y por qué.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span>PCB</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: Qué dispara un cambio -->
+    <section class="slide content-slide" data-title="Disparadores">
+      <div class="inner">
+        <div class="header">¿Cuándo el kernel toma el control?</div>
+        <div class="content two-col">
+          <div>
+            <h2>Disparadores típicos</h2>
+            <ul>
+              <li><strong>Interrupción de timer:</strong> habilita preempción (Running → Ready).</li>
+              <li><strong>Interrupción de I/O:</strong> un dispositivo avisa “terminé” (Blocked → Ready).</li>
+              <li><strong>Llamada al sistema:</strong> el proceso pide un servicio (ej. read, write, fork, exit).</li>
+              <li><strong>Excepción:</strong> error o condición especial (división por cero, page fault).</li>
+            </ul>
+            <div class="callout">
+              <p>
+                Esta lista explica por qué el diagrama de estados no es “teoría”: es la traducción gráfica
+                de eventos reales que ocurren en ejecución.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Idea clave</h2>
+            <p>
+              El proceso no “cambia de estado por voluntad propia”. Cambia porque ocurre un evento y el kernel
+              decide qué hacer con él (encolarlo, bloquearlo, terminarlo, etc.).
+            </p>
+            <pre style="margin-top:10px;">
+Regla mental:
+Evento -> handler del kernel -> decisión -> nuevo estado
+            </pre>
+          </div>
+        </div>
+        <div class="footer"><span>Disparadores</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Modo usuario vs kernel -->
+    <section class="slide content-slide" data-title="Modos">
+      <div class="inner">
+        <div class="header">Modo usuario y modo kernel</div>
+        <div class="content two-col">
+          <div>
+            <h2>Por qué existen dos modos</h2>
+            <p>
+              El SO necesita proteger el hardware y los datos entre procesos. Por eso separa:
+              <strong>modo usuario</strong> (aplicaciones) y <strong>modo kernel</strong> (código privilegiado).
+            </p>
+            <ul>
+              <li>En modo usuario no se permite ejecutar instrucciones privilegiadas.</li>
+              <li>Una syscall (llamada al sistema) hace una transición controlada al kernel.</li>
+              <li>Al terminar el servicio, el kernel retorna al usuario.</li>
+            </ul>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Ejemplo</h2>
+            <pre>
+Aplicación:
+  read(fd, buf, n)
+
+Efecto:
+  trap/syscall -> kernel -> driver/FS -> retorno
+
+Si read() necesita disco:
+  Running -> Blocked (espera I/O)
+y luego:
+  I/O interrupt -> Blocked -> Ready
+            </pre>
+            <p class="note">
+              Este ejemplo une: syscalls + estados + eventos (I/O interrupt).
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Modos</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: Interrupt vs exception vs syscall -->
+    <section class="slide content-slide" data-title="Eventos">
+      <div class="inner">
+        <div class="header">Eventos del sistema</div>
+        <div class="content">
+          <h2>Interrupciones, excepciones y llamadas al sistema</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Origen</th>
+                <th>Ejemplos</th>
+                <th>Efecto típico en estados</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Interrupción</strong></td>
+                <td>Hardware (asíncrona)</td>
+                <td>Timer tick, fin de I/O (disco/red)</td>
+                <td>Running → Ready (timer), Blocked → Ready (I/O)</td>
+              </tr>
+              <tr>
+                <td><strong>Excepción</strong></td>
+                <td>CPU/Proceso (sincrónica)</td>
+                <td>División por cero, page fault</td>
+                <td>Puede bloquear/esperar (page fault) o terminar (fatal)</td>
+              </tr>
+              <tr>
+                <td><strong>Syscall</strong></td>
+                <td>Proceso (intencional)</td>
+                <td>read, write, fork, exec, exit</td>
+                <td>Running → Blocked (I/O bloqueante) o Running → Exit</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <p>
+              En la actividad: tu trabajo es tomar un enunciado y decidir “qué tipo de evento ocurrió”,
+              para justificar cada transición en el diagrama.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Eventos</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: Estados canónicos -->
+    <section class="slide content-slide" data-title="Estados">
+      <div class="inner">
+        <div class="header">Estados del proceso</div>
+        <div class="content two-col">
+          <div>
+            <h2>Modelo canónico (5 estados)</h2>
+            <ul>
+              <li><strong>New:</strong> el proceso se crea (PCB inicial, recursos básicos).</li>
+              <li><strong>Ready:</strong> puede correr, está esperando turno de CPU.</li>
+              <li><strong>Running:</strong> está ejecutando instrucciones en CPU.</li>
+              <li><strong>Blocked/Waiting:</strong> no puede correr porque espera un evento (I/O).</li>
+              <li><strong>Exit:</strong> terminó; el SO libera recursos (o deja “zombie” breve según el SO).</li>
+            </ul>
+            <div class="callout">
+              <p>
+                Regla central: <strong>Blocked no compite por CPU</strong>. Eso evita desperdiciar tiempo de CPU.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Ampliación (si aplica)</h2>
+            <p>
+              Algunos libros agregan estados “suspendidos” (Ready Suspended / Blocked Suspended) para modelar
+              swapping o falta de memoria. Hoy nos quedamos con el modelo canónico.
+            </p>
+            <pre style="margin-top:10px;">
+Pregunta guía:
+¿Un proceso bloqueado debería estar en Ready?
+No: no puede avanzar aunque le des CPU.
+            </pre>
+          </div>
+        </div>
+        <div class="footer"><span>Estados</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: Imagen - diagrama de estados (ES) -->
+    <section class="slide content-slide" data-title="Diagrama (imagen)">
+      <div class="inner">
+        <div class="header">Diagrama de estados (referencia visual)</div>
+        <div class="content two-col">
+          <div>
+            <h2>Cómo leerlo</h2>
+            <ul>
+              <li>Cada rectángulo es un estado.</li>
+              <li>Cada flecha es una transición causada por un evento.</li>
+              <li>Tu objetivo no es memorizar el dibujo: es justificar flechas con eventos reales.</li>
+            </ul>
+            <div class="callout">
+              <p>
+                En la actividad vas a trazar rutas (recorridos) sobre este tipo de diagrama y escribir la
+                tabla “estado → evento → estado”.
+              </p>
+            </div>
+          </div>
+
+          <div class="media">
+            <div class="media-viewport">
+              <img
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/Diagrama_de_estados5.PNG"
+                alt="Diagrama de 5 estados de un proceso (español)"
+                loading="lazy"
+              />
+            </div>
+            <div class="caption">
+              Imagen (ES) en Wikimedia Commons:
+              https://commons.wikimedia.org/wiki/File:Diagrama_de_estados5.PNG
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span>Diagrama</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12: Transiciones detalladas -->
+    <section class="slide content-slide" data-title="Transiciones">
+      <div class="inner">
+        <div class="header">Transiciones: evento → cambio</div>
+        <div class="content">
+          <h2>Mapa de transiciones (versión operativa)</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Transición</th>
+                <th>Qué significa</th>
+                <th>Evento típico</th>
+                <th>Ejemplo real</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Ready → Running</strong></td>
+                <td>El dispatcher asigna CPU</td>
+                <td>Decisión del scheduler</td>
+                <td>RR toma el primero de la cola Ready</td>
+              </tr>
+              <tr>
+                <td><strong>Running → Ready</strong></td>
+                <td>Se quita CPU (preempción)</td>
+                <td>Timer interrupt</td>
+                <td>Se venció el quantum</td>
+              </tr>
+              <tr>
+                <td><strong>Running → Blocked</strong></td>
+                <td>El proceso no puede seguir</td>
+                <td>Syscall bloqueante / espera</td>
+                <td>read() a disco o espera de red</td>
+              </tr>
+              <tr>
+                <td><strong>Blocked → Ready</strong></td>
+                <td>Ya puede competir por CPU</td>
+                <td>Interrupción de dispositivo</td>
+                <td>Disco termina y “despierta” al proceso</td>
+              </tr>
+              <tr>
+                <td><strong>Running → Exit</strong></td>
+                <td>Finaliza ejecución</td>
+                <td>exit() / return</td>
+                <td>El proceso terminó su trabajo</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <p>
+              Observa: algunas transiciones dependen del hardware (timer/I-O) y otras del kernel (planificación).
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Transiciones</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 13: Colas -->
+    <section class="slide content-slide" data-title="Colas">
+      <div class="inner">
+        <div class="header">Colas del sistema</div>
+        <div class="content two-col">
+          <div>
+            <h2>Por qué el SO usa colas</h2>
+            <p>
+              Las colas son la forma simple de representar “quién espera qué”. La más importante para scheduling es
+              <strong>Ready</strong>. Para I/O suelen existir colas por dispositivo.
+            </p>
+            <ul>
+              <li><strong>Ready queue:</strong> procesos listos para ejecutar.</li>
+              <li><strong>Device queue(s):</strong> procesos bloqueados por un dispositivo/evento.</li>
+            </ul>
+            <div class="callout">
+              <p>
+                Lo que cambia entre algoritmos (FIFO/SJF/RR) es principalmente cómo se elige desde Ready.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Diagrama mínimo</h2>
+            <pre>
+New -> Ready -> Running -> Exit
+             |     |
+             |     v
+             |   Blocked
+             |     |
+             +-----+
+           (I/O interrupt)
+            </pre>
+            <p class="note">
+              Este dibujo “explica” por qué Blocked no está en Ready: espera un evento externo.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Colas</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 14: Imagen extra (ES) - componentes del sistema -->
+    <section class="slide content-slide" data-title="Imagen sistema">
+      <div class="inner">
+        <div class="header">Contexto: CPU, buses y dispositivos</div>
+        <div class="content two-col">
+          <div>
+            <h2>Qué aporta esta imagen</h2>
+            <p>
+              Te recuerda que muchos eventos (sobre todo I/O) vienen de dispositivos que “hablan” con la CPU
+              a través del chipset/buses. Esa “señal” es la interrupción que despierta procesos bloqueados.
+            </p>
+            <div class="callout">
+              <p>
+                En otras palabras: Blocked → Ready ocurre porque el hardware avisa “ya está”.
+              </p>
+            </div>
+          </div>
+
+          <div class="media">
+            <div class="media-viewport">
+              <img
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/Diagrama_de_la_comunicaci%C3%B3n_entre_componentes_de_un_sistema_de_c%C3%B3mputo.svg"
+                alt="Diagrama de la comunicación entre componentes de un sistema de cómputo (español)"
+                loading="lazy"
+              />
+            </div>
+            <div class="caption">
+              Imagen (ES) en Wikimedia Commons:
+              https://commons.wikimedia.org/wiki/File:Diagrama_de_la_comunicaci%C3%B3n_entre_componentes_de_un_sistema_de_c%C3%B3mputo.svg
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span>Contexto hardware</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 15: Recorrido guiado 1 -->
+    <section class="slide content-slide" data-title="Recorrido 1">
+      <div class="inner">
+        <div class="header">Recorrido guiado #1</div>
+        <div class="content two-col">
+          <div>
+            <h2>Escenario: proceso con lectura a disco</h2>
+            <p>
+              “El proceso P es creado, obtiene CPU, necesita leer del disco, espera, vuelve a ejecutar y termina.”
+            </p>
+            <div class="callout">
+              <p>
+                Tu tarea al leer el escenario: detectar palabras clave (creado, obtiene CPU, espera disco, vuelve, termina)
+                y mapearlas a estados + eventos.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Traza (modelo)</h2>
+            <table>
+              <thead>
+                <tr><th>Paso</th><th>Estado</th><th>Evento</th><th>Nuevo estado</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>New</td><td>Creación finaliza</td><td>Ready</td></tr>
+                <tr><td>2</td><td>Ready</td><td>Dispatcher asigna CPU</td><td>Running</td></tr>
+                <tr><td>3</td><td>Running</td><td>Syscall read() bloqueante</td><td>Blocked</td></tr>
+                <tr><td>4</td><td>Blocked</td><td>Interrupción: I/O completada</td><td>Ready</td></tr>
+                <tr><td>5</td><td>Ready</td><td>Scheduler lo elige</td><td>Running</td></tr>
+                <tr><td>6</td><td>Running</td><td>exit()/return</td><td>Exit</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="footer"><span>Recorrido 1</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 16: Recorrido guiado 2 -->
+    <section class="slide content-slide" data-title="Recorrido 2">
+      <div class="inner">
+        <div class="header">Recorrido guiado #2</div>
+        <div class="content two-col">
+          <div>
+            <h2>Escenario: RR con preempción</h2>
+            <p>
+              “El proceso A está ejecutando, llega el timer (quantum), se preempta, vuelve a Ready y más tarde retoma.”
+            </p>
+            <div class="callout">
+              <p>
+                Aquí el evento que “manda” es el timer interrupt, no una decisión voluntaria del proceso.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Traza (modelo)</h2>
+            <table>
+              <thead>
+                <tr><th>Paso</th><th>Estado</th><th>Evento</th><th>Nuevo estado</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>Ready</td><td>Scheduler lo elige</td><td>Running</td></tr>
+                <tr><td>2</td><td>Running</td><td>Timer interrupt (fin de quantum)</td><td>Ready</td></tr>
+                <tr><td>3</td><td>Ready</td><td>Más tarde, dispatcher lo re-elige</td><td>Running</td></tr>
+              </tbody>
+            </table>
+            <p class="note">
+              En RR, esto se repite muchas veces. Cada repetición implica posible cambio de contexto.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Recorrido 2</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 17: Actividad -->
+    <section class="slide content-slide" data-title="Actividad">
+      <div class="inner">
+        <div class="header">Actividad (20–25 min)</div>
+        <div class="content two-col">
+          <div>
+            <h2>Recorridos por casos (en parejas)</h2>
+            <ul>
+              <li>Elige 2 casos de la siguiente diapositiva.</li>
+              <li>Para cada caso: traza la ruta en el diagrama de estados y llena la tabla (paso/estado/evento/nuevo estado).</li>
+              <li>En 5 líneas: explica qué eventos fueron interrupciones, cuáles syscalls y si hubo excepciones.</li>
+            </ul>
+            <div class="callout">
+              <p>
+                Regla: si no puedes nombrar el evento, la transición no está justificada.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h2 style="font-size:clamp(18px,1.7vw,24px);">Entrega</h2>
+            <ul>
+              <li>Foto del diagrama marcado o copia en hoja.</li>
+              <li>Tabla de traza por caso (mínimo 6 pasos si hay I/O).</li>
+              <li>Explicación breve: “por qué Blocked existe” y “qué hace el timer”.</li>
+            </ul>
+            <pre style="margin-top:10px;">
+Checklist:
+- ¿Usaste New y Exit?
+- ¿Identificaste syscalls de I/O?
+- ¿Nombraste el I/O interrupt?
+- ¿Ubicaste el timer interrupt?
+            </pre>
+          </div>
+        </div>
+        <div class="footer"><span>Actividad</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 18: Casos -->
+    <section class="slide content-slide" data-title="Casos actividad">
+      <div class="inner">
+        <div class="header">Casos para resolver</div>
+        <div class="content">
+          <h2>Selecciona 2 (o asigna por filas)</h2>
+          <ol>
+            <li><strong>Caso A (I/O):</strong> P corre, hace read() a disco, queda esperando, vuelve a Ready al completar I/O y termina.</li>
+            <li><strong>Caso B (preempción):</strong> P corre y es preemptado dos veces por timer (RR), sin I/O.</li>
+            <li><strong>Caso C (exit normal):</strong> P corre y finaliza con exit()/return sin bloquearse.</li>
+            <li><strong>Caso D (excepción fatal):</strong> P provoca división por cero y el SO lo termina (Running → Exit).</li>
+            <li><strong>Caso E (page fault discutible):</strong> P accede a memoria no residente, ocurre page fault; discute si se bloquea brevemente o si termina (según política simplificada).</li>
+          </ol>
+          <div class="callout">
+            <p>
+              Para E: si aún no han visto memoria virtual, puedes tratarlo como “excepción manejable” que produce espera corta (Blocked) y retorno a Ready.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Casos</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 19: Socialización -->
+    <section class="slide content-slide" data-title="Debrief">
+      <div class="inner">
+        <div class="header">Socialización (10 min)</div>
+        <div class="content">
+          <h2>Preguntas para consolidar</h2>
+          <ul>
+            <li>¿Qué transición es “decisión del scheduler” y cuál depende del hardware?</li>
+            <li>¿Por qué Blocked no debería competir por CPU?</li>
+            <li>¿Cómo se conecta Running → Ready con el “quantum” de RR de la sesión anterior?</li>
+            <li>¿Qué parte del PCB explica que un proceso retome justo “donde iba”?</li>
+          </ul>
+          <div class="callout">
+            <p>
+              Si puedes responder estas preguntas, ya tienes el modelo mental que sostiene planificación, sincronización y rendimiento.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Debrief</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 20: Exit ticket -->
+    <section class="slide content-slide" data-title="Exit ticket">
+      <div class="inner">
+        <div class="header">Exit ticket (8–10 min)</div>
+        <div class="content">
+          <h2>Responde (individual)</h2>
+          <ol>
+            <li>En una frase: diferencia entre <strong>programa</strong> y <strong>proceso</strong>.</li>
+            <li>Menciona 4 campos del PCB y explica para qué sirve 1 de ellos.</li>
+            <li>Da un ejemplo de transición Running → Blocked y nombra el evento.</li>
+            <li>Explica por qué el timer interrupt es esencial para scheduling preemptivo.</li>
+          </ol>
+          <div class="callout">
+            <p>
+              Entrega esperada: respuestas cortas, pero con términos correctos (estado, evento, transición).
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Exit ticket</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 21: Próxima -->
+    <section class="slide content-slide" data-title="Próxima sesión">
+      <div class="inner">
+        <div class="header">Cierre</div>
+        <div class="content">
+          <h2>Próxima sesión</h2>
+          <p>
+            Volvemos a planificación con más formalismo: algoritmos (FIFO, SJF, RR) + métricas (waiting, turnaround, throughput)
+            y comparación de eficiencia en escenarios simulados.
+          </p>
+          <div class="callout" style="margin-top:10px;">
+            <p>
+              Con lo de hoy, podrás explicar “por qué” una métrica cambia: porque cambia cuánto tiempo pasan los procesos en Ready, Running o Blocked.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Próxima</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    let idx = 0;
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+    function show(i){
+      idx = clamp(i, 0, slides.length - 1);
+      slides.forEach((s,k) => s.classList.toggle('active', k === idx));
+      const label = (idx+1) + " / " + slides.length;
+      counters.forEach(el => el.textContent = label);
+      history.replaceState(null, "", "#" + (idx+1));
+    }
+
+    const m = (location.hash || "").match(/^#(\d+)$/);
+    if(m){
+      const start = parseInt(m[1], 10);
+      if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1);
+    }
+    show(idx);
+
+    document.addEventListener('keydown', (e) => {
+      const k = e.key;
+
+      if(k === 'f' || k === 'F'){
+        if(!document.fullscreenElement){
+          document.documentElement.requestFullscreen?.();
+        }else{
+          document.exitFullscreen?.();
+        }
+        return;
+      }
+
+      if(k === 'ArrowRight' || k === 'PageDown' || k === ' '){
+        e.preventDefault(); show(idx+1);
+      }else if(k === 'ArrowLeft' || k === 'PageUp'){
+        e.preventDefault(); show(idx-1);
+      }else if(k === 'Home'){
+        e.preventDefault(); show(0);
+      }else if(k === 'End'){
+        e.preventDefault(); show(slides.length-1);
+      }
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 7: Proyecto — Primera Entrega</title>
+
+  <style>
+    :root{
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+
+    body{ margin:0; font-family: Arial, Helvetica, sans-serif; background:#ffffff; }
+
+    .deck{
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      padding:clamp(10px, 2vw, 22px); box-sizing:border-box; background:#ffffff;
+    }
+    .stage{ width:min(96vw, calc(92vh * (16/9))); aspect-ratio:16/9; position:relative; }
+
+    .slide{
+      position:absolute; inset:0; display:none;
+      box-shadow:0 14px 40px rgba(0,0,0,.35); overflow:hidden;
+    }
+    .slide.active{ display:block; }
+
+    .slide.cover{
+      background:url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+    .slide.content-slide{
+      background: url("./Contenido.png") top left/contain no-repeat, #ffffff;
+      color:var(--texto);
+    }
+
+    .inner{
+      height:100%; box-sizing:border-box;
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+      display:flex; flex-direction:column; gap:clamp(10px, 1.1vw, 18px);
+    }
+    .cover .inner{
+      padding: var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);
+    }
+
+    .content{ flex:1; display:flex; flex-direction:column; gap:clamp(10px, 1.1vw, 16px); min-height:0; }
+
+    .header{
+      color:var(--azul-medio); font-size:clamp(18px, 1.6vw, 22px);
+      font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+    }
+    h1{ margin:0; font-size:var(--h1); line-height:1.08; color:var(--texto); }
+    h2{ margin:0; font-size:var(--h2); line-height:1.15; color:var(--azul-medio); }
+    p{ margin:0; font-size:var(--p); line-height:1.4; color:var(--texto); }
+    li{ font-size:var(--li); line-height:1.4; color:var(--texto); }
+    ul,ol{ margin:0; padding-left:1.2em; }
+
+    .subtitle{
+      color:var(--turquesa); font-weight:800;
+      font-size:clamp(18px, 1.8vw, 24px); margin-top:clamp(6px, 1vw, 10px);
+    }
+    .cover h1{ color:#ffffff; }
+    .cover p{ color:#e5edf8; }
+    .cover .subtitle{ color:#f7df00; }
+
+    .note{ color:var(--muted); font-size:clamp(12px, 1.05vw, 14px); line-height:1.35; }
+
+    .callout{
+      background:rgba(255,255,255,0.94); border-left:6px solid var(--turquesa);
+      padding:clamp(10px, 1.1vw, 14px); border-radius:6px;
+    }
+    .callout-warn{
+      background:#fffbf0; border-left:6px solid #f59e0b;
+      padding:clamp(10px, 1.1vw, 14px); border-radius:6px;
+    }
+    .callout-ok{
+      background:#f0fdf4; border-left:6px solid #22c55e;
+      padding:clamp(10px, 1.1vw, 14px); border-radius:6px;
+    }
+
+    .two-col{
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:clamp(12px, 1.6vw, 22px); align-items:flex-start; min-height:0;
+    }
+    .two-col-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:clamp(10px,1.4vw,18px); min-height:0; }
+    @media(max-width:980px){ .two-col,.two-col-3{ grid-template-columns:1fr; } }
+
+    .card{
+      background:rgba(255,255,255,0.96); border:1px solid #dde2f1;
+      border-radius:10px; padding:clamp(10px, 1.1vw, 14px);
+    }
+    .card-accent{ border-top:4px solid var(--turquesa); }
+    .card-warn{ border-top:4px solid #f59e0b; }
+    .card-ok{ border-top:4px solid #22c55e; }
+
+    .kbd{
+      font-family: ui-monospace, monospace;
+      background:#111827; color:#e5e7eb; padding:2px 8px;
+      border-radius:7px; font-size:clamp(11px, 1vw, 13px);
+    }
+    .code{
+      font-family: ui-monospace, monospace; font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35; background:#0b1020; color:#e5e7eb; border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px); overflow:auto; max-height:36vh;
+      border:1px solid rgba(17,24,39,.25); white-space:pre;
+    }
+
+    .pill{
+      display:inline-block; background:var(--turquesa); color:#fff;
+      font-size:clamp(11px,1vw,13px); font-weight:700; letter-spacing:.06em;
+      text-transform:uppercase; padding:3px 12px; border-radius:999px;
+    }
+    .badge{
+      display:inline-block; background:#015583; color:#fff;
+      font-size:clamp(11px,1vw,13px); font-weight:700; padding:2px 10px;
+      border-radius:6px; margin-right:4px;
+    }
+    .badge-warn{
+      display:inline-block; background:#f59e0b; color:#fff;
+      font-size:clamp(11px,1vw,13px); font-weight:700; padding:2px 10px;
+      border-radius:6px; margin-right:4px;
+    }
+    .badge-ok{
+      display:inline-block; background:#22c55e; color:#fff;
+      font-size:clamp(11px,1vw,13px); font-weight:700; padding:2px 10px;
+      border-radius:6px; margin-right:4px;
+    }
+
+    table{ width:100%; border-collapse:collapse; background:rgba(255,255,255,0.96); }
+    th,td{
+      border:1px solid #dde2f1; padding:clamp(6px, 0.8vw, 10px);
+      font-size:clamp(12px, 1.1vw, 16px); color:var(--texto); vertical-align:top;
+    }
+    th{
+      background:#f3f6fb; text-transform:uppercase;
+      font-size:clamp(11px, 1vw, 13px); letter-spacing:.06em; color:var(--azul-medio);
+    }
+    td.pts{ font-weight:800; color:var(--azul-medio); text-align:center; white-space:nowrap; }
+    tr.highlight td{ background:#f0f7ff; }
+
+    .footer{
+      display:flex; justify-content:space-between; align-items:center;
+      color:var(--muted); font-size:clamp(12px, 1.05vw, 14px); gap:14px;
+    }
+    .counter{ font-weight:800; color:var(--azul-medio); }
+    .cover .counter{ color:#e5edf8; }
+
+    .touch-nav{
+      position:absolute; top:50%; left:0; right:0;
+      transform:translateY(-50%); display:flex;
+      justify-content:space-between; padding:0 12px;
+      pointer-events:none; z-index:10;
+    }
+    .touch-nav button{
+      pointer-events:auto; width:44px; height:44px; border-radius:999px;
+      padding:0; border:1px solid rgba(221,226,241,0.95);
+      background:rgba(255,255,255,0.92); color:var(--texto); font-weight:900;
+      box-shadow:0 10px 22px rgba(0,0,0,.12); cursor:pointer; font-size:18px;
+    }
+    #touchNav{ opacity:0; transform:translateY(-50%) translateY(6px); transition:.15s ease; }
+    .stage:hover #touchNav{ opacity:1; transform:translateY(-50%) translateY(0); }
+    @media(hover:none){ #touchNav{ opacity:1; transform:translateY(-50%); } }
+  </style>
+</head>
+<body>
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <!-- SLIDE 1: PORTADA -->
+    <section class="slide cover active" data-title="Portada">
+      <div class="inner">
+        <div class="content">
+          <span class="pill">Sistemas Operativos</span>
+          <h1>Sesión 7: Proyecto<br/>Primera Entrega</h1>
+          <div class="subtitle">
+            Modalidades · Componentes · Rúbricas · GitHub · Actividad en clase
+          </div>
+          <div class="callout" style="max-width:72%; margin-top:clamp(14px,1.8vw,22px); background:rgba(255,255,255,0.15); border-left-color:#f7df00;">
+            <p style="color:#e5edf8;">
+              Hoy definen la modalidad de su proyecto, construyen la propuesta inicial y
+              arrancan el repositorio. En 2 días hacen la primera entrega.
+            </p>
+          </div>
+          <p class="note" style="margin-top:auto;">
+            Navegación: <span class="kbd">←</span> <span class="kbd">→</span> |
+            <span class="kbd">Home</span> <span class="kbd">End</span> |
+            <span class="kbd">F</span> pantalla completa | Táctil: desliza
+          </p>
+        </div>
+        <div class="footer">
+          <span style="color:#e5edf8;">I.U. Pascual Bravo · Sistemas Operativos</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: AGENDA -->
+    <section class="slide content-slide" data-title="Agenda">
+      <div class="inner">
+        <div class="header">Plan de la sesión</div>
+        <div class="content">
+          <h2>¿Qué haremos en 120 minutos?</h2>
+          <div class="two-col">
+            <div>
+              <ul>
+                <li><b>0–15 min</b> — Contexto del proyecto incremental: qué son E1, E2 y E3, y qué se espera de cada una.</li>
+                <li><b>15–35 min</b> — Presentación de las dos modalidades y sus rúbricas finales.</li>
+                <li><b>35–55 min</b> — Rúbrica de la Entrega 1 y flujo de entrega con GitHub.</li>
+                <li><b>55–100 min</b> — Taller guiado: elección de modalidad, definición del problema y arranque del repositorio.</li>
+                <li><b>100–120 min</b> — Compromisos por equipo: qué tendrán listo en 2 días.</li>
+              </ul>
+            </div>
+            <div class="callout">
+              <p><b>Resultado esperado al salir:</b></p>
+              <ul style="margin-top:8px;">
+                <li>Modalidad elegida y pre-aprobada.</li>
+                <li>Repositorio GitHub creado con estructura básica.</li>
+                <li>Problema y alcance de E1 escritos.</li>
+                <li>Un compromiso concreto por integrante.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Unidad 1 · Actividad 3 · Tarea 2 · Indicadores D-I · F-I · G-I</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: QUÉ ES UN PROYECTO INCREMENTAL -->
+    <section class="slide content-slide" data-title="Proyecto incremental">
+      <div class="inner">
+        <div class="header">Contexto del proyecto</div>
+        <div class="content">
+          <h2>Un proyecto en 3 incrementos, no uno gigante al final</h2>
+          <div class="two-col-3">
+            <div class="card card-accent">
+              <div style="font-size:clamp(13px,1.15vw,16px); font-weight:800; color:var(--azul-medio); margin-bottom:6px;">ENTREGA 1 · Semana actual</div>
+              <ul style="font-size:clamp(12px,1.1vw,15px);">
+                <li>Propuesta técnica.</li>
+                <li>Mock funcional / boceto.</li>
+                <li>Arranque del repositorio.</li>
+                <li>Algo básico que ya funciona.</li>
+                <li>Presentación en clase.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <div style="font-size:clamp(13px,1.15vw,16px); font-weight:800; color:var(--azul-medio); margin-bottom:6px;">ENTREGA 2 · Unidad 2</div>
+              <ul style="font-size:clamp(12px,1.1vw,15px);">
+                <li>Componentes de Unidad 1 completos.</li>
+                <li>Concurrencia real demostrable.</li>
+                <li>Sincronización implementada.</li>
+                <li>Integración con Unidad 2.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <div style="font-size:clamp(13px,1.15vw,16px); font-weight:800; color:var(--azul-medio); margin-bottom:6px;">ENTREGA 3 · Final</div>
+              <ul style="font-size:clamp(12px,1.1vw,15px);">
+                <li>Sistema completo e integrado.</li>
+                <li>Monitoreo de recursos.</li>
+                <li>Documentación final.</li>
+                <li><b>Sustentación oral (25 pts).</b></li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout">
+            <p><b>Regla de oro:</b> un equipo que solo planea pero no tiene nada ejecutable tiene 0 en el criterio de Incremento, en cualquier entrega.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">La sustentación individual con peso del 25% aplica a partir de la Entrega 2.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: DOS MODALIDADES -->
+    <section class="slide content-slide" data-title="Modalidades">
+      <div class="inner">
+        <div class="header">Modalidades del proyecto</div>
+        <div class="content">
+          <h2>Elige tu camino — ambas son equivalentes en exigencia</h2>
+          <table>
+            <thead>
+              <tr><th>Aspecto</th><th>Modalidad 1 — Proyecto Base</th><th>Modalidad 2 — Proyecto Alternativo</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>Nombre</b></td>
+                <td>Gestor de Procesos y Concurrencia</td>
+                <td>Propuesto por el equipo</td>
+              </tr>
+              <tr>
+                <td><b>Lenguaje</b></td>
+                <td>Libre (C#, Java, Python, C/C++, etc.)</td>
+                <td>Libre (cualquiera que soporte los criterios)</td>
+              </tr>
+              <tr>
+                <td><b>Simulación de procesos</b></td>
+                <td>Obligatoria (componente 1 de 5)</td>
+                <td>No obligatoria</td>
+              </tr>
+              <tr>
+                <td><b>Concurrencia real</b></td>
+                <td>Obligatoria</td>
+                <td>Obligatoria</td>
+              </tr>
+              <tr>
+                <td><b>Sincronización</b></td>
+                <td>Obligatoria (sección crítica + solución)</td>
+                <td>Obligatoria</td>
+              </tr>
+              <tr>
+                <td><b>Interacción con el SO real</b></td>
+                <td>Obligatoria (procesos reales)</td>
+                <td>Obligatoria</td>
+              </tr>
+              <tr class="highlight">
+                <td><b>Pre-aprobación</b></td>
+                <td>No requiere, es el proyecto por defecto</td>
+                <td>Requiere aprobación del docente HOY</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout-warn">
+            <p><b>Alternativo:</b> si el equipo no recibe aprobación del docente al final del taller, trabajará con el Proyecto Base.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Ambas modalidades tienen la misma rúbrica de 100 pts y el mismo peso en el curso.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: PROYECTO BASE — ENUNCIADO -->
+    <section class="slide content-slide" data-title="Proyecto Base — Enunciado">
+      <div class="inner">
+        <div class="header">Modalidad 1 — Proyecto Base</div>
+        <div class="content">
+          <h2>Gestor de Procesos y Concurrencia</h2>
+          <p>Una aplicación que integra progresivamente los conceptos de la asignatura:</p>
+          <div class="two-col">
+            <div>
+              <div class="card card-accent" style="margin-bottom:clamp(8px,1vw,12px);">
+                <b>1. Simulación académica (didáctica)</b>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li>Modelado de procesos con estados y transiciones.</li>
+                  <li>Algoritmo de planificación (ej. Round Robin).</li>
+                  <li>Máquina de estados coherente con la teoría.</li>
+                </ul>
+              </div>
+              <div class="card" style="margin-bottom:clamp(8px,1vw,12px);">
+                <b>2. Procesos reales del SO</b>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li>Listar, iniciar y finalizar procesos reales.</li>
+                  <li>Obtener PID, memoria básica y estado.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <b>5. Monitoreo de recursos</b>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li>Uso de CPU, memoria o número de hilos.</li>
+                  <li>Registro de actividad concurrente.</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div class="card card-accent" style="margin-bottom:clamp(8px,1vw,12px);">
+                <b>3. Concurrencia real</b>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li>Múltiples hilos o tareas reales.</li>
+                  <li>Procesamiento concurrente observable.</li>
+                </ul>
+              </div>
+              <div class="card card-accent">
+                <b>4. Sincronización</b>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li>Demostrar una condición de carrera real.</li>
+                  <li>Solucionarla: Mutex, Semáforo o lock (o equivalente).</li>
+                  <li>Explicar conceptualmente la sección crítica.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Lenguaje libre: C#, Java, Python, C/C++, Rust, Go — lo que el equipo domine mejor.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: PROYECTO BASE — RÚBRICA FINAL -->
+    <section class="slide content-slide" data-title="Rúbrica Proyecto Base">
+      <div class="inner">
+        <div class="header">Modalidad 1 — Rúbrica final (Entrega 3)</div>
+        <div class="content">
+          <h2>100 puntos totales</h2>
+          <table>
+            <thead>
+              <tr><th>Criterio</th><th style="width:7%;">Pts</th><th>Qué se verifica</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Simulación académica</td><td class="pts">15</td><td>Estados correctos, transiciones coherentes, algoritmo funcional, relación con teoría.</td></tr>
+              <tr><td>Procesos reales</td><td class="pts">20</td><td>Listado funcional, inicio/finalización, manejo adecuado de la API del SO.</td></tr>
+              <tr><td>Concurrencia</td><td class="pts">15</td><td>Hilos/tareas reales, diseño concurrente adecuado, evidencia observable.</td></tr>
+              <tr><td>Sincronización</td><td class="pts">15</td><td>Condición de carrera demostrada, mecanismo correcto, explicación conceptual.</td></tr>
+              <tr><td>Monitoreo de recursos</td><td class="pts">10</td><td>Datos reales obtenidos (CPU, memoria o hilos), presentación clara.</td></tr>
+              <tr class="highlight"><td><b>Sustentación y comprensión</b></td><td class="pts"><b>25</b></td><td>Cada integrante demuestra dominio de proceso, hilo, sincronización y decisiones de diseño. <b>Quien no pueda explicarlo no aprueba el componente.</b></td></tr>
+            </tbody>
+          </table>
+          <div class="callout-warn">
+            <p><b>La sustentación es individual.</b> El proyecto puede ser grupal, pero cada persona debe poder explicar cualquier parte del código y justificar cada decisión de diseño.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Esta rúbrica se aplica en la Entrega 3. Las entregas 1 y 2 se evalúan por avance incremental esperado.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: PROYECTO ALTERNATIVO — CRITERIOS -->
+    <section class="slide content-slide" data-title="Proyecto Alternativo — Criterios">
+      <div class="inner">
+        <div class="header">Modalidad 2 — Proyecto Alternativo</div>
+        <div class="content">
+          <h2>Criterios obligatorios para que sea aprobado</h2>
+          <div class="two-col">
+            <div>
+              <div class="callout-ok" style="margin-bottom:clamp(10px,1.1vw,14px);">
+                <p><b>El proyecto DEBE:</b></p>
+                <ul style="margin-top:6px;">
+                  <li>Interactuar con el sistema operativo real.</li>
+                  <li>Incluir procesos o hilos reales.</li>
+                  <li>Implementar concurrencia observable (no secuencial encubierto).</li>
+                  <li>Resolver un problema de sincronización verificable.</li>
+                  <li>Demostrar uso/monitoreo de un recurso real.</li>
+                </ul>
+              </div>
+              <div class="note">
+                El recurso puede ser: CPU, memoria, archivo compartido, base de datos, dispositivo de E/S, socket de red, servicio externo o hardware (ej. Arduino).
+              </div>
+            </div>
+            <div>
+              <div class="callout-warn">
+                <p><b>NO se acepta:</b></p>
+                <ul style="margin-top:6px;">
+                  <li>CRUD simple sin concurrencia real.</li>
+                  <li>Aplicación puramente secuencial.</li>
+                  <li>Sin sincronización real demostrable.</li>
+                  <li>Simulación puramente teórica sin interacción con el SO.</li>
+                </ul>
+              </div>
+              <div class="callout" style="margin-top:clamp(8px,1vw,12px);">
+                <p><b>Lenguaje:</b> libre. Cualquiera que permita cumplir los criterios.</p>
+                <p style="margin-top:6px;"><b>Aprobación:</b> el docente debe dar visto bueno <b>hoy en clase</b> antes de que termine el taller.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Si el proyecto alternativo no es aprobado hoy, el equipo trabaja con el Proyecto Base.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: PROYECTO ALTERNATIVO — EJEMPLOS -->
+    <section class="slide content-slide" data-title="Proyecto Alternativo — Ejemplos">
+      <div class="inner">
+        <div class="header">Modalidad 2 — Ejemplos válidos</div>
+        <div class="content">
+          <h2>Ideas que cumplen los criterios</h2>
+          <div class="two-col">
+            <div>
+              <ul>
+                <li>Servidor concurrente con control de sesiones.</li>
+                <li>Sistema de logs concurrentes con control de acceso a archivo.</li>
+                <li>Monitor de base de datos con acceso simultáneo desde múltiples hilos.</li>
+                <li>Sistema de impresión con cola y sincronización.</li>
+                <li>Control concurrente de sensores — Arduino u otro hardware.</li>
+              </ul>
+            </div>
+            <div>
+              <ul>
+                <li>Sistema de tareas en segundo plano con prioridades.</li>
+                <li>Analizador de procesos y consumo de memoria en tiempo real.</li>
+                <li>Mini-servidor web concurrente con límite de conexiones.</li>
+                <li>Chat o mensajería con hilos y paso de mensajes.</li>
+                <li>Pipeline de procesamiento de archivos concurrente.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout">
+            <p><b>Para proponer uno propio,</b> el equipo debe responder estas 3 preguntas al docente:</p>
+            <ol style="margin-top:6px;">
+              <li>¿Dónde están los hilos o procesos reales?</li>
+              <li>¿Cuál es el recurso compartido y cuál es la sección crítica?</li>
+              <li>¿Cómo se demuestra que la concurrencia es real y no secuencial?</li>
+            </ol>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Si responden estas 3 preguntas con claridad, el proyecto probablemente cumple los criterios.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: PROYECTO ALTERNATIVO — RÚBRICA FINAL -->
+    <section class="slide content-slide" data-title="Rúbrica Proyecto Alternativo">
+      <div class="inner">
+        <div class="header">Modalidad 2 — Rúbrica final (Entrega 3)</div>
+        <div class="content">
+          <h2>100 puntos totales</h2>
+          <table>
+            <thead>
+              <tr><th>Criterio</th><th style="width:7%;">Pts</th><th>Qué se verifica</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Aplicación real de conceptos de SO</td><td class="pts">20</td><td>Hilos/procesos reales, concurrencia observable, sincronización funcional, interacción con recursos.</td></tr>
+              <tr><td>Problema técnico resuelto</td><td class="pts">15</td><td>Problema no trivial, justificación técnica clara, no es un CRUD simple.</td></tr>
+              <tr><td>Sincronización</td><td class="pts">15</td><td>Sección crítica evidente, mecanismo correcto implementado, explicación conceptual.</td></tr>
+              <tr><td>Uso o monitoreo de recursos</td><td class="pts">15</td><td>Recurso real controlado (DB, archivo, puerto, CPU/memoria, socket), funcional.</td></tr>
+              <tr><td>Calidad técnica</td><td class="pts">10</td><td>Código estructurado, modularidad, buen uso del lenguaje elegido.</td></tr>
+              <tr class="highlight"><td><b>Sustentación conceptual</b></td><td class="pts"><b>25</b></td><td>Cada integrante demuestra comprensión de proceso, hilo, concurrencia, sincronización y sección crítica. <b>Quien no pueda explicarlo no aprueba el componente.</b></td></tr>
+            </tbody>
+          </table>
+          <div class="callout-warn">
+            <p>La rúbrica de Entrega 3 es la misma para ambas modalidades en cuanto a peso de sustentación: <b>25 pts individuales e irremplazables.</b></p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Esta rúbrica se aplica en la Entrega 3. Las entregas 1 y 2 son hitos de avance.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: ENTREGA 1 — RÚBRICA SUAVIZADA -->
+    <section class="slide content-slide" data-title="Rúbrica Entrega 1">
+      <div class="inner">
+        <div class="header">Entrega 1 — Esta semana (100 pts)</div>
+        <div class="content">
+          <h2>Rúbrica de la primera entrega — 2 días para hacerla</h2>
+          <table>
+            <thead>
+              <tr><th>Criterio</th><th style="width:7%;">Pts</th><th>Qué se evalúa y qué se acepta</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>Propuesta técnica</b></td>
+                <td class="pts">30</td>
+                <td>Problema delimitado, alcance para las 3 entregas, arquitectura básica de módulos, decisión de lenguaje y modalidad justificada. <em>No debe ser perfecta, debe ser clara.</em></td>
+              </tr>
+              <tr>
+                <td><b>Mock funcional / boceto</b></td>
+                <td class="pts">20</td>
+                <td>Flujo representado con mínimo 3 estados o pantallas visibles. <b>Se acepta wireframe en papel fotografiado, Excalidraw o draw.io.</b></td>
+              </tr>
+              <tr>
+                <td><b>Incremento 1 — primer arranque</b></td>
+                <td class="pts">30</td>
+                <td>Repositorio GitHub creado con estructura de carpetas. Al menos un componente básico funciona y puede demostrarse. README con instrucciones mínimas de ejecución. <em>No se exige que esté completo.</em></td>
+              </tr>
+              <tr class="highlight">
+                <td><b>Presentación del equipo</b></td>
+                <td class="pts">20</td>
+                <td>Cada integrante participa y habla. Se entiende qué hace el proyecto, qué funciona hoy y cuál es el plan. 2–3 min por equipo.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <p><b>Nota:</b> la sustentación formal con peso del 25% aplica a partir de la Entrega 2. En E1 se evalúa la presentación grupal como hito de arranque.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Si el repositorio no existe o el README no tiene instrucciones de ejecución → 0 en el criterio Incremento 1.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: GITHUB — FLUJO DE ENTREGA -->
+    <section class="slide content-slide" data-title="GitHub — Flujo de entrega">
+      <div class="inner">
+        <div class="header">Entrega via GitHub</div>
+        <div class="content">
+          <h2>Repositorio obligatorio desde la Entrega 1</h2>
+          <div class="two-col">
+            <div>
+              <div class="card card-accent" style="margin-bottom:clamp(8px,1vw,12px);">
+                <b>Nombre del repositorio</b>
+                <div class="code" style="margin-top:6px; max-height:auto; padding:8px 12px;">SO-proyecto-equipoXX</div>
+                <p style="margin-top:6px; font-size:clamp(12px,1.05vw,14px);">Reemplaza XX por el número de equipo asignado en clase.</p>
+              </div>
+              <div class="card">
+                <b>Estructura mínima de carpetas</b>
+                <div class="code" style="margin-top:6px; max-height:22vh; padding:8px 12px;">SO-proyecto-equipoXX/
+├── README.md          ← Obligatorio
+├── propuesta/
+│   └── propuesta-tecnica.pdf
+├── mock/
+│   └── (capturas, wireframe o video)
+└── src/
+    └── (código fuente)</div>
+              </div>
+            </div>
+            <div>
+              <div class="card" style="margin-bottom:clamp(8px,1vw,12px);">
+                <b>README.md debe incluir:</b>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li>Nombre del equipo e integrantes.</li>
+                  <li>Nombre y modalidad del proyecto.</li>
+                  <li>Descripción breve (3–5 líneas).</li>
+                  <li>Lenguaje y dependencias.</li>
+                  <li>Instrucciones de ejecución.</li>
+                  <li>Qué funciona y qué no (por entrega).</li>
+                </ul>
+              </div>
+              <div class="callout">
+                <p><b>Entrega al docente:</b> compartir el link del repositorio en el aula virtual (Classroom) antes de la fecha límite.</p>
+                <p style="margin-top:6px;">El repositorio debe ser público o tener al docente como colaborador.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Cada entrega incremental (E2, E3) se entrega actualizando el mismo repositorio con commits claros.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12: GITHUB — BUENAS PRÁCTICAS -->
+    <section class="slide content-slide" data-title="GitHub — Buenas prácticas">
+      <div class="inner">
+        <div class="header">GitHub — Buenas prácticas de trabajo en equipo</div>
+        <div class="content">
+          <h2>Cómo usar el repositorio durante el proyecto</h2>
+          <div class="two-col">
+            <div>
+              <div class="card" style="margin-bottom:clamp(8px,1vw,12px);">
+                <b>Ramas recomendadas</b>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li><code style="color:var(--azul-medio);">main</code> — versión estable de cada entrega (no se toca a diario).</li>
+                  <li><code style="color:var(--turquesa);">develop</code> — trabajo del día a día, integración continua.</li>
+                  <li><code style="color:var(--muted);">feature/nombre</code> — funcionalidades individuales (opcional).</li>
+                </ul>
+              </div>
+              <div class="card">
+                <b>Mensajes de commit útiles</b>
+                <div class="code" style="margin-top:6px; max-height:16vh; padding:8px 12px;">git commit -m "feat: listado de procesos reales"
+git commit -m "fix: condición de carrera en buffer"
+git commit -m "docs: actualizar README con E1"</div>
+              </div>
+            </div>
+            <div>
+              <div class="callout-warn" style="margin-bottom:clamp(8px,1vw,12px);">
+                <p><b>Errores comunes a evitar:</b></p>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li>Subir solo en la última noche antes de la entrega (sin historial).</li>
+                  <li>Un solo integrante hace todos los commits.</li>
+                  <li>README vacío o con placeholder.</li>
+                  <li>Repositorio privado sin agregar al docente.</li>
+                </ul>
+              </div>
+              <div class="callout-ok">
+                <p><b>El historial de commits es evidencia de trabajo.</b> Un repositorio con commits de todos los integrantes y mensajes claros vale más que un zip entregado en el último momento.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">No se requiere Git Flow completo — solo main + develop es suficiente para el alcance del proyecto.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 13: TALLER GUIADO -->
+    <section class="slide content-slide" data-title="Taller guiado">
+      <div class="inner">
+        <div class="header">Taller en clase (55–100 min)</div>
+        <div class="content">
+          <h2>Lo que deben construir ahora mismo</h2>
+          <div class="two-col">
+            <div>
+              <ol>
+                <li style="margin-bottom:clamp(8px,1vw,12px);">
+                  <b>Formar/confirmar equipo</b> y asignar roles básicos:
+                  <em>líder de integración, responsable de cada componente.</em>
+                </li>
+                <li style="margin-bottom:clamp(8px,1vw,12px);">
+                  <b>Elegir modalidad</b> (Base o Alternativo). Si es Alternativo, llamar al docente para pre-aprobación respondiendo las 3 preguntas de la diapositiva 8.
+                </li>
+                <li style="margin-bottom:clamp(8px,1vw,12px);">
+                  <b>Escribir el problema</b>: 1 párrafo que defina QUÉ hace el sistema y PARA QUÉ sirve.
+                </li>
+                <li>
+                  <b>Definir el alcance de E1</b>: ¿qué componente específico estará listo en 2 días? ¿Qué criterio de aceptación tendrá?
+                </li>
+              </ol>
+            </div>
+            <div>
+              <ol start="5">
+                <li style="margin-bottom:clamp(8px,1vw,12px);">
+                  <b>Dibujar el diagrama de módulos</b>: bloques + flechas, 5–8 componentes, en papel o Excalidraw.
+                </li>
+                <li style="margin-bottom:clamp(8px,1vw,12px);">
+                  <b>Crear el repositorio en GitHub</b> con el nombre correcto y la estructura de carpetas. Subir el README mínimo.
+                </li>
+                <li>
+                  <b>Definir 1 compromiso por integrante</b> para las próximas 48 horas: concreto, verificable, fechado.
+                </li>
+              </ol>
+            </div>
+          </div>
+          <div class="callout">
+            <p><b>Pregunta del docente durante la revisión:</b> "¿Cuál es el componente mínimo verificable que tendrán listo en 2 días?" Si la respuesta es vaga, el equipo debe reducir el alcance.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">El docente circula, valida y hace preguntas — no da respuestas, hace que el equipo las encuentre.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 14: CIERRE Y COMPROMISOS -->
+    <section class="slide content-slide" data-title="Cierre y compromisos">
+      <div class="inner">
+        <div class="header">Cierre (100–120 min)</div>
+        <div class="content">
+          <h2>Presentación rápida — 2 minutos por equipo</h2>
+          <div class="two-col">
+            <div>
+              <div class="card card-accent" style="margin-bottom:clamp(8px,1vw,12px);">
+                <p><b>Cada equipo debe decir:</b></p>
+                <ol style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li>Nombre del proyecto y modalidad elegida.</li>
+                  <li>En 1 oración: qué problema resuelve.</li>
+                  <li>Lenguaje elegido y por qué.</li>
+                  <li>Qué componente tendrá listo para E1 (2 días).</li>
+                  <li>Link del repositorio GitHub (ya debe existir).</li>
+                </ol>
+              </div>
+              <div class="note">Si el repositorio no está creado al momento de hablar → el equipo pierde 5 pts de presentación.</div>
+            </div>
+            <div>
+              <div class="callout-warn" style="margin-bottom:clamp(8px,1vw,12px);">
+                <p><b>Fecha de entrega E1:</b> [Definir con el grupo]</p>
+                <p style="margin-top:6px;">Entregar el link del repositorio en Classroom antes de la fecha límite.</p>
+              </div>
+              <div class="callout">
+                <p><b>Recuerden:</b> E1 no requiere el proyecto terminado. Requiere que algo funcione, que el diseño esté pensado y que el equipo haya arrancado.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">La siguiente sesión comenzará con revisión rápida del estado de cada repositorio.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Botones de navegación táctil -->
+    <div class="touch-nav" id="touchNav">
+      <button id="btnPrev" aria-label="Anterior">&#8592;</button>
+      <button id="btnNext" aria-label="Siguiente">&#8594;</button>
+    </div>
+
+  </div><!-- /stage -->
+</div><!-- /deck -->
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    const stage = document.getElementById('stage');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    let idx = 0;
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+    function show(i){
+      idx = clamp(i, 0, slides.length - 1);
+      slides.forEach((s,k) => s.classList.toggle('active', k === idx));
+      const label = (idx+1) + " / " + slides.length;
+      counters.forEach(el => el.textContent = label);
+      history.replaceState(null, "", "#" + (idx+1));
+    }
+
+    function next(){ show(idx+1); }
+    function prev(){ show(idx-1); }
+
+    const m = (location.hash || "").match(/^#(\d+)$/);
+    if(m){ const start = parseInt(m[1], 10); if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1); }
+    show(idx);
+
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+
+    document.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if(k === 'f' || k === 'F'){
+        if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.(); }
+        else{ document.exitFullscreen?.(); }
+        return;
+      }
+      if(k === 'ArrowRight' || k === 'PageDown' || k === ' '){ e.preventDefault(); next(); }
+      else if(k === 'ArrowLeft' || k === 'PageUp'){ e.preventDefault(); prev(); }
+      else if(k === 'Home'){ e.preventDefault(); show(0); }
+      else if(k === 'End'){ e.preventDefault(); show(slides.length-1); }
+    });
+
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if(isTouch){
+      let x0=null, y0=null, t0=0;
+      const SWIPE_MIN_X=50, SWIPE_MAX_Y=80, SWIPE_MAX_MS=800;
+      stage.addEventListener('touchstart', (e)=>{ const t=e.changedTouches[0]; x0=t.clientX; y0=t.clientY; t0=Date.now(); }, {passive:true});
+      stage.addEventListener('touchend', (e)=>{
+        if(x0===null||y0===null) return;
+        const t=e.changedTouches[0]; const dx=t.clientX-x0; const dy=t.clientY-y0; const dt=Date.now()-t0;
+        x0=null; y0=null;
+        if(dt>SWIPE_MAX_MS) return; if(Math.abs(dy)>SWIPE_MAX_Y) return;
+        if(dx<=-SWIPE_MIN_X) next(); else if(dx>=SWIPE_MIN_X) prev();
+      }, {passive:true});
+    }
+  })();
+</script>
+</body>
+</html>

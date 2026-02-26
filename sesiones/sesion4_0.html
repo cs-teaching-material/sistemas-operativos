@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 4 (v2): Scheduling y Context Switch</title>
+
+  <style>
+    :root{
+      --navy:#003366;
+      --orange:#FF6600;
+      --dark:#1f2937;
+      --muted:#6b7280;
+      --light:#F0F0F0;
+      --white:#ffffff;
+
+      --pad: clamp(18px, 2.2vw, 44px);
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(16px, 1.35vw, 22px);
+      --li: clamp(16px, 1.35vw, 21px);
+    }
+
+    body{ margin:0; font-family: Arial, Helvetica, sans-serif; background:#0b1220; }
+    .deck{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(10px, 2vw, 22px);
+      box-sizing:border-box;
+    }
+
+    /* Stage keeps 16:9 and fits PC screens simply */
+    .stage{
+      width:min(96vw, calc(92vh * (16/9)));
+      aspect-ratio: 16 / 9;
+      position:relative;
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:none;
+      background:var(--white);
+      border-radius:14px;
+      box-shadow:0 14px 50px rgba(0,0,0,.35);
+      overflow:hidden; /* safe: we ensure internal layout fits */
+    }
+    .slide.active{ display:block; }
+
+    .inner{
+      height:100%;
+      box-sizing:border-box;
+      padding:var(--pad);
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 18px);
+    }
+
+    .header{
+      background:var(--navy);
+      color:var(--white);
+      padding: clamp(10px, 1.2vw, 16px) clamp(14px, 1.4vw, 20px);
+      border-radius:12px;
+      font-size: clamp(16px, 1.5vw, 22px);
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+
+    h1{ margin:0; font-size:var(--h1); line-height:1.08; color:var(--navy); }
+    h2{ margin:0; font-size:var(--h2); line-height:1.15; color:var(--navy); }
+
+    p{ margin:0; font-size:var(--p); line-height:1.35; color:var(--dark); }
+    li{ font-size:var(--li); line-height:1.35; color:var(--dark); }
+    ul,ol{ margin:0; padding-left: 1.2em; }
+
+    .subtitle{
+      color:var(--orange);
+      font-weight:800;
+      font-size: clamp(16px, 1.7vw, 24px);
+      margin-top: clamp(6px, 1vw, 10px);
+    }
+
+    .note{ color:var(--muted); font-size: clamp(12px, 1.05vw, 14px); line-height:1.35; }
+    .callout{
+      background:var(--light);
+      border-left: 8px solid var(--orange);
+      padding: clamp(10px, 1.1vw, 14px);
+      border-radius:10px;
+    }
+
+    .content{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap: clamp(10px, 1.1vw, 16px);
+      min-height:0;
+    }
+
+    .two-col{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: clamp(12px, 1.6vw, 22px);
+      align-items:stretch;
+      min-height:0;
+    }
+    @media (max-width: 980px){
+      .two-col{ grid-template-columns: 1fr; }
+    }
+
+    pre{
+      margin:0;
+      background:#0f172a;
+      color:#e5e7eb;
+      padding: clamp(10px, 1.1vw, 14px);
+      border-radius:12px;
+      overflow:auto;
+      font-size: clamp(13px, 1.15vw, 16px);
+      line-height:1.35;
+    }
+
+    /* Media box: simple guarantee images stay complete */
+    .media{
+      background:var(--light);
+      border-radius:12px;
+      padding: clamp(8px, 1vw, 12px);
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      min-height:0;
+    }
+    .media-viewport{
+      flex:1;
+      min-height: 0;
+      height: clamp(220px, 36vh, 360px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#fff;
+      border-radius:10px;
+      overflow:hidden;
+    }
+    .media img{
+      max-width:100%;
+      max-height:100%;
+      width:auto;
+      height:auto;
+      object-fit:contain; /* key */
+      display:block;
+    }
+    .caption{ font-size: clamp(12px, 1.05vw, 13px); color:#444; line-height:1.25; }
+
+    table{ width:100%; border-collapse:collapse; }
+    th,td{
+      border:1px solid #ddd;
+      padding: clamp(8px, 1vw, 12px);
+      font-size: clamp(14px, 1.2vw, 18px);
+      color:var(--dark);
+      vertical-align:top;
+    }
+    th{ background:#f7f7f7; }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-size: clamp(12px, 1.05vw, 14px);
+      gap: 14px;
+    }
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background:#111827;
+      color:#e5e7eb;
+      padding:2px 8px;
+      border-radius:7px;
+      font-size: clamp(11px, 1vw, 13px);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    /* Cover/closing */
+    .cover{
+      background:var(--navy);
+      color:var(--white);
+    }
+    .cover h1{ color:var(--white); }
+    .cover p{ color:#dbe7f3; }
+    .closing{ background:var(--orange); }
+    .closing h1{ color:var(--white); }
+    .closing p{ color:var(--navy); font-weight:800; }
+  </style>
+</head>
+
+<body>
+<div class="deck">
+  <div class="stage">
+
+    <!-- SLIDE 1 -->
+    <section class="slide active cover" data-title="Portada">
+      <div class="inner">
+        <div class="content">
+          <h1>Sistemas Operativos</h1>
+          <div class="subtitle">Sesión 4 (v2): Scheduling, quantum y cambio de contexto</div>
+          <p style="margin-top:10px;">Unidad 1: Gestión de procesos — de “eventos” (timer) a “turnos de CPU”.</p>
+          <div class="callout" style="background:rgba(255,255,255,.08); border-left-color:#fff;">
+            <p style="color:#eaf2fb;">
+              Resultado esperado hoy: podrás explicar (1) por qué el timer habilita la preempción,
+              (2) cómo funciona un cambio de contexto y (3) por qué el quantum es un trade-off.
+            </p>
+          </div>
+          <p class="note" style="color:#c7d7ea;">
+            Navegación: <span class="kbd">←</span> <span class="kbd">→</span> | <span class="kbd">Home</span> <span class="kbd">End</span> | <span class="kbd">F</span> pantalla completa
+          </p>
+        </div>
+        <div class="footer">
+          <span>Sesión 4</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2 -->
+    <section class="slide" data-title="Agenda">
+      <div class="inner">
+        <div class="header">Agenda (120 min)</div>
+        <div class="content">
+          <h2>Plan de trabajo</h2>
+          <ul>
+            <li>0–12: Puente con la sesión anterior: eventos + timer → control del kernel.</li>
+            <li>12–35: Qué problema resuelve el scheduler (muchos procesos, una CPU).</li>
+            <li>35–65: Quantum + preempción + cola Ready (modelo mental completo).</li>
+            <li>65–105: Actividad “Juego de la CPU” (Round Robin) + medición de overhead.</li>
+            <li>105–120: Debrief + exit ticket (conexión a estados de proceso en la próxima sesión).</li>
+          </ul>
+          <div class="callout">
+            <p><strong>Tip didáctico:</strong> hoy no buscamos memorizar algoritmos, buscamos entender “qué información necesita el kernel” para repartir CPU de forma justa y eficiente.</p>
+          </div>
+        </div>
+        <div class="footer"><span>Agenda</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3 -->
+    <section class="slide" data-title="Puente: timer">
+      <div class="inner">
+        <div class="header">Puente: del evento al turno</div>
+        <div class="content two-col">
+          <div style="display:flex; flex-direction:column; gap:14px; min-height:0;">
+            <h2>¿Por qué el timer cambia el juego?</h2>
+            <p>
+              El timer interrupt le permite al kernel recuperar el control *periódicamente*, incluso si el proceso en CPU no “coopera”.
+            </p>
+            <div class="callout">
+              <p>
+                <strong>Idea clave:</strong> si el kernel puede interrumpir y decidir, entonces puede repartir CPU en “turnos” y evitar que un proceso monopolice.
+              </p>
+            </div>
+            <p class="note">
+              En términos prácticos: el timer es el “reloj de arbitraje” que habilita preempción y scheduling en sistemas multitarea.
+            </p>
+          </div>
+
+          <div class="media">
+            <div class="media-viewport">
+              <img
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/Diagrama_de_la_comunicaci%C3%B3n_entre_componentes_de_un_sistema_de_c%C3%B3mputo.svg"
+                alt="Diagrama en español: comunicación entre componentes de un sistema de cómputo"
+                loading="lazy"
+              />
+            </div>
+            <div class="caption">
+              Diagrama (ES) desde Wikimedia Commons. Fuente: https://commons.wikimedia.org/wiki/File:Diagrama_de_la_comunicaci%C3%B3n_entre_componentes_de_un_sistema_de_c%C3%B3mputo.svg
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span>Timer → control</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4 -->
+    <section class="slide" data-title="Problema central">
+      <div class="inner">
+        <div class="header">El problema central</div>
+        <div class="content">
+          <h2>Muchos procesos, pocos núcleos</h2>
+          <p>
+            En un PC real, hay procesos interactivos (IDE, navegador) y procesos “silenciosos” (servicios, actualizaciones) compitiendo por CPU.
+          </p>
+          <div class="callout">
+            <p>
+              <strong>El scheduler</strong> es el módulo del kernel que decide cuál proceso corre ahora y cuál espera.
+              Su objetivo no es solo “rapidez”, sino una combinación de: respuesta, justicia, throughput y estabilidad.
+            </p>
+          </div>
+          <p class="note">
+            Hoy trabajamos con un modelo simplificado (suficiente para entender estados de proceso y algoritmos después).
+          </p>
+        </div>
+        <div class="footer"><span>Problema</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5 -->
+    <section class="slide" data-title="CPU burst vs I/O">
+      <div class="inner">
+        <div class="header">Comportamiento típico</div>
+        <div class="content two-col">
+          <div style="display:flex; flex-direction:column; gap:14px; min-height:0;">
+            <h2>CPU burst e I/O wait</h2>
+            <p>
+              Un proceso no “usa CPU todo el tiempo”: normalmente alterna entre ejecutar (CPU burst) y esperar por I/O (disco, red, teclado).
+            </p>
+            <p>
+              Cuando un proceso está esperando I/O, mantenerlo en CPU sería desperdicio; lo correcto es que el kernel le dé la CPU a otro listo.
+            </p>
+            <div class="callout">
+              <p>
+                <strong>Consecuencia:</strong> el kernel necesita colas y estados (listo, ejecutando, bloqueado) para organizar este flujo.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <pre>
+Modelo mental:
+- CPU burst: instrucciones, cálculo, ejecución.
+- I/O wait: esperando respuesta del dispositivo.
+- Interrupt: el dispositivo "avisa" cuando terminó.
+            </pre>
+            <pre>
+Pregunta guía:
+Si P1 queda bloqueado esperando disco,
+¿qué debería hacer la CPU mientras tanto?
+            </pre>
+          </div>
+        </div>
+        <div class="footer"><span>CPU vs I/O</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6 -->
+    <section class="slide" data-title="Cola Ready">
+      <div class="inner">
+        <div class="header">Cola Ready</div>
+        <div class="content">
+          <h2>¿Qué significa “listo”?</h2>
+          <p>
+            Un proceso está <strong>Ready</strong> si *puede* ejecutar, pero no está ejecutando porque la CPU está ocupada con otro.
+          </p>
+          <div class="callout">
+            <p>
+              La cola Ready es la “fila” de procesos listos. El scheduler toma el siguiente según la política (hoy: Round Robin).
+            </p>
+          </div>
+
+          <div class="two-col" style="align-items:start;">
+            <div>
+              <h2 style="font-size:clamp(18px,1.7vw,24px);">Definiciones rápidas</h2>
+              <ul>
+                <li><strong>Running:</strong> está en CPU ahora.</li>
+                <li><strong>Ready:</strong> está esperando CPU.</li>
+                <li><strong>Blocked/Waiting:</strong> está esperando I/O o un evento.</li>
+              </ul>
+              <p class="note">
+                En la próxima sesión formalizamos estados y transiciones; hoy los usamos para explicar scheduling.
+              </p>
+            </div>
+            <div>
+              <pre>
+CPU (Running) -> Tick -> Kernel:
+  - Puede seguir mismo proceso
+  - O hacer preempción (cambiar al siguiente Ready)
+Blocked:
+  - Sale de Ready/Running
+  - Vuelve a Ready cuando llega la interrupción del dispositivo
+              </pre>
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span>Ready queue</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7 -->
+    <section class="slide" data-title="Quantum">
+      <div class="inner">
+        <div class="header">Quantum (time slice)</div>
+        <div class="content">
+          <h2>El tamaño del turno</h2>
+          <p>
+            El <strong>quantum</strong> es la cantidad máxima de CPU continua que un proceso puede usar antes de que el kernel re-evalúe.
+          </p>
+          <div class="two-col">
+            <div class="callout">
+              <p><strong>Quantum pequeño</strong>: mejor respuesta al usuario, pero más cambios de contexto (más overhead).</p>
+              <p><strong>Quantum grande</strong>: menos overhead, pero peor respuesta (los procesos “esperan más” su turno).</p>
+            </div>
+            <div>
+              <pre>
+Regla mental:
+Más cambios de contexto = más tiempo del kernel
+guardando/restaurando en vez de ejecutar trabajo útil.
+              </pre>
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span>Quantum</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8 -->
+    <section class="slide" data-title="Preempción">
+      <div class="inner">
+        <div class="header">Preempción</div>
+        <div class="content two-col">
+          <div style="display:flex; flex-direction:column; gap:14px; min-height:0;">
+            <h2>¿Qué es preemptive scheduling?</h2>
+            <p>
+              Es cuando el kernel puede quitarle la CPU a un proceso (aunque no quiera), típicamente al llegar el tick del timer.
+            </p>
+            <div class="callout">
+              <p>
+                <strong>Sin preempción</strong>, un proceso que no libere CPU voluntariamente puede degradar la respuesta del sistema.
+                <br/>Con preempción, el kernel impone turnos.
+              </p>
+            </div>
+            <p class="note">Hoy lo simularemos de manera explícita con un rol “Timer”.</p>
+          </div>
+          <div>
+            <pre>
+Tick (timer interrupt) llega:
+1) CPU entra a handler del kernel
+2) Kernel decide: ¿cambio o no?
+3) Si cambia: context switch
+4) Retorna a user mode con otro proceso
+            </pre>
+          </div>
+        </div>
+        <div class="footer"><span>Preempción</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9 -->
+    <section class="slide" data-title="Context switch">
+      <div class="inner">
+        <div class="header">Cambio de contexto</div>
+        <div class="content two-col">
+          <div style="display:flex; flex-direction:column; gap:14px; min-height:0;">
+            <h2>Qué guarda el kernel (conceptualmente)</h2>
+            <p>
+              Para pausar P1 y continuar P2 sin “romper” nada, el kernel debe guardar la “foto” del estado de CPU de P1.
+            </p>
+            <ul>
+              <li><strong>PC/IP</strong>: próxima instrucción a ejecutar.</li>
+              <li><strong>SP</strong>: estado del stack.</li>
+              <li><strong>Registros</strong>: valores temporales.</li>
+              <li><strong>Flags</strong>: estado/condiciones.</li>
+            </ul>
+            <div class="callout">
+              <p>
+                Esa foto vive en una estructura tipo <strong>PCB</strong> (Process Control Block).
+                No necesitas memorizar campos exactos hoy; sí entender la necesidad.
+              </p>
+            </div>
+          </div>
+          <div>
+            <pre>
+Context switch (alto nivel):
+save(P1.cpu_state) -> PCB1
+pick_next(Ready)   -> P2
+load(PCB2.cpu_state)
+return_to_user(P2)
+            </pre>
+            <pre>
+Pregunta guía:
+Si no guardas PC/SP/registros,
+¿cómo retomas P1 exactamente donde iba?
+            </pre>
+          </div>
+        </div>
+        <div class="footer"><span>Context switch</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10 -->
+    <section class="slide" data-title="Costo">
+      <div class="inner">
+        <div class="header">Costo del cambio</div>
+        <div class="content">
+          <h2>Por qué “cambiar” no es gratis</h2>
+          <ul>
+            <li>Tiempo directo: guardar/restaurar estado + ejecutar lógica del scheduler.</li>
+            <li>Efectos indirectos: cachés y TLB pueden perder eficiencia al cambiar de proceso.</li>
+            <li>Riesgo didáctico: si cambias demasiado seguido, el sistema “parece” ocupado pero avanza poco (mucho overhead).</li>
+          </ul>
+          <div class="callout">
+            <p>
+              <strong>Meta de la actividad:</strong> sentir ese overhead de forma visible (por eso el juego introduce un “costo” de cambio).
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Overhead</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11 -->
+    <section class="slide" data-title="RR en 60s">
+      <div class="inner">
+        <div class="header">Round Robin en 60 segundos</div>
+        <div class="content">
+          <h2>La regla</h2>
+          <p>
+            En <strong>Round Robin</strong> la cola Ready rota: cada proceso recibe un quantum; al terminar el quantum (tick), vuelve al final si no terminó.
+          </p>
+          <div class="two-col">
+            <div>
+              <div class="callout">
+                <p>
+                  <strong>Ventaja:</strong> es intuitivamente “justo” y muy usado para interacción.
+                  <br/><strong>Desventaja:</strong> si el quantum es demasiado pequeño, sube el overhead.
+                </p>
+              </div>
+              <p class="note">En sesiones posteriores compararás RR con FIFO/SJF, y medirás eficiencia en escenarios simulados.</p>
+            </div>
+            <div>
+              <pre>
+Cola Ready inicial: P1, P2, P3
+Quantum = 10s
+
+Tick:
+- Si P1 no terminó -> vuelve al final
+Nueva cola: P2, P3, P1
+              </pre>
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span>RR</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+        <!-- SLIDE 12 (REEMPLAZO) -->
+    <section class="slide" data-title="Actividad: objetivo">
+      <div class="inner">
+        <div class="header">Actividad central (40 min)</div>
+        <div class="content">
+          <h2>Scheduling por casos (Round Robin + conmutaciones)</h2>
+          <p>
+            En equipos (3 o 4), cada equipo resuelve <strong>un contexto</strong> (A, B, C o D) usando el mismo algoritmo (RR),
+            y luego comparamos cómo cambian el Gantt, el makespan y el overhead por conmutaciones.
+          </p>
+
+          <div class="callout">
+            <p>
+              <strong>Producto:</strong> (1) diagrama de Gantt con bloques “CS”, (2) métricas: makespan, #CS, overhead, (3) interpretación corta (4–6 líneas).
+            </p>
+          </div>
+
+          <div class="two-col" style="align-items:start;">
+            <div>
+              <h2 style="font-size:clamp(18px,1.7vw,24px);">Dinámica</h2>
+              <ul>
+                <li>Equipo 1 → Contexto A.</li>
+                <li>Equipo 2 → Contexto B.</li>
+                <li>Equipo 3 → Contexto C.</li>
+                <li>Equipo 4 (si existe) → Contexto D.</li>
+              </ul>
+              <p class="note">
+                Todos tienen los 4 contextos en los siguientes slides (nadie se queda sin datos).
+              </p>
+            </div>
+
+            <div>
+              <pre>
+Tiempo sugerido:
+- 15 min: Gantt
+- 10 min: métricas
+- 10 min: interpretación
+- 5 min: preparar socialización
+              </pre>
+              <pre>
+Regla visual:
+Cada vez que la CPU cambia P→Q,
+dibujar un bloque "CS" con duración costo_CS.
+              </pre>
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span>Actividad</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 13 (REEMPLAZO) -->
+    <section class="slide" data-title="Actividad: reglas">
+      <div class="inner">
+        <div class="header">Reglas del caso (comunes)</div>
+        <div class="content two-col">
+          <div style="display:flex; flex-direction:column; gap:14px; min-height:0;">
+            <h2>Reglas generales (para TODOS los contextos)</h2>
+            <ul>
+              <li><strong>CPU:</strong> 1 (un núcleo).</li>
+              <li><strong>Algoritmo:</strong> Round Robin (RR), preemptivo.</li>
+              <li><strong>Arrivals:</strong> los procesos entran a Ready en su tiempo de llegada.</li>
+              <li><strong>Empates:</strong> si llegan al mismo tiempo, el orden inicial es por ID (P1, P2, P3...).</li>
+              <li><strong>Fin de quantum:</strong> si no terminó, vuelve al final de Ready.</li>
+              <li><strong>CS:</strong> se paga SOLO cuando la CPU cambia de un proceso a otro (P→Q); durante CS no avanza ningún proceso.</li>
+            </ul>
+
+            <div class="callout">
+              <p>
+                <strong>En Contexto D</strong> hay I/O: cuando un proceso pide I/O se va a <strong>Blocked</strong> y vuelve a Ready cuando termina el I/O.
+              </p>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:12px; min-height:0;">
+            <h2>Métricas a entregar</h2>
+            <ul>
+              <li><strong>Makespan:</strong> tiempo cuando termina el último proceso.</li>
+              <li><strong>#CS:</strong> número de conmutaciones (número de bloques “CS”).</li>
+              <li><strong>Overhead CS:</strong> #CS * costo_CS.</li>
+              <li><strong>(Opcional)</strong> Waiting promedio.</li>
+            </ul>
+
+            <pre>
+Definiciones útiles:
+Turnaround(P) = Finish(P) - Arrival(P)
+
+Waiting(P) = Turnaround(P) - CPU_total(P) - IO_total(P)
+(solo si hay I/O)
+            </pre>
+
+            <p class="note">
+              Si te falta tiempo, prioriza: Gantt correcto → makespan → #CS → overhead.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Reglas</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 14 (REEMPLAZO) -->
+    <section class="slide" data-title="Casos A y B">
+      <div class="inner">
+        <div class="header">Hoja de casos (A y B)</div>
+        <div class="content">
+          <h2>Contexto A — “PC interactivo”</h2>
+          <p class="note">Objetivo: ver overhead con quantum pequeño + tareas cortas.</p>
+
+          <table style="font-size:clamp(12px,1.05vw,16px);">
+            <thead>
+              <tr>
+                <th style="width:22%;">Parámetros</th>
+                <th style="width:78%;">Datos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>RR</strong></td>
+                <td>Quantum = <strong>2</strong>, costo_CS = <strong>1</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Procesos</strong></td>
+                <td>
+                  P1: arrival 0, CPU 4<br/>
+                  P2: arrival 1, CPU 3<br/>
+                  P3: arrival 2, CPU 2<br/>
+                  P4: arrival 3, CPU 1
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="height:10px;"></div>
+
+          <h2>Contexto B — “CPU-bound / compilación”</h2>
+          <p class="note">Objetivo: ver efecto de quantum mayor + llegadas tardías.</p>
+
+          <table style="font-size:clamp(12px,1.05vw,16px);">
+            <thead>
+              <tr>
+                <th style="width:22%;">Parámetros</th>
+                <th style="width:78%;">Datos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>RR</strong></td>
+                <td>Quantum = <strong>4</strong>, costo_CS = <strong>1</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Procesos</strong></td>
+                <td>
+                  P1: arrival 0, CPU 8<br/>
+                  P2: arrival 0, CPU 6<br/>
+                  P3: arrival 2, CPU 7<br/>
+                  P4: arrival 4, CPU 3
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout">
+            <p>
+              En A y B no hay I/O: solo CPU_total. En el Gantt, “CS” cuenta como tiempo real pero no ejecuta CPU útil.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Casos A/B</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 15 (REEMPLAZO) -->
+    <section class="slide" data-title="Casos C y D">
+      <div class="inner">
+        <div class="header">Hoja de casos (C y D)</div>
+        <div class="content">
+          <h2>Contexto C — “Servidor mixto” (llegadas frecuentes)</h2>
+          <p class="note">Objetivo: ver cómo el Gantt cambia cuando “aparecen” procesos a mitad de ejecución.</p>
+
+          <table style="font-size:clamp(12px,1.05vw,16px);">
+            <thead>
+              <tr>
+                <th style="width:22%;">Parámetros</th>
+                <th style="width:78%;">Datos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>RR</strong></td>
+                <td>Quantum = <strong>3</strong>, costo_CS = <strong>1</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Procesos</strong></td>
+                <td>
+                  P1: arrival 0, CPU 5<br/>
+                  P2: arrival 1, CPU 4<br/>
+                  P3: arrival 2, CPU 6<br/>
+                  P4: arrival 6, CPU 2
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="height:10px;"></div>
+
+          <h2>Contexto D — “I/O heavy” (bloqueos y retornos)</h2>
+          <p class="note">Objetivo: ver por qué existen Ready/Running/Blocked y el rol de interrupciones del dispositivo.</p>
+
+          <table style="font-size:clamp(12px,1.05vw,16px);">
+            <thead>
+              <tr>
+                <th style="width:22%;">Parámetros</th>
+                <th style="width:78%;">Datos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>RR</strong></td>
+                <td>Quantum = <strong>2</strong>, costo_CS = <strong>1</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Procesos</strong></td>
+                <td>
+                  P1: arrival 0, CPU1 2 → I/O 3 → CPU2 2<br/>
+                  P2: arrival 0, CPU 5 (sin I/O)<br/>
+                  P3: arrival 1, CPU1 1 → I/O 2 → CPU2 3
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout">
+            <p>
+              Regla D: si un proceso termina su CPU1 y solicita I/O, pasa a <strong>Blocked</strong> inmediatamente (sin esperar tick);
+              cuando se cumple su tiempo de I/O, vuelve a Ready al final de la cola.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Casos C/D</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 16 (REEMPLAZO) -->
+    <section class="slide" data-title="Actividad: entrega">
+      <div class="inner">
+        <div class="header">Entrega y socialización</div>
+        <div class="content two-col">
+          <div style="display:flex; flex-direction:column; gap:14px; min-height:0;">
+            <h2>Entregable (por equipo)</h2>
+            <ul>
+              <li>Gantt completo (incluye “CS”).</li>
+              <li>Makespan.</li>
+              <li>#CS y overhead total (#CS * costo_CS).</li>
+              <li>(Opcional) Turnaround / Waiting promedio.</li>
+              <li>Interpretación (4–6 líneas): qué variable “deformó” el diagrama.</li>
+            </ul>
+
+            <div class="callout">
+              <p>
+                <strong>Tip:</strong> si dos equipos terminan rápido, intercambian contexto y verifican el Gantt del otro (control cruzado).
+              </p>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:12px; min-height:0;">
+            <h2>Socialización (10–15 min)</h2>
+            <ol>
+              <li>Cada equipo dibuja su Gantt y escribe métricas al lado.</li>
+              <li>Comparación grupal: ¿qué contexto tuvo más overhead? ¿Cuál terminó antes?</li>
+              <li>Discusión: ¿qué cambiarías del quantum si tu objetivo fuera “respuesta” vs “throughput”?</li>
+            </ol>
+
+            <pre>
+Preguntas guía rápidas:
+1) ¿Qué subió #CS (quantum, llegadas, I/O)?
+2) ¿Qué contexto evidencia Blocked?
+3) ¿Dónde se ve “tiempo perdido” por CS?
+            </pre>
+          </div>
+        </div>
+        <div class="footer"><span>Entrega</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+
+    <!-- SLIDE 17 -->
+    <section class="slide" data-title="Debrief">
+      <div class="inner">
+        <div class="header">Debrief</div>
+        <div class="content">
+          <h2>Preguntas para consolidar</h2>
+          <ul>
+            <li>¿Qué rol fue “el cuello de botella”: CPU, timer, kernel (switch), o scheduler?</li>
+            <li>¿Cómo se manifestó el overhead del context switch en tu Gantt?</li>
+            <li>¿Por qué el timer (interrupción) es la base técnica de la preempción?</li>
+            <li>Conecta con estados: ¿cuándo un proceso debería ir a Blocked en lugar de volver a Ready?</li>
+          </ul>
+          <div class="callout">
+            <p>
+              Puente a la siguiente sesión: formalizaremos <strong>estados de proceso</strong> y transiciones (Ready/Running/Blocked/Exit) y ahí el scheduling queda “amarrado” a un modelo estándar.
+            </p>
+          </div>
+        </div>
+        <div class="footer"><span>Debrief</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 18 -->
+    <section class="slide" data-title="Exit ticket">
+      <div class="inner">
+        <div class="header">Exit ticket (10 min)</div>
+        <div class="content">
+          <h2>Responde (individual)</h2>
+          <ol>
+            <li>Explica por qué el timer interrupt habilita el scheduling preemptivo.</li>
+            <li>Enumera 4 cosas que el kernel debe guardar/restaurar en un context switch.</li>
+            <li>Describe el trade-off de escoger quantum pequeño vs grande.</li>
+            <li>Con tu registro: estima cuánto tiempo se “perdió” en overhead (switches * costo).</li>
+          </ol>
+        </div>
+        <div class="footer"><span>Evaluación</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 19 -->
+    <section class="slide closing" data-title="Próxima">
+      <div class="inner">
+        <div class="content">
+          <h1>Próxima sesión</h1>
+          <p style="font-size:clamp(18px,2vw,28px); margin-top:10px;">Sesión 5: Estados de proceso, control y transiciones</p>
+          <p style="color:#ffffff; font-weight:400; margin-top:14px;">
+            Lo de hoy (Ready queue, quantum, preempción, context switch) se formaliza cuando modelamos el ciclo de vida del proceso y su control.
+          </p>
+        </div>
+        <div class="footer"><span>Siguiente</span><span class="counter"></span></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    let idx = 0;
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+    function show(i){
+      idx = clamp(i, 0, slides.length - 1);
+      slides.forEach((s,k) => s.classList.toggle('active', k === idx));
+      const label = (idx+1) + " / " + slides.length;
+      counters.forEach(el => el.textContent = label);
+      history.replaceState(null, "", "#"+(idx+1));
+    }
+
+    const m = (location.hash || "").match(/^#(\d+)$/);
+    if(m){
+      const start = parseInt(m[1], 10);
+      if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1);
+    }
+    show(idx);
+
+    document.addEventListener('keydown', (e) => {
+      const k = e.key;
+
+      if(k === 'f' || k === 'F'){
+        if(!document.fullscreenElement){
+          document.documentElement.requestFullscreen?.();
+        }else{
+          document.exitFullscreen?.();
+        }
+        return;
+      }
+
+      if(k === 'ArrowRight' || k === 'PageDown' || k === ' '){
+        e.preventDefault(); show(idx+1);
+      }else if(k === 'ArrowLeft' || k === 'PageUp'){
+        e.preventDefault(); show(idx-1);
+      }else if(k === 'Home'){
+        e.preventDefault(); show(0);
+      }else if(k === 'End'){
+        e.preventDefault(); show(slides.length-1);
+      }
+    });
+  })();
+</script>
+</body>
+</html>
