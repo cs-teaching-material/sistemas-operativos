@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 2</title>
+
+  <style>
+    :root{
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:#ffffff;
+    }
+
+    .deck{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(10px, 2vw, 22px);
+      box-sizing:border-box;
+      background:#ffffff;
+    }
+
+    .stage{
+      width:min(96vw, calc(92vh * (16/9)));
+      aspect-ratio:16/9;
+      position:relative;
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:none;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .slide.active{ display:block; }
+
+    .slide.cover{
+      background:url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+    .slide.content-slide{
+      background:
+        url("./Contenido.png") top left/contain no-repeat,
+        #ffffff;
+      color:var(--texto);
+    }
+
+    .inner{
+      height:100%;
+      box-sizing:border-box;
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 18px);
+    }
+    .cover .inner{
+      padding:
+        var(--safe-top-cover)
+        var(--safe-right-cover)
+        var(--safe-bottom-cover)
+        var(--safe-left-cover);
+    }
+
+    .content{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 16px);
+      min-height:0;
+      overflow-y:auto;
+    }
+
+    .header{
+      color:var(--azul-medio);
+      font-size:clamp(18px, 1.6vw, 22px);
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    h1{
+      margin:0;
+      font-size:var(--h1);
+      line-height:1.08;
+      color:var(--texto);
+    }
+    h2{
+      margin:0;
+      font-size:var(--h2);
+      line-height:1.15;
+      color:var(--azul-medio);
+    }
+
+    p{
+      margin:0;
+      font-size:var(--p);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    li{
+      font-size:var(--li);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    ul,ol{ margin:0; padding-left:1.2em; }
+
+    .subtitle{
+      color:var(--turquesa);
+      font-weight:800;
+      font-size:clamp(18px, 1.8vw, 24px);
+      margin-top:clamp(6px, 1vw, 10px);
+    }
+
+    .cover h1{ color:#ffffff; }
+    .cover p{ color:#e5edf8; }
+    .cover .subtitle{ color:#f7df00; }
+
+    .note{
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+    }
+
+    .callout{
+      background:rgba(255,255,255,0.94);
+      border-left:6px solid var(--turquesa);
+      padding:clamp(10px, 1.1vw, 14px);
+      border-radius:6px;
+    }
+
+    .two-col{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:clamp(12px, 1.6vw, 22px);
+      align-items:flex-start;
+      min-height:0;
+    }
+    @media(max-width:980px){
+      .two-col{ grid-template-columns:1fr; }
+    }
+
+    .card{
+      background:rgba(255,255,255,0.96);
+      border:1px solid #dde2f1;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+    }
+
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+      background:#0b1020;
+      color:#e5e7eb;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+      overflow:auto;
+      max-height: 44vh;
+      border:1px solid rgba(17,24,39,.25);
+      white-space:pre-wrap;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:rgba(255,255,255,0.96);
+    }
+    th,td{
+      border:1px solid #dde2f1;
+      padding:clamp(8px, 1vw, 12px);
+      font-size:clamp(14px, 1.2vw, 18px);
+      color:var(--texto);
+      vertical-align:top;
+    }
+    th{
+      background:#f3f6fb;
+      text-transform:uppercase;
+      font-size:clamp(12px, 1.1vw, 14px);
+      letter-spacing:.06em;
+      color:var(--azul-medio);
+    }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      gap:14px;
+    }
+
+    .counter{
+      font-weight:800;
+      color:var(--azul-medio);
+    }
+    .cover .counter{ color:#e5edf8; }
+
+    .touch-nav{
+      position:absolute;
+      top:50%;
+      left:0;
+      right:0;
+      transform:translateY(-50%);
+      display:flex;
+      justify-content:space-between;
+      padding: 0 12px;
+      pointer-events:none;
+      z-index: 10;
+    }
+    .touch-nav button{
+      pointer-events:auto;
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      padding:0;
+      border:1px solid rgba(221,226,241,0.95);
+      background:rgba(255,255,255,0.92);
+      color:var(--texto);
+      font-weight:900;
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      cursor:pointer;
+    }
+
+    #touchNav{ opacity:0; transform:translateY(-50%) translateY(6px); transition:.15s ease; }
+    .stage:hover #touchNav{ opacity:1; transform:translateY(-50%) translateY(0); }
+
+    @media (hover: none){
+      #touchNav{ opacity:1; transform:translateY(-50%); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <!-- SLIDE 1: PORTADA -->
+    <div class="slide cover active">
+      <div class="inner">
+        <div class="content">
+          <h1>Sistemas Operativos</h1>
+          <p class="subtitle">Sesión 2: ¿Qué hace realmente tu computadora?</p>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">1 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: PREGUNTA FUNDAMENTAL -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">La pregunta fundamental</div>
+        <div class="content">
+          <ul>
+            <li>Tu computadora tiene UNA CPU (procesador central)</li>
+            <li>Pero 100+ procesos quieren usarla AL MISMO TIEMPO</li>
+            <li>¿Cómo es posible que todo funcione sin conflictos?</li>
+            <li>¿Quién decide quién usa la CPU ahora?</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">2 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: ¿QUÉ ES UN SISTEMA OPERATIVO? -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">¿Qué es un Sistema Operativo?</div>
+        <div class="content">
+          <p>Un Sistema Operativo (SO) es un PROGRAMA ESPECIAL que:</p>
+          <ul>
+            <li>Corre 'siempre' en tu computadora (incluso cuando no lo ves)</li>
+            <li>Controla el hardware (CPU, RAM, disco, impresora, etc.)</li>
+            <li>Ejecuta otras aplicaciones (Chrome, VS Code, Spotify, etc.)</li>
+            <li>Decide qué aplicación usa la CPU en cada momento</li>
+            <li>Protege a las aplicaciones entre sí (si una falla, no cae todo)</li>
+            <li>Proporciona interfaz para que el usuario interactúe</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">3 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: ANALOGÍA DEL GERENTE -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Analogía del Gerente</div>
+        <div class="content">
+          <p>Imagina un restaurante:</p>
+          <div class="two-col">
+            <div class="card">
+              <p><strong>HARDWARE</strong> = Recursos disponibles<br>(cocineros, mesas, dinero, ingredientes)</p>
+              <br>
+              <p><strong>APLICACIONES</strong> = Clientes que llegan pidiendo servicio<br>(comer, beber, pagar)</p>
+            </div>
+            <div class="card">
+              <p><strong>SISTEMA OPERATIVO</strong> = El gerente que decide:</p>
+              <ul>
+                <li>A qué clientes atender primero</li>
+                <li>En qué orden</li>
+                <li>Cuántos recursos asignar a cada uno</li>
+                <li>Cómo evitar que un cliente ocupe todo</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout">
+            <p><strong>LECCIÓN:</strong> Sin un buen gerente → CAOS. Sin un buen SO → INESTABILIDAD.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">4 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: FUNCIONES PRINCIPALES -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Funciones Principales</div>
+        <div class="content">
+          <div class="two-col">
+            <div>
+              <ul>
+                <li><strong>Gestión de procesos</strong><br> (crear, terminar, ordenar procesos)</li>
+                <li><strong>Gestión de memoria RAM</strong><br> (asignar espacio, proteger espacios)</li>
+                <li><strong>Gestión de entrada/salida (E/S)</strong><br> (teclado, ratón, red, impresora)</li>
+                <li><strong>Gestión de archivos</strong><br> (carpetas, lectura, escritura, eliminación)</li>
+              </ul>
+            </div>
+            <div>
+              <ul>
+                <li><strong>Aislamiento de procesos</strong><br> (un proceso no afecta a otro)</li>
+                <li><strong>Control de permisos</strong><br> (quién puede acceder a qué)</li>
+                <li><strong>Protección de memoria</strong><br> (evitar accesos no autorizados)</li>
+                <li><strong>Seguridad en hardware</strong><br> (controlar quién accede a qué dispositivo)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">5 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: DOS 'MUNDOS' EN TU COMPUTADOR -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Dos 'mundos' en tu computador</div>
+        <div class="content">
+          <div class="two-col">
+            <div class="card">
+              <h2 style="font-size: var(--p);">El Usuario (Lo que ves)</h2>
+              <ul>
+                <li>Escritorio (fondo, iconos)</li>
+                <li>Ventanas de aplicaciones</li>
+                <li>Menús (inicio, barra de tareas)</li>
+                <li>Archivos y carpetas (explorador)</li>
+                <li>Interfaz gráfica amigable</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h2 style="font-size: var(--p);">El Kernel (El corazón invisible)</h2>
+              <ul>
+                <li>Procesos invisibles (50-100+)</li>
+                <li>Drivers de dispositivos</li>
+                <li>Gestión de memoria y CPU</li>
+                <li>Servicios del sistema</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">6 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: TRES COMPONENTES CLAVE -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Tres Componentes Clave</div>
+        <div class="content">
+          <div class="two-col">
+            <div class="card">
+              <h2 style="font-size: var(--p); color: var(--azul-medio);">PROCESOS</h2>
+              <p><strong>Instancias de aplicaciones corriendo:</strong><br>Ejemplo: Chrome es UNA aplicación, pero puede tener 50 procesos (una pestaña = un proceso). Cada proceso es independiente: uno falla, no caen todos.</p>
+            </div>
+            <div class="card">
+              <h2 style="font-size: var(--p); color: var(--azul-medio);">CPU</h2>
+              <p><strong>El recurso LIMITADO que TODOS quieren usar:</strong><br>Tu computadora tiene 1 (o pocos) CPUs. 100+ procesos quieren usarla AHORA. Solamente 1 puede usar CPU en cada instante.</p>
+            </div>
+          </div>
+          <div class="card">
+            <h2 style="font-size: var(--p); color: var(--azul-medio);">SCHEDULER (Planificador)</h2>
+            <p><strong>El 'árbitro' del SO:</strong><br>Es un ALGORITMO (programa) que decide: ¿A quién le doy la CPU ahora? ¿Por cuánto tiempo? ¿Cuándo cambio a otro proceso?</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">7 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: PROBLEMA DE COORDINACIÓN (SCHEDULING) -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">El Problema de Coordinación</div>
+        <div class="content">
+          <p><strong>100+ PROCESOS compiten por 1 CPU → ¿Cómo decidir?</strong></p>
+
+          <div class="callout">
+            <p><strong>OPCIÓN 1: FIFO (First In, First Out)</strong><br>
+            <strong>Regla:</strong> El primero que llega, es el primero que atiende.<br>
+            ✓ Simple y justo &nbsp; ✗ Lento, esperas mucho tu turno.</p>
+          </div>
+
+          <div class="callout">
+            <p><strong>OPCIÓN 2: ROUND ROBIN (Turnos iguales de tiempo)</strong><br>
+            <strong>Regla:</strong> Cada proceso obtiene 30 ms, luego al siguiente.<br>
+            ✓ Más justo, todos obtienen tiempo &nbsp; ✗ Cambios frecuentes cuesta recursos.</p>
+          </div>
+
+          <div class="callout">
+            <p><strong>OPCIÓN 3: PRIORIDADES (Tareas críticas primero)</strong><br>
+            <strong>Regla:</strong> Procesos importantes van antes.<br>
+            ✓ Rápido para lo importante &nbsp; ✗ Injusto con procesos secundarios.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">8 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: CONTEXT SWITCHING -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Context Switching - El Costo Oculto</div>
+        <div class="content">
+          <p>Cada vez que el SO cambia de proceso, SUCEDE:</p>
+          <ul>
+            <li><strong>COSTO 1:</strong> Guardar estado del proceso anterior (dónde estaba, registros, variables locales)</li>
+            <li><strong>COSTO 2:</strong> Cargar estado del nuevo proceso (acceder a memoria, restaurar contexto)</li>
+            <li><strong>COSTO 3:</strong> Limpiar la caché del procesador (datos del proceso anterior se descartan)</li>
+            <li><strong>COSTO 4:</strong> El nuevo proceso tarda en 'volver a concentrarse'</li>
+          </ul>
+          <div class="card">
+            <p><strong>ANALOGÍA HUMANA:</strong> Trabajar en Excel → Cambiar a escribir en Word. Cada cambio requiere 'adaptación mental'. Si cambias cada 30 segundos, pierdes productividad.</p>
+            <p><strong>EN TU COMPUTADORA:</strong> Esto sucede cada MILISEGUNDO (1000x más rápido). Por eso el context switching es uno de los costos mayores.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">9 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: TIPOS DE SISTEMAS OPERATIVOS -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Tipos de Sistemas Operativos</div>
+        <div class="content">
+          <div class="two-col">
+            <div class="card">
+              <p>🖥️ <strong>DESKTOP/PERSONAL</strong><br>
+              Ejemplos: Windows, macOS, Ubuntu<br>
+              Optimizado para: Facilidad de uso, múltiples apps<br>
+              Usuarios: Personas (tu computadora)</p>
+            </div>
+            <div class="card">
+              <p>🖲️ <strong>SERVIDOR</strong><br>
+              Ejemplos: Linux, Windows Server<br>
+              Optimizado para: Confiabilidad, rendimiento<br>
+              Usuarios: Centros de datos, nube</p>
+            </div>
+            <div class="card">
+              <p>📱 <strong>MÓVIL</strong><br>
+              Ejemplos: Android, iOS<br>
+              Optimizado para: Batería, touch, memoria limitada<br>
+              Usuarios: Teléfonos, tablets</p>
+            </div>
+            <div class="card">
+              <p>⚡ <strong>TIEMPO REAL</strong><br>
+              Ejemplos: VxWorks, FreeRTOS<br>
+              Optimizado para: Decisiones en milisegundos<br>
+              Usuarios: Autos, robots, equipo médico</p>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">10 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 11: ¿POR QUÉ IMPORTA? -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">¿Por qué importa?</div>
+        <div class="content">
+          <p>Como estudiante de desarrollo de software, entender el SO te permite:</p>
+          <ul>
+            <li><strong>DIAGNOSTICAR problemas de rendimiento:</strong> "¿Mi computadora está lenta? ¿Es hardware o decisiones del SO?"</li>
+            <li><strong>TOMAR MEJORES DECISIONES profesionales:</strong> "¿Qué SO usar para esta aplicación? ¿Cómo optimizar?"</li>
+            <li><strong>ESCRIBIR SOFTWARE MÁS EFICIENTE:</strong> "¿Qué hace el SO detrás de mi código? ¿Cómo puedo usar menos recursos?"</li>
+            <li><strong>DISEÑAR SOLUCIONES escalables y robustas:</strong> "Sistemas embebidos, redes, aplicaciones críticas"</li>
+            <li><strong>ENTENDER TU COMPUTADORA:</strong> "De verdad, no es 'magia', es DISEÑO INTELIGENTE"</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">11 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 12: HISTORIA DEL SO (PARTE 1) -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">La Evolución del SO - Historia (I)</div>
+        <div class="content">
+          <ul>
+            <li><strong>GENERACIÓN 1 (1940s-1950s): Máquinas de Cálculo</strong><br>
+            ENIAC (1946). NO había SO (programadores trabajaban directamente con hardware).</li>
+
+            <li><strong>GENERACIÓN 2 (1955-1965): Batch Processing</strong><br>
+            IBM System/360 (1964). Surgieron los primeros SO (FORTRAN Monitor System). Función: Automatizar carga de trabajos (batch = lotes). Problema: Mucho tiempo inactivo de CPU.</li>
+
+            <li><strong>GENERACIÓN 3 (1965-1980): Multiprogramación</strong><br>
+            Necesidad: Usar CPU constantemente. OS/360, Unix (1969), Multics. Logro: Varios procesos en memoria simultáneamente. Eficiencia > 70%.</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">12 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 13: HISTORIA DEL SO (PARTE 2) -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">La Evolución del SO - Historia (II)</div>
+        <div class="content">
+          <ul>
+            <li><strong>GENERACIÓN 4 (1980-2000): Computadoras Personales</strong><br>
+            Apple Macintosh (1984), MS-DOS (1981), Windows (1985). Paradigma nuevo: Interfaz gráfica (GUI). Prioridad cambió: Usabilidad > Eficiencia. Las personas usan computadoras, no solo expertos.</li>
+
+            <li><strong>GENERACIÓN 5 (2000-hoy): Móviles, Nube, IoT</strong><br>
+            Smartphones con Android/iOS (capacidades de PC). Cloud Computing (AWS, Azure): SO distribuido. IoT: Millones de mini SO en dispositivos. Desafío nuevo: Eficiencia energética + Conectividad.</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">13 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 14: UNIX VS WINDOWS -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Unix vs Windows - Bifurcación Histórica</div>
+        <div class="content">
+          <div class="two-col">
+            <div class="card">
+              <h2 style="font-size: var(--p); color: var(--azul-medio);">UNIX (BSD, Linux, macOS)</h2>
+              <p><strong>Creador:</strong> Ken Thompson, Dennis Ritchie<br>
+              <strong>Filosofía:</strong> "Haz una cosa y hazla bien". Modular y simple, Open source (Linux). Domina servidores.</p>
+              <p><strong>Mercado:</strong><br>
+              ✓ Servidores (>90% web usan Linux)<br>
+              ✓ Supercomputadoras (99% Linux)<br>
+              ✓ Android (Linux kernel)<br>
+              ✓ macOS (Unix-based)</p>
+            </div>
+            <div class="card">
+              <h2 style="font-size: var(--p); color: var(--azul-medio);">WINDOWS (MS-DOS, Win 11)</h2>
+              <p><strong>Creador:</strong> Bill Gates, Microsoft<br>
+              <strong>Filosofía:</strong> "Accesible para todos". Interfaz amigable, Propietario. Domina usuarios finales.</p>
+              <p><strong>Mercado:</strong><br>
+              ✓ Computadoras personales (~70% desktop)<br>
+              ✓ Servidores empresariales (Windows Server)<br>
+              ✗ Bajo en servidores vs Linux</p>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">14 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 15: ESTRUCTURA BÁSICA Y COMPONENTES -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Estructura Básica y Componentes</div>
+        <div class="content">
+          <div class="code">
+┌─────────────────────────────────────────┐
+│  APLICACIONES (Word, Chrome, etc)       │ ← Lo que VES
+├─────────────────────────────────────────┤
+│  SISTEMA DE LLAMADAS (System Calls)     │ ← Interfaz SO-Apps
+├─────────────────────────────────────────┤
+│  KERNEL (Núcleo del SO)                 │ ← El corazón invisible
+│  ┌───────────────────────────────────┐  │
+│  │ • Gestor de Procesos              │  │
+│  │ • Gestor de Memoria               │  │
+│  │ • Gestor de E/S                   │  │
+│  │ • Gestor de Archivos              │  │
+│  └───────────────────────────────────┘  │
+├─────────────────────────────────────────┤
+│  CONTROLADORES (Drivers)                │ ← Traducen a Hardware
+├─────────────────────────────────────────┤
+│  HARDWARE (CPU, RAM, Disco, etc)        │ ← El que hace el trabajo
+└─────────────────────────────────────────┘
+          </div>
+          <p><strong>1. KERNEL:</strong> Gestiona recursos (Hardware directamente). <strong>2. SHELL:</strong> Traduce comandos usuario (CLI o GUI). <strong>3. SISTEMA DE ARCHIVOS:</strong> Organiza datos (NTFS, ext4). <strong>4. ADMIN. DE DISPOSITIVOS:</strong> Controla periféricos (Drivers). <strong>5. UTILIDADES:</strong> Servicios, red, antivirus.</p>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Sesión 2</span>
+          <span class="counter">15 / 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegación touch/mouse -->
+    <div class="touch-nav" id="touchNav">
+      <button id="btnPrev">&#8592;</button>
+      <button id="btnNext">&#8594;</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    const stage = document.getElementById('stage');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+
+    let idx = 0;
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+    function show(i){
+      idx = clamp(i, 0, slides.length - 1);
+      slides.forEach((s,k) => s.classList.toggle('active', k === idx));
+      const label = (idx+1) + " / " + slides.length;
+      counters.forEach(el => el.textContent = label);
+      history.replaceState(null, "", "#" + (idx+1));
+    }
+
+    function next(){ show(idx+1); }
+    function prev(){ show(idx-1); }
+
+    const m = (location.hash || "").match(/^#(\d+)$/);
+    if(m){
+      const start = parseInt(m[1], 10);
+      if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1);
+    }
+    show(idx);
+
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+
+    document.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if(k === 'f' || k === 'F'){
+        if(!document.fullscreenElement){
+          document.documentElement.requestFullscreen?.();
+        }else{
+          document.exitFullscreen?.();
+        }
+        return;
+      }
+      if(k === 'ArrowRight' || k === 'PageDown' || k === ' '){
+        e.preventDefault(); next();
+      }else if(k === 'ArrowLeft' || k === 'PageUp'){
+        e.preventDefault(); prev();
+      }else if(k === 'Home'){
+        e.preventDefault(); show(0);
+      }else if(k === 'End'){
+        e.preventDefault(); show(slides.length-1);
+      }
+    });
+
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if(isTouch){
+      let x0=null, y0=null, t0=0;
+      const SWIPE_MIN_X = 50;
+      const SWIPE_MAX_Y = 80;
+      const SWIPE_MAX_MS = 800;
+
+      stage.addEventListener('touchstart', (e)=>{
+        const t = e.changedTouches[0];
+        x0=t.clientX; y0=t.clientY; t0=Date.now();
+      }, {passive:true});
+
+      stage.addEventListener('touchend', (e)=>{
+        if(x0===null || y0===null) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - x0;
+        const dy = t.clientY - y0;
+        const dt = Date.now() - t0;
+        x0=null; y0=null;
+        if(dt > SWIPE_MAX_MS) return;
+        if(Math.abs(dy) > SWIPE_MAX_Y) return;
+        if(dx <= -SWIPE_MIN_X) next();
+        else if(dx >= SWIPE_MIN_X) prev();
+      }, {passive:true});
+    }
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 8: Concurrencia, Sincronización e Interbloqueo</title>
+
+  <style>
+    :root{
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+
+    body{ margin:0; font-family: Arial, Helvetica, sans-serif; background:#ffffff; }
+
+    .deck{
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      padding:clamp(10px, 2vw, 22px); box-sizing:border-box; background:#ffffff;
+    }
+    .stage{ width:min(96vw, calc(92vh * (16/9))); aspect-ratio:16/9; position:relative; }
+
+    .slide{ position:absolute; inset:0; display:none; box-shadow:0 14px 40px rgba(0,0,0,.35); overflow:hidden; }
+    .slide.active{ display:block; }
+
+    .slide.cover{
+      background:url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+    .slide.content-slide{
+      background: url("./Contenido.png") top left/contain no-repeat, #ffffff;
+      color:var(--texto);
+    }
+
+    .inner{
+      height:100%; box-sizing:border-box;
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+      display:flex; flex-direction:column; gap:clamp(10px, 1.1vw, 18px);
+    }
+    .cover .inner{
+      padding: var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);
+    }
+
+    .content{ flex:1; display:flex; flex-direction:column; gap:clamp(8px, 1vw, 14px); min-height:0; }
+
+    .header{ color:var(--azul-medio); font-size:clamp(18px, 1.6vw, 22px); font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    h1{ margin:0; font-size:var(--h1); line-height:1.08; color:var(--texto); }
+    h2{ margin:0; font-size:var(--h2); line-height:1.15; color:var(--azul-medio); }
+    p{ margin:0; font-size:var(--p); line-height:1.4; color:var(--texto); }
+    li{ font-size:var(--li); line-height:1.4; color:var(--texto); }
+    ul,ol{ margin:0; padding-left:1.2em; }
+    b{ color:var(--azul-medio); }
+
+    .subtitle{ color:var(--turquesa); font-weight:800; font-size:clamp(18px, 1.8vw, 24px); margin-top:clamp(6px,1vw,10px); }
+    .cover h1{ color:#ffffff; }
+    .cover p{ color:#e5edf8; }
+    .cover .subtitle{ color:#f7df00; }
+    .note{ color:var(--muted); font-size:clamp(12px, 1.05vw, 14px); line-height:1.35; }
+
+    .callout{
+      background:rgba(255,255,255,0.94); border-left:6px solid var(--turquesa);
+      padding:clamp(8px,1vw,12px); border-radius:6px;
+    }
+    .callout-warn{
+      background:#fffbf0; border-left:6px solid #f59e0b;
+      padding:clamp(8px,1vw,12px); border-radius:6px;
+    }
+    .callout-ok{
+      background:#f0fdf4; border-left:6px solid #22c55e;
+      padding:clamp(8px,1vw,12px); border-radius:6px;
+    }
+    .callout-red{
+      background:#fff1f2; border-left:6px solid #ef4444;
+      padding:clamp(8px,1vw,12px); border-radius:6px;
+    }
+
+    .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(10px,1.5vw,20px); align-items:flex-start; min-height:0; }
+    .two-col-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:clamp(8px,1.2vw,16px); min-height:0; }
+    @media(max-width:980px){ .two-col,.two-col-3{ grid-template-columns:1fr; } }
+
+    .card{ background:rgba(255,255,255,0.96); border:1px solid #dde2f1; border-radius:10px; padding:clamp(8px,1vw,12px); }
+    .card-accent{ border-top:4px solid var(--turquesa); }
+    .card-warn{ border-top:4px solid #f59e0b; }
+    .card-red{ border-top:4px solid #ef4444; }
+    .card-ok{ border-top:4px solid #22c55e; }
+
+    .pill{ display:inline-block; background:var(--turquesa); color:#fff; font-size:clamp(11px,1vw,13px); font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 12px; border-radius:999px; }
+    .tag{ display:inline-block; background:#e8f4fd; color:var(--azul-medio); font-size:clamp(11px,1vw,13px); font-weight:700; padding:2px 10px; border-radius:6px; margin-bottom:4px; }
+    .tag-red{ display:inline-block; background:#fff1f2; color:#ef4444; font-size:clamp(11px,1vw,13px); font-weight:700; padding:2px 10px; border-radius:6px; margin-bottom:4px; }
+    .tag-ok{ display:inline-block; background:#f0fdf4; color:#15803d; font-size:clamp(11px,1vw,13px); font-weight:700; padding:2px 10px; border-radius:6px; margin-bottom:4px; }
+
+    .mono{ font-family:ui-monospace,monospace; background:#0b1020; color:#e5e7eb; border-radius:8px; padding:clamp(6px,0.8vw,10px); font-size:clamp(12px,1.05vw,14px); line-height:1.45; white-space:pre; overflow:auto; max-height:30vh; }
+
+    table{ width:100%; border-collapse:collapse; background:rgba(255,255,255,0.96); }
+    th,td{ border:1px solid #dde2f1; padding:clamp(5px,0.7vw,9px); font-size:clamp(12px,1.05vw,15px); color:var(--texto); vertical-align:top; }
+    th{ background:#f3f6fb; text-transform:uppercase; font-size:clamp(11px,0.95vw,13px); letter-spacing:.06em; color:var(--azul-medio); }
+    tr.hl td{ background:#f0f7ff; }
+
+    .footer{ display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:clamp(12px,1.05vw,14px); gap:14px; }
+    .counter{ font-weight:800; color:var(--azul-medio); }
+    .cover .counter{ color:#e5edf8; }
+
+    .touch-nav{ position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); display:flex; justify-content:space-between; padding:0 12px; pointer-events:none; z-index:10; }
+    .touch-nav button{ pointer-events:auto; width:44px; height:44px; border-radius:999px; padding:0; border:1px solid rgba(221,226,241,0.95); background:rgba(255,255,255,0.92); color:var(--texto); font-weight:900; box-shadow:0 10px 22px rgba(0,0,0,.12); cursor:pointer; font-size:18px; }
+    #touchNav{ opacity:0; transform:translateY(-50%) translateY(6px); transition:.15s ease; }
+    .stage:hover #touchNav{ opacity:1; transform:translateY(-50%) translateY(0); }
+    @media(hover:none){ #touchNav{ opacity:1; transform:translateY(-50%); } }
+  </style>
+</head>
+<body>
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <!-- ===== SLIDE 1: PORTADA ===== -->
+    <section class="slide cover active" data-title="Portada">
+      <div class="inner">
+        <div class="content">
+          <span class="pill">Sistemas Operativos</span>
+          <h1>Sesión 8<br/>Concurrencia, Sincronización<br/>e Interbloqueo</h1>
+          <div class="subtitle">Exclusión mutua · Semáforos · Condición de carrera · Deadlock</div>
+          <div class="callout" style="max-width:74%; margin-top:clamp(14px,1.8vw,22px); background:rgba(255,255,255,0.12); border-left-color:#f7df00;">
+            <p style="color:#e5edf8;">Última sesión teórica antes del cierre del primer corte. Aquí conectamos procesos, hilos y planificación con el problema real de "qué pasa cuando dos procesos quieren el mismo recurso al mismo tiempo".</p>
+          </div>
+          <p class="note" style="margin-top:auto;">
+            Navegación: <span style="background:#111827;color:#e5e7eb;padding:2px 8px;border-radius:7px;font-size:clamp(11px,1vw,13px);">←</span>
+            <span style="background:#111827;color:#e5e7eb;padding:2px 8px;border-radius:7px;font-size:clamp(11px,1vw,13px);">→</span> |
+            <span style="background:#111827;color:#e5e7eb;padding:2px 8px;border-radius:7px;font-size:clamp(11px,1vw,13px);">F</span> pantalla completa | Táctil: desliza
+          </p>
+        </div>
+        <div class="footer">
+          <span style="color:#e5edf8;">I.U. Pascual Bravo · Sistemas Operativos · Unidad 1</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 2: AGENDA ===== -->
+    <section class="slide content-slide" data-title="Agenda">
+      <div class="inner">
+        <div class="header">Plan de la sesión</div>
+        <div class="content">
+          <h2>120 minutos — última sesión teórica de la Unidad 1</h2>
+          <div class="two-col">
+            <ul>
+              <li><b>0–10 min</b> — Puente: de planificación a "¿qué pasa si dos procesos compiten?"</li>
+              <li><b>10–30 min</b> — Multiprogramación: solicitudes, interrupciones y conmutación de contexto.</li>
+              <li><b>30–55 min</b> — Concurrencia: definición, condición de carrera, sección crítica.</li>
+              <li><b>55–65 min</b> — Pausa.</li>
+              <li><b>65–90 min</b> — Exclusión mutua: Mutex, Semáforo, lock. Monitores y paso de mensajes.</li>
+              <li><b>90–110 min</b> — Interbloqueo e inanición: condiciones de Coffman, detección y prevención.</li>
+              <li><b>110–120 min</b> — Cierre: conexión con el proyecto y la evaluación de la semana siguiente.</li>
+            </ul>
+            <div class="callout">
+              <p><b>Indicadores trabajados hoy:</b></p>
+              <ul style="margin-top:6px;">
+                <li><b>E - I</b>: Multiprogramación, exclusión mutua, sincronización, interbloqueo e inanición, concurrencia y comunicación.</li>
+                <li><b>F - I</b>: Interrupciones, excepciones, llamadas + todos los saberes de E-I.</li>
+                <li><b>G - I</b>: Integración de procesos, hilos, planificación y concurrencia en el proyecto.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Actividad evaluativa de la semana: "Reconociendo lo aprendido – Unidad 1" (individual, 10%) · Fecha: 05/03/2026</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 3: PUENTE CONCEPTUAL ===== -->
+    <section class="slide content-slide" data-title="Puente">
+      <div class="inner">
+        <div class="header">Puente con lo visto</div>
+        <div class="content">
+          <h2>De planificación a concurrencia: el paso natural</h2>
+          <p>En las sesiones anteriores aprendimos que el scheduler decide qué proceso usa la CPU. Pero cuando el sistema es multiprogramado, varios procesos están en memoria al mismo tiempo y pueden querer acceder a los mismos recursos.</p>
+          <div class="two-col" style="margin-top:clamp(8px,1vw,12px);">
+            <div class="card card-accent">
+              <div class="tag">Lo que ya sabemos</div>
+              <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                <li>Un proceso tiene estados: New, Ready, Running, Blocked, Terminated.</li>
+                <li>El scheduler elige quién pasa a Running.</li>
+                <li>FCFS, SJF y RR cambian el orden y los tiempos de espera.</li>
+                <li>La conmutación de contexto guarda y restaura el estado del proceso.</li>
+              </ul>
+            </div>
+            <div class="card card-warn">
+              <div class="tag" style="background:#fff7ed; color:#b45309;">El problema nuevo</div>
+              <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                <li>¿Qué pasa si dos procesos leen y escriben el mismo dato "al mismo tiempo"?</li>
+                <li>¿Puede el scheduler interrumpir un proceso en medio de una operación crítica?</li>
+                <li>¿Qué ocurre si el Proceso A espera algo que tiene el Proceso B, y viceversa?</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout" style="margin-top:clamp(6px,0.8vw,10px);">
+            <p><b>Idea central de hoy:</b> la concurrencia no es un error del sistema, es una característica diseñada. El problema surge cuando no se coordina correctamente el acceso a recursos compartidos.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Pregunta de activación: "¿Qué pasaría si dos cajeros de un banco intentaran restar saldo de la misma cuenta al mismo tiempo?"</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 4: MULTIPROGRAMACIÓN ===== -->
+    <section class="slide content-slide" data-title="Multiprogramación">
+      <div class="inner">
+        <div class="header">Multiprogramación</div>
+        <div class="content">
+          <h2>Varios procesos en memoria — solicitudes, interrupciones y conmutación</h2>
+          <div class="two-col">
+            <div>
+              <div class="card" style="margin-bottom:clamp(8px,1vw,12px);">
+                <div class="tag">Multiprogramación</div>
+                <p style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">Técnica del SO para mantener múltiples procesos en memoria y cambiar la CPU entre ellos cuando uno se bloquea (espera I/O, señal, etc.). El objetivo es maximizar el uso de la CPU.</p>
+              </div>
+              <div class="card">
+                <div class="tag">Solicitudes e interrupciones</div>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li><b>Syscall</b>: el proceso pide algo al SO voluntariamente (abrir archivo, leer red).</li>
+                  <li><b>Interrupción hardware</b>: el dispositivo avisa que terminó (señal asíncrona).</li>
+                  <li><b>Excepción</b>: error dentro del proceso (división por cero, acceso inválido).</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div class="card card-accent">
+                <div class="tag">Conmutación de contexto</div>
+                <p style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">Cuando el SO retira la CPU a un proceso (expropiación o bloqueo voluntario), guarda su <b>contexto</b> completo en el PCB (Program Counter, registros, estado de pila) y carga el contexto del siguiente proceso.</p>
+                <p style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">Este intercambio tiene un <b>costo de tiempo</b> (overhead). RR con quantum muy pequeño puede generar demasiadas conmutaciones y degradar el rendimiento.</p>
+              </div>
+              <div class="callout" style="margin-top:clamp(8px,1vw,12px);">
+                <p style="font-size:clamp(12px,1.1vw,15px);"><b>Clave:</b> la conmutación puede ocurrir en cualquier momento entre dos instrucciones. Eso hace posible la condición de carrera.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Paralelo vs. distribuido: paralelo = múltiples CPUs en la misma máquina; distribuido = múltiples máquinas conectadas en red.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 5: CONCURRENCIA Y CONDICIÓN DE CARRERA ===== -->
+    <section class="slide content-slide" data-title="Condición de carrera">
+      <div class="inner">
+        <div class="header">Concurrencia</div>
+        <div class="content">
+          <h2>Condición de carrera — cuando el orden importa y no está garantizado</h2>
+          <div class="two-col">
+            <div>
+              <div class="card card-red" style="margin-bottom:clamp(8px,1vw,12px);">
+                <div class="tag-red">Condición de carrera (Race Condition)</div>
+                <p style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">Ocurre cuando dos o más procesos/hilos acceden a un recurso compartido y el resultado depende del orden de ejecución, que el sistema no garantiza.</p>
+              </div>
+              <div class="mono">// Saldo inicial: 1000
+// Proceso A lee saldo → 1000
+// Proceso B lee saldo → 1000
+// Proceso A resta 200 → escribe 800
+// Proceso B resta 300 → escribe 700
+// Resultado final: 700 (debería ser 500)</div>
+            </div>
+            <div>
+              <div class="card" style="margin-bottom:clamp(8px,1vw,12px);">
+                <div class="tag">Sección crítica</div>
+                <p style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">Fragmento de código donde un proceso accede a recursos compartidos (variables, archivos, dispositivos). Solo <b>un proceso a la vez</b> debe ejecutar su sección crítica.</p>
+              </div>
+              <div class="callout-warn">
+                <p style="font-size:clamp(12px,1.1vw,15px);"><b>El problema de la sección crítica</b> tiene tres requisitos de solución:</p>
+                <ul style="margin-top:4px; font-size:clamp(12px,1.05vw,14px);">
+                  <li><b>Exclusión mutua:</b> solo uno dentro a la vez.</li>
+                  <li><b>Progreso:</b> si nadie está adentro, alguien debe poder entrar.</li>
+                  <li><b>Espera acotada:</b> ningún proceso espera indefinidamente.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Hilo vs. proceso: los hilos del mismo proceso comparten memoria → son más susceptibles a condiciones de carrera que procesos separados.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 6: EXCLUSIÓN MUTUA Y MECANISMOS ===== -->
+    <section class="slide content-slide" data-title="Exclusión mutua">
+      <div class="inner">
+        <div class="header">Exclusión mutua</div>
+        <div class="content">
+          <h2>Mutex · Semáforo · Lock · Monitor · Paso de mensajes</h2>
+          <div class="two-col-3">
+            <div class="card card-accent">
+              <div class="tag">Mutex</div>
+              <p style="margin-top:4px; font-size:clamp(11px,1vw,14px);">Objeto binario: bloqueado (1) o libre (0). El proceso que lo adquiere es el único que puede liberarlo. Ideal para proteger una sección crítica simple.</p>
+              <div class="mono" style="margin-top:6px; font-size:clamp(10px,0.9vw,12px);">mutex.lock()
+  // sección crítica
+mutex.unlock()</div>
+            </div>
+            <div class="card card-accent">
+              <div class="tag">Semáforo</div>
+              <p style="margin-top:4px; font-size:clamp(11px,1vw,14px);">Contador entero ≥ 0. Operaciones atómicas <b>wait()</b> (decrementa) y <b>signal()</b> (incrementa). Permite controlar el acceso a N recursos simultáneos.</p>
+              <div class="mono" style="margin-top:6px; font-size:clamp(10px,0.9vw,12px);">sem.wait()   // P()
+  // sección crítica
+sem.signal() // V()</div>
+            </div>
+            <div class="card">
+              <div class="tag">Monitor / lock / paso de mensajes</div>
+              <p style="margin-top:4px; font-size:clamp(11px,1vw,14px);"><b>Monitor:</b> abstracción de alto nivel; el lenguaje garantiza exclusión dentro del monitor (C# <code>lock</code>, Java <code>synchronized</code>).</p>
+              <p style="margin-top:4px; font-size:clamp(11px,1vw,14px);"><b>Paso de mensajes:</b> los procesos no comparten memoria; se comunican enviando/recibiendo mensajes. Evita el problema de la sección crítica compartida por diseño.</p>
+            </div>
+          </div>
+          <div class="callout" style="margin-top:clamp(6px,0.8vw,10px);">
+            <p><b>Para el proyecto:</b> elegir el mecanismo correcto depende del lenguaje y del tipo de recurso compartido. Lo importante es que sea atómico: que no pueda ser interrumpido a la mitad.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Productor-Consumidor clásico: un semáforo controla "espacio libre", otro controla "elementos disponibles".</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 7: INTERBLOQUEO ===== -->
+    <section class="slide content-slide" data-title="Interbloqueo">
+      <div class="inner">
+        <div class="header">Interbloqueo (Deadlock)</div>
+        <div class="content">
+          <h2>Cuatro condiciones de Coffman — todas deben cumplirse simultáneamente</h2>
+          <div class="two-col">
+            <div>
+              <div class="two-col-3" style="margin-bottom:clamp(8px,1vw,12px);">
+                <div class="card card-red">
+                  <div class="tag-red" style="font-size:clamp(10px,0.9vw,12px);">1. Exclusión mutua</div>
+                  <p style="font-size:clamp(11px,1vw,13px); margin-top:4px;">Al menos un recurso no puede ser compartido simultáneamente.</p>
+                </div>
+                <div class="card card-red">
+                  <div class="tag-red" style="font-size:clamp(10px,0.9vw,12px);">2. Retención y espera</div>
+                  <p style="font-size:clamp(11px,1vw,13px); margin-top:4px;">Un proceso retiene recursos mientras espera otros que otro proceso tiene.</p>
+                </div>
+                <div class="card card-red">
+                  <div class="tag-red" style="font-size:clamp(10px,0.9vw,12px);">3. Sin expropiación</div>
+                  <p style="font-size:clamp(11px,1vw,13px); margin-top:4px;">El SO no puede quitarle un recurso a un proceso por la fuerza.</p>
+                </div>
+              </div>
+              <div class="card card-red">
+                <div class="tag-red">4. Espera circular</div>
+                <p style="font-size:clamp(11px,1vw,13px); margin-top:4px;">P1 espera un recurso de P2, P2 espera uno de P3, P3 espera uno de P1. Ciclo cerrado.</p>
+              </div>
+            </div>
+            <div>
+              <div class="card" style="margin-bottom:clamp(8px,1vw,12px);">
+                <div class="tag">Estrategias frente al deadlock</div>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.05vw,14px);">
+                  <li><b>Prevención:</b> eliminar una de las 4 condiciones por diseño (ej. pedir todos los recursos de golpe → elimina retención y espera).</li>
+                  <li><b>Evitación:</b> algoritmo del Banquero — no asigna si pone al sistema en estado "inseguro".</li>
+                  <li><b>Detección + recuperación:</b> permitir que ocurra, detectar el ciclo y matar/reiniciar un proceso.</li>
+                  <li><b>Ignorar:</b> política "ostrich" — asumir que es tan raro que no vale el costo de manejarlo (Windows, Linux en algunos casos).</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Grafo de asignación de recursos: si hay un ciclo sin instancias múltiples → deadlock garantizado.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 8: INANICIÓN ===== -->
+    <section class="slide content-slide" data-title="Inanición">
+      <div class="inner">
+        <div class="header">Inanición (Starvation)</div>
+        <div class="content">
+          <h2>Diferencia entre interbloqueo e inanición</h2>
+          <div class="two-col">
+            <div>
+              <table>
+                <thead>
+                  <tr><th>Aspecto</th><th>Interbloqueo</th><th>Inanición</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Causa</td><td>Espera circular cerrada entre procesos</td><td>Un proceso nunca recibe el recurso porque otros tienen prioridad</td></tr>
+                  <tr><td>¿El proceso avanza?</td><td>No — ninguno de los involucrados</td><td>No — solo el proceso "hambriento"</td></tr>
+                  <tr><td>¿Hay ciclo?</td><td>Sí, explícito</td><td>No necesariamente</td></tr>
+                  <tr><td>Ejemplo típico</td><td>P1 tiene A, quiere B; P2 tiene B, quiere A</td><td>SJF con procesos largos que nunca corren porque siempre llega uno más corto</td></tr>
+                  <tr class="hl"><td><b>Solución habitual</b></td><td>Prevención o detección</td><td><b>Aging</b>: aumentar la prioridad del proceso que lleva mucho esperando</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="callout-warn">
+                <p><b>Recuerda de la sesión 6:</b> SJF puro puede causar inanición en procesos largos. RR con quantum adecuado evita inanición porque garantiza que todos corren eventualmente.</p>
+              </div>
+              <div class="callout" style="margin-top:clamp(8px,1vw,12px);">
+                <p><b>Para la tarea evaluativa</b> de Unidad 1 - Actividad 3 - Tarea 1 ("Analizando la administración de procesos en multitarea"), ya resolvieron Gantt y métricas. Esta sesión les da el vocabulario para justificar también si un algoritmo puede causar inanición.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Inanición ≠ bloqueo indefinido: el proceso sigue siendo "runnable", simplemente nunca lo seleccionan.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 9: EJEMPLO INTEGRADOR ===== -->
+    <section class="slide content-slide" data-title="Ejemplo integrador">
+      <div class="inner">
+        <div class="header">Ejemplo integrador</div>
+        <div class="content">
+          <h2>Banco con dos cajeros — del problema a la solución</h2>
+          <div class="two-col">
+            <div>
+              <div class="card card-red" style="margin-bottom:clamp(8px,1vw,12px);">
+                <div class="tag-red">Sin sincronización — condición de carrera</div>
+                <div class="mono" style="font-size:clamp(10px,0.9vw,12px); margin-top:6px;">Hilo A: lee saldo = 1000
+Hilo B: lee saldo = 1000
+Hilo A: saldo = 1000 - 200 → escribe 800
+Hilo B: saldo = 1000 - 300 → escribe 700
+// Saldo final: 700 (perdimos 200)</div>
+              </div>
+              <div class="card card-ok">
+                <div class="tag-ok">Con Mutex — correcto</div>
+                <div class="mono" style="font-size:clamp(10px,0.9vw,12px); margin-top:6px;">Hilo A: adquiere mutex
+  lee saldo = 1000
+  saldo = 800 → escribe
+  libera mutex
+Hilo B: adquiere mutex
+  lee saldo = 800
+  saldo = 500 → escribe
+  libera mutex
+// Saldo final: 500 ✓</div>
+              </div>
+            </div>
+            <div>
+              <div class="card" style="margin-bottom:clamp(8px,1vw,12px);">
+                <div class="tag">¿Qué cambió?</div>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.1vw,15px);">
+                  <li>La sección crítica (leer-modificar-escribir) es atómica: nadie puede interrumpirla.</li>
+                  <li>El mutex garantiza que solo un hilo está en esa sección a la vez.</li>
+                  <li>El orden exacto puede variar, pero el resultado siempre es correcto.</li>
+                </ul>
+              </div>
+              <div class="callout">
+                <p><b>Conexión con el proyecto:</b> si tu proyecto tiene hilos que comparten una variable, un archivo o una cola, necesitas exactamente este patrón. Identificar la sección crítica es el primer paso antes de escribir una sola línea de código concurrente.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">El ejemplo del banco es el "Hola Mundo" de la sincronización — si entiendes esto, entiendes el 80% del problema.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 10: PRODUCTOR-CONSUMIDOR ===== -->
+    <section class="slide content-slide" data-title="Productor-Consumidor">
+      <div class="inner">
+        <div class="header">Patrón clásico</div>
+        <div class="content">
+          <h2>Productor–Consumidor con semáforos</h2>
+          <div class="two-col">
+            <div>
+              <div class="card" style="margin-bottom:clamp(8px,1vw,12px);">
+                <div class="tag">El escenario</div>
+                <p style="font-size:clamp(12px,1.1vw,15px); margin-top:6px;">Un proceso <b>produce</b> datos y los pone en un buffer compartido. Otro proceso <b>consume</b> esos datos. El buffer tiene capacidad limitada (N posiciones).</p>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.05vw,14px);">
+                  <li>El productor no puede agregar si el buffer está <b>lleno</b>.</li>
+                  <li>El consumidor no puede tomar si el buffer está <b>vacío</b>.</li>
+                  <li>Ambos no pueden acceder al buffer <b>al mismo tiempo</b>.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <div class="tag">Tres semáforos necesarios</div>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.05vw,14px);">
+                  <li><b>mutex</b> (inicia en 1): exclusión mutua al acceder al buffer.</li>
+                  <li><b>lleno</b> (inicia en 0): cuenta posiciones ocupadas.</li>
+                  <li><b>vacío</b> (inicia en N): cuenta posiciones libres.</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div class="mono" style="font-size:clamp(10px,0.9vw,12px);">// PRODUCTOR
+loop:
+  produce(item)
+  vacío.wait()     // espera si buffer lleno
+  mutex.wait()
+    buffer.add(item)
+  mutex.signal()
+  lleno.signal()   // avisa que hay un item
+
+// CONSUMIDOR
+loop:
+  lleno.wait()     // espera si buffer vacío
+  mutex.wait()
+    item = buffer.remove()
+  mutex.signal()
+  vacío.signal()   // avisa que hay espacio
+  consume(item)</div>
+              <div class="callout" style="margin-top:clamp(8px,1vw,12px);">
+                <p style="font-size:clamp(12px,1.05vw,14px);"><b>Este patrón aparece en tu proyecto</b> si tienes un hilo generando datos y otro procesándolos: logs concurrentes, tareas en cola, sensor + procesador, etc.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Ejercicio mental: ¿qué ocurre si el consumidor llama mutex.wait() ANTES de lleno.wait()? → posible deadlock.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 11: MAPA CONCEPTUAL UNIDAD 1 ===== -->
+    <section class="slide content-slide" data-title="Mapa Unidad 1">
+      <div class="inner">
+        <div class="header">Cierre de la Unidad 1</div>
+        <div class="content">
+          <h2>Todo lo que cubre la Unidad 1 — qué ya saben y qué conecta con qué</h2>
+          <table style="font-size:clamp(11px,1vw,14px);">
+            <thead>
+              <tr><th>Bloque de saber</th><th>Sesiones</th><th>Estado</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Perspectiva histórica, definición y estructura del SO. Tipos y funciones.</td><td>S1 – S3</td><td class="tag-ok" style="display:table-cell; background:#f0fdf4; color:#15803d; font-weight:700;">Cubierto</td></tr>
+              <tr><td>Arquitecturas hardware (Von Neumann / Harvard). Interrupciones, excepciones y llamadas al sistema.</td><td>S3 – S4</td><td class="tag-ok" style="display:table-cell; background:#f0fdf4; color:#15803d; font-weight:700;">Cubierto</td></tr>
+              <tr><td>Definición, control y estados de un proceso. Hilos. PCB.</td><td>S4 – S5</td><td class="tag-ok" style="display:table-cell; background:#f0fdf4; color:#15803d; font-weight:700;">Cubierto</td></tr>
+              <tr><td>Planificación de procesos y algoritmos (FCFS, SJF, RR). Métricas.</td><td>S5 – S6</td><td class="tag-ok" style="display:table-cell; background:#f0fdf4; color:#15803d; font-weight:700;">Cubierto</td></tr>
+              <tr><td>Proyecto — Primera entrega (propuesta + mock + Incremento 1).</td><td>S7</td><td class="tag-ok" style="display:table-cell; background:#f0fdf4; color:#15803d; font-weight:700;">Cubierto</td></tr>
+              <tr class="hl"><td><b>Multiprogramación, concurrencia, exclusión mutua, sincronización, interbloqueo e inanición.</b></td><td><b>S8 (hoy)</b></td><td style="background:#e8f4fd; color:var(--azul-medio); font-weight:700;">En curso</td></tr>
+            </tbody>
+          </table>
+          <div class="callout" style="margin-top:clamp(6px,0.8vw,10px);">
+            <p><b>La Unidad 1 queda completa con esta sesión.</b> Las dos próximas sesiones son evaluativas: Proyecto E1 (ya entregada) y "Reconociendo lo aprendido Unidad 1" (05/03/2026, individual, 10%).</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Unidad 2 comienza el 10/03/2026 con "Confrontando mi saber" sobre almacenamiento primario, memoria virtual y archivos.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 12: CONEXIÓN CON LA EVALUACIÓN ===== -->
+    <section class="slide content-slide" data-title="Evaluación de cierre">
+      <div class="inner">
+        <div class="header">Actividad evaluativa — semana de cierre</div>
+        <div class="content">
+          <h2>Reconociendo lo aprendido — Unidad 1 (individual · 10% · 05/03/2026)</h2>
+          <div class="two-col">
+            <div>
+              <div class="card card-accent" style="margin-bottom:clamp(8px,1vw,12px);">
+                <div class="tag">Parte 1 — Conceptos clave</div>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.05vw,14px);">
+                  <li>Programa vs. proceso.</li>
+                  <li>Estados de proceso y transiciones.</li>
+                  <li>Recursos: CPU, memoria, I/O.</li>
+                  <li>Multitarea, multiprogramación.</li>
+                  <li><b>Sección crítica, exclusión mutua, condición de carrera.</b></li>
+                  <li><b>Interbloqueo e inanición: diferencia y solución básica.</b></li>
+                </ul>
+              </div>
+              <div class="card">
+                <div class="tag">Parte 2 — Mini ejercicio de planificación</div>
+                <p style="font-size:clamp(12px,1.05vw,14px); margin-top:6px;">Aplicar FIFO o Round Robin a un conjunto pequeño de procesos, construir el Gantt, calcular T, W, R y justificar el resultado.</p>
+              </div>
+            </div>
+            <div>
+              <div class="callout-warn" style="margin-bottom:clamp(8px,1vw,12px);">
+                <p><b>Parte 3 — Reflexión (8–12 líneas):</b> explicar por qué los mecanismos de gestión de procesos y la planificación impactan el rendimiento y la experiencia del usuario. Se valora argumentación, no solo definiciones.</p>
+              </div>
+              <div class="callout">
+                <p><b>Cómo prepararse:</b></p>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.05vw,14px);">
+                  <li>Revisar las sesiones 1 a 8 (especialmente S5, S6 y S8).</li>
+                  <li>Practicar Gantt con los ejercicios de la S6.</li>
+                  <li>Para la reflexión: conectar "planificación mala = espera larga = usuario frustrado".</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Es individual. No admite trabajo en equipo. El docente valora precisión conceptual, coherencia del procedimiento y calidad de la argumentación.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 13: CIERRE Y PROYECTO ===== -->
+    <section class="slide content-slide" data-title="Proyecto — conexión">
+      <div class="inner">
+        <div class="header">Conexión con el proyecto</div>
+        <div class="content">
+          <h2>Lo de hoy va directo al Incremento 2 y a la Entrega Final</h2>
+          <div class="two-col">
+            <div>
+              <div class="card card-accent" style="margin-bottom:clamp(8px,1vw,12px);">
+                <div class="tag">Lo que deben identificar en su proyecto ahora</div>
+                <ol style="margin-top:6px; font-size:clamp(12px,1.05vw,14px);">
+                  <li>¿Hay recursos compartidos entre hilos o procesos? ¿Cuáles?</li>
+                  <li>¿Cuál es la sección crítica exacta en su código?</li>
+                  <li>¿Qué mecanismo usarán: Mutex, Semáforo, lock o paso de mensajes?</li>
+                  <li>¿Puede ocurrir un deadlock en su diseño? ¿Por cuál de las 4 condiciones?</li>
+                  <li>¿Cómo lo demostrarán (y solucionarán) en la Entrega Final?</li>
+                </ol>
+              </div>
+            </div>
+            <div>
+              <div class="callout-warn" style="margin-bottom:clamp(8px,1vw,12px);">
+                <p><b>Recuerden:</b> la sustentación (25% de la nota final del proyecto) incluye preguntas sobre:</p>
+                <ul style="margin-top:6px; font-size:clamp(12px,1.05vw,14px);">
+                  <li>¿Dónde está la sección crítica en su código?</li>
+                  <li>¿Por qué eligieron ese mecanismo de sincronización?</li>
+                  <li>¿Pueden mostrar la condición de carrera que resolvieron?</li>
+                </ul>
+              </div>
+              <div class="callout-ok">
+                <p><b>Buena práctica:</b> documentar en el README del repositorio cuál es la sección crítica y qué mecanismo se usa. Un commit con ese cambio es evidencia de que lo pensaron, no lo hicieron al final.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Próxima sesión evaluativa: 05/03/2026 — Reconociendo lo aprendido Unidad 1 (individual). Luego arranca Unidad 2.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Botones táctiles -->
+    <div class="touch-nav" id="touchNav">
+      <button id="btnPrev" aria-label="Anterior">&#8592;</button>
+      <button id="btnNext" aria-label="Siguiente">&#8594;</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    const stage = document.getElementById('stage');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    let idx = 0;
+    function clamp(n,min,max){ return Math.max(min,Math.min(max,n)); }
+    function show(i){
+      idx = clamp(i,0,slides.length-1);
+      slides.forEach((s,k)=>s.classList.toggle('active',k===idx));
+      const label=(idx+1)+" / "+slides.length;
+      counters.forEach(el=>el.textContent=label);
+      history.replaceState(null,"","#"+(idx+1));
+    }
+    function next(){ show(idx+1); }
+    function prev(){ show(idx-1); }
+    const m=(location.hash||"").match(/^#(\d+)$/);
+    if(m){ const s=parseInt(m[1],10); if(!isNaN(s)) idx=clamp(s-1,0,slides.length-1); }
+    show(idx);
+    btnPrev.addEventListener('click',prev);
+    btnNext.addEventListener('click',next);
+    document.addEventListener('keydown',(e)=>{
+      const k=e.key;
+      if(k==='f'||k==='F'){
+        if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+        return;
+      }
+      if(k==='ArrowRight'||k==='PageDown'||k===' '){ e.preventDefault(); next(); }
+      else if(k==='ArrowLeft'||k==='PageUp'){ e.preventDefault(); prev(); }
+      else if(k==='Home'){ e.preventDefault(); show(0); }
+      else if(k==='End'){ e.preventDefault(); show(slides.length-1); }
+    });
+    const isTouch=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
+    if(isTouch){
+      let x0=null,y0=null,t0=0;
+      const SX=50,SY=80,ST=800;
+      stage.addEventListener('touchstart',(e)=>{ const t=e.changedTouches[0]; x0=t.clientX; y0=t.clientY; t0=Date.now(); },{passive:true});
+      stage.addEventListener('touchend',(e)=>{
+        if(x0===null||y0===null) return;
+        const t=e.changedTouches[0]; const dx=t.clientX-x0; const dy=t.clientY-y0; const dt=Date.now()-t0;
+        x0=null; y0=null;
+        if(dt>ST||Math.abs(dy)>SY) return;
+        if(dx<=-SX) next(); else if(dx>=SX) prev();
+      },{passive:true});
+    }
+  })();
+</script>
+</body>
+</html>

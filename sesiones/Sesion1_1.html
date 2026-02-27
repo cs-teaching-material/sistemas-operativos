@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Clase 1</title>
+
+  <style>
+    :root{
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:#ffffff;
+    }
+
+    .deck{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(10px, 2vw, 22px);
+      box-sizing:border-box;
+      background:#ffffff;
+    }
+
+    .stage{
+      width:min(96vw, calc(92vh * (16/9)));
+      aspect-ratio:16/9;
+      position:relative;
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:none;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .slide.active{ display:block; }
+
+    .slide.cover{
+      background:url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+    .slide.content-slide{
+      background:
+        url("./Contenido.png") top left/contain no-repeat,
+        #ffffff;
+      color:var(--texto);
+    }
+
+    .inner{
+      height:100%;
+      box-sizing:border-box;
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 18px);
+    }
+    .cover .inner{
+      padding:
+        var(--safe-top-cover)
+        var(--safe-right-cover)
+        var(--safe-bottom-cover)
+        var(--safe-left-cover);
+    }
+
+    .content{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 16px);
+      min-height:0;
+    }
+
+    .header{
+      color:var(--azul-medio);
+      font-size:clamp(18px, 1.6vw, 22px);
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    h1{
+      margin:0;
+      font-size:var(--h1);
+      line-height:1.08;
+      color:var(--texto);
+    }
+    h2{
+      margin:0;
+      font-size:var(--h2);
+      line-height:1.15;
+      color:var(--azul-medio);
+    }
+
+    p{
+      margin:0;
+      font-size:var(--p);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    li{
+      font-size:var(--li);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    ul,ol{ margin:0; padding-left:1.2em; }
+
+    .subtitle{
+      color:var(--turquesa);
+      font-weight:800;
+      font-size:clamp(18px, 1.8vw, 24px);
+      margin-top:clamp(6px, 1vw, 10px);
+    }
+
+    .cover h1{ color:#ffffff; }
+    .cover p{ color:#e5edf8; }
+    .cover .subtitle{ color:#f7df00; }
+
+    .note{
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+    }
+
+    .callout{
+      background:rgba(255,255,255,0.94);
+      border-left:6px solid var(--turquesa);
+      padding:clamp(10px, 1.1vw, 14px);
+      border-radius:6px;
+    }
+
+    .two-col{
+      display:grid;
+      grid-template-columns:1.15fr 0.9fr;
+      gap:clamp(12px, 1.6vw, 22px);
+      align-items:flex-start;
+      min-height:0;
+    }
+    @media(max-width:980px){
+      .two-col{ grid-template-columns:1fr; }
+    }
+
+    .card{
+      background:rgba(255,255,255,0.96);
+      border:1px solid #dde2f1;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:rgba(255,255,255,0.96);
+    }
+    th,td{
+      border:1px solid #dde2f1;
+      padding:clamp(8px, 1vw, 12px);
+      font-size:clamp(14px, 1.2vw, 18px);
+      color:var(--texto);
+      vertical-align:top;
+    }
+    th{
+      background:#f3f6fb;
+      text-transform:uppercase;
+      font-size:clamp(12px, 1.1vw, 14px);
+      letter-spacing:.06em;
+      color:var(--azul-medio);
+    }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      gap:14px;
+    }
+
+    .counter{
+      font-weight:800;
+      color:var(--azul-medio);
+    }
+    .cover .counter{ color:#e5edf8; }
+
+    .touch-nav{
+      position:absolute;
+      top:50%;
+      left:0;
+      right:0;
+      transform:translateY(-50%);
+      display:flex;
+      justify-content:space-between;
+      padding: 0 12px;
+      pointer-events:none;
+      z-index: 10;
+    }
+    .touch-nav button{
+      pointer-events:auto;
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      padding:0;
+      border:1px solid rgba(221,226,241,0.95);
+      background:rgba(255,255,255,0.92);
+      color:var(--texto);
+      font-weight:900;
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      cursor:pointer;
+    }
+
+    #touchNav{ opacity:0; transform:translateY(-50%) translateY(6px); transition:.15s ease; }
+    .stage:hover #touchNav{ opacity:1; transform:translateY(-50%) translateY(0); }
+
+    @media (hover: none){
+      #touchNav{ opacity:1; transform:translateY(-50%); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <!-- ======================== SLIDE 1 — PORTADA ======================== -->
+    <div class="slide cover active">
+      <div class="inner">
+        <div class="content">
+          <h1>Sistemas Operativos</h1>
+          <p class="subtitle">Clase 1 — Introducción</p>
+          <p>Docente: Mauricio Rojas Sánchez</p>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Clase 1</span>
+          <span class="counter">1 / 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== SLIDE 2 — INFO DEL CURSO ======================== -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Información del Curso</div>
+        <div class="content">
+          <table>
+            <tr><th>Campo</th><th>Detalle</th></tr>
+            <tr><td>Curso</td><td>Sistemas Operativos</td></tr>
+            <tr><td>Docente</td><td>Mauricio Rojas Sánchez</td></tr>
+            <tr><td>Objetivo</td><td>Comprender el funcionamiento, estructura y gestión de recursos en los sistemas operativos.</td></tr>
+            <tr><td>Duración</td><td>64 horas académicas</td></tr>
+            <tr><td>Metodología</td><td>Teórico – práctica basada en laboratorio y análisis de casos.</td></tr>
+          </table>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Clase 1</span>
+          <span class="counter">2 / 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== SLIDE 3 — ¿QUÉ ES UN SO? ======================== -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">¿Qué es un Sistema Operativo?</div>
+        <div class="content">
+          <p>Un sistema operativo es el <strong>software principal</strong> que administra el hardware y los recursos del computador.</p>
+          <p>Permite la comunicación entre el usuario y el hardware.</p>
+          <div class="callout">
+            <p><strong>Ejemplos:</strong> Windows, Linux, macOS, Android.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Clase 1</span>
+          <span class="counter">3 / 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== SLIDE 4 — ¿PARA QUÉ SIRVE? ======================== -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">¿Para qué sirve un Sistema Operativo?</div>
+        <div class="content">
+          <ul>
+            <li>Gestiona memoria, procesos, almacenamiento y dispositivos.</li>
+            <li>Permite ejecutar aplicaciones.</li>
+            <li>Garantiza seguridad y estabilidad del sistema.</li>
+            <li>Es la base del funcionamiento de servidores, computadores personales y dispositivos móviles.</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Clase 1</span>
+          <span class="counter">4 / 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== SLIDE 5 — FUNCIONES PRINCIPALES ======================== -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Funciones Principales</div>
+        <div class="content">
+          <ul>
+            <li>Gestión de procesos.</li>
+            <li>Administración de memoria.</li>
+            <li>Gestión de archivos y almacenamiento.</li>
+            <li>Control de dispositivos de entrada y salida.</li>
+            <li>Seguridad y control de usuarios.</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Clase 1</span>
+          <span class="counter">5 / 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== SLIDE 6 — TIPOS DE SO ======================== -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Tipos de Sistemas Operativos</div>
+        <div class="content">
+          <ul>
+            <li>Sistemas operativos de escritorio.</li>
+            <li>Sistemas operativos de servidor.</li>
+            <li>Sistemas operativos embebidos.</li>
+            <li>Sistemas operativos móviles.</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Clase 1</span>
+          <span class="counter">6 / 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== SLIDE 7 — LINUX ======================== -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Linux</div>
+        <div class="content">
+          <p>Linux es un sistema operativo de <strong>código abierto</strong>, ampliamente utilizado en servidores y entornos de desarrollo.</p>
+          <div class="callout">
+            <p><strong>Distribuciones populares:</strong> Ubuntu, Debian, Fedora, Arch Linux.</p>
+          </div>
+          <p>Se caracteriza por su <strong>estabilidad, seguridad y flexibilidad</strong>.</p>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Clase 1</span>
+          <span class="counter">7 / 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== SLIDE 8 — ACTIVIDAD ======================== -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Actividad</div>
+        <div class="content">
+          <ol>
+            <li>Identificar el sistema operativo instalado en su equipo.</li>
+            <li>Investigar versión, arquitectura y características principales.</li>
+            <li>Comparar con otro sistema operativo conocido.</li>
+            <li>Socializar resultados en grupo.</li>
+          </ol>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Clase 1</span>
+          <span class="counter">8 / 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== SLIDE 9 — LOGROS DE APRENDIZAJE ======================== -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Logros de Aprendizaje</div>
+        <div class="content">
+          <ul>
+            <li>Comprende el concepto de sistema operativo.</li>
+            <li>Identifica funciones principales.</li>
+            <li>Reconoce tipos de sistemas operativos.</li>
+            <li>Relaciona el sistema operativo con el uso cotidiano del computador.</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Clase 1</span>
+          <span class="counter">9 / 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== SLIDE 10 — CIERRE ======================== -->
+    <div class="slide content-slide">
+      <div class="inner">
+        <div class="header">Cierre</div>
+        <div class="content">
+          <div class="callout">
+            <p><strong>Reflexión:</strong> ¿Qué pasaría si un computador no tuviera sistema operativo?</p>
+          </div>
+          <p>Espacio para preguntas.</p>
+          <p>Asignación de lectura introductoria sobre <strong>historia de los sistemas operativos</strong>.</p>
+        </div>
+        <div class="footer">
+          <span>Sistemas Operativos · Clase 1</span>
+          <span class="counter">10 / 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegación touch/mouse -->
+    <div class="touch-nav" id="touchNav">
+      <button id="btnPrev">&#8592;</button>
+      <button id="btnNext">&#8594;</button>
+    </div>
+
+  </div><!-- .stage -->
+</div><!-- .deck -->
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    const stage = document.getElementById('stage');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+
+    let idx = 0;
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+    function show(i){
+      idx = clamp(i, 0, slides.length - 1);
+      slides.forEach((s,k) => s.classList.toggle('active', k === idx));
+      const label = (idx+1) + " / " + slides.length;
+      counters.forEach(el => el.textContent = label);
+      history.replaceState(null, "", "#" + (idx+1));
+    }
+
+    function next(){ show(idx+1); }
+    function prev(){ show(idx-1); }
+
+    const m = (location.hash || "").match(/^#(\d+)$/);
+    if(m){
+      const start = parseInt(m[1], 10);
+      if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1);
+    }
+    show(idx);
+
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+
+    document.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if(k === 'f' || k === 'F'){
+        if(!document.fullscreenElement){
+          document.documentElement.requestFullscreen?.();
+        }else{
+          document.exitFullscreen?.();
+        }
+        return;
+      }
+      if(k === 'ArrowRight' || k === 'PageDown' || k === ' '){
+        e.preventDefault(); next();
+      }else if(k === 'ArrowLeft' || k === 'PageUp'){
+        e.preventDefault(); prev();
+      }else if(k === 'Home'){
+        e.preventDefault(); show(0);
+      }else if(k === 'End'){
+        e.preventDefault(); show(slides.length-1);
+      }
+    });
+
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if(isTouch){
+      let x0=null, y0=null, t0=0;
+      const SWIPE_MIN_X = 50;
+      const SWIPE_MAX_Y = 80;
+      const SWIPE_MAX_MS = 800;
+
+      stage.addEventListener('touchstart', (e)=>{
+        const t = e.changedTouches[0];
+        x0=t.clientX; y0=t.clientY; t0=Date.now();
+      }, {passive:true});
+
+      stage.addEventListener('touchend', (e)=>{
+        if(x0===null || y0===null) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - x0;
+        const dy = t.clientY - y0;
+        const dt = Date.now() - t0;
+        x0=null; y0=null;
+        if(dt > SWIPE_MAX_MS) return;
+        if(Math.abs(dy) > SWIPE_MAX_Y) return;
+        if(dx <= -SWIPE_MIN_X) next();
+        else if(dx >= SWIPE_MIN_X) prev();
+      }, {passive:true});
+    }
+  })();
+</script>
+</body>
+</html>
