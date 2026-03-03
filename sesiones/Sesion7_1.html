@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Ejemplo E1: Simulador FCFS (Unidad 1)</title>
+
+  <style>
+    :root{
+      /* Tema */
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+
+      /* Safe margins (tal cual) */
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:#ffffff;
+    }
+
+    .deck{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(10px, 2vw, 22px);
+      box-sizing:border-box;
+      background:#ffffff;
+    }
+
+    .stage{
+      width:min(96vw, calc(92vh * (16/9)));
+      aspect-ratio:16/9;
+      position:relative;
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:none;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .slide.active{ display:block; }
+
+    /* Fondos institucionales */
+    .slide.cover{
+      background:url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+    .slide.content-slide{
+      background: url("./Contenido.png") top left/contain no-repeat, #ffffff;
+      color:var(--texto);
+    }
+
+    /* Safe padding por tipo de slide */
+    .inner{
+      height:100%;
+      box-sizing:border-box;
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 18px);
+    }
+    .cover .inner{
+      padding: var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);
+    }
+
+    .content{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 16px);
+      min-height:0;
+    }
+
+    .header{
+      color:var(--azul-medio);
+      font-size:clamp(18px, 1.6vw, 22px);
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    h1{
+      margin:0;
+      font-size:var(--h1);
+      line-height:1.08;
+      color:var(--texto);
+    }
+    h2{
+      margin:0;
+      font-size:var(--h2);
+      line-height:1.15;
+      color:var(--azul-medio);
+    }
+    p{
+      margin:0;
+      font-size:var(--p);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    li{
+      font-size:var(--li);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    ul,ol{
+      margin:0;
+      padding-left:1.2em;
+    }
+
+    .subtitle{
+      color:var(--turquesa);
+      font-weight:800;
+      font-size:clamp(18px, 1.8vw, 24px);
+      margin-top:clamp(6px, 1vw, 10px);
+    }
+
+    /* Portada colores */
+    .cover h1{ color:#ffffff; }
+    .cover p{ color:#e5edf8; }
+    .cover .subtitle{ color:#f7df00; }
+
+    .note{
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+    }
+
+    .callout{
+      background:rgba(255,255,255,0.94);
+      border-left:6px solid var(--turquesa);
+      padding:clamp(10px, 1.1vw, 14px);
+      border-radius:6px;
+    }
+
+    .two-col{
+      display:grid;
+      grid-template-columns:1.15fr 0.9fr;
+      gap:clamp(12px, 1.6vw, 22px);
+      align-items:flex-start;
+      min-height:0;
+    }
+    @media(max-width:980px){
+      .two-col{ grid-template-columns:1fr; }
+    }
+
+    .card{
+      background:rgba(255,255,255,0.96);
+      border:1px solid #dde2f1;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+    }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background:#111827;
+      color:#e5e7eb;
+      padding:2px 8px;
+      border-radius:7px;
+      font-size:clamp(11px, 1vw, 13px);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+      background:#0b1020;
+      color:#e5e7eb;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+      overflow:auto;
+      max-height:44vh;
+      border:1px solid rgba(17,24,39,.25);
+      white-space:pre-wrap;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:rgba(255,255,255,0.96);
+    }
+    th,td{
+      border:1px solid #dde2f1;
+      padding:clamp(8px, 1vw, 12px);
+      font-size:clamp(14px, 1.2vw, 18px);
+      color:var(--texto);
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#f3f6fb;
+      text-transform:uppercase;
+      font-size:clamp(12px, 1.1vw, 14px);
+      letter-spacing:.06em;
+      color:var(--azul-medio);
+    }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      gap:14px;
+    }
+    .counter{
+      font-weight:800;
+      color:var(--azul-medio);
+    }
+    .cover .counter{ color:#e5edf8; }
+
+    /* Botones pequeños mouse / touch */
+    .touch-nav{
+      position:absolute;
+      top:50%;
+      left:0;
+      right:0;
+      transform:translateY(-50%);
+      display:flex;
+      justify-content:space-between;
+      padding: 0 12px;
+      pointer-events:none;
+      z-index:10;
+    }
+    .touch-nav button{
+      pointer-events:auto;
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      padding:0;
+      border:1px solid rgba(221,226,241,0.95);
+      background:rgba(255,255,255,0.92);
+      color:var(--texto);
+      font-weight:900;
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      cursor:pointer;
+      font-size:18px;
+    }
+    #touchNav{
+      opacity:0;
+      transform:translateY(-50%) translateY(6px);
+      transition:.15s ease;
+    }
+    .stage:hover #touchNav{
+      opacity:1;
+      transform:translateY(-50%) translateY(0);
+    }
+    @media(hover:none){
+      #touchNav{ opacity:1; transform:translateY(-50%); }
+    }
+  </style>
+</head>
+
+<body>
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <!-- ===== SLIDE 1: PORTADA ===== -->
+    <section class="slide cover active" data-title="Portada">
+      <div class="inner">
+        <div class="content">
+          <h1>Ejemplo E1 (Unidad 1)<br/>Simulador FCFS</h1>
+          <div class="subtitle">Propuesta + mock + repo + código + presentación</div>
+          <div class="callout" style="background:rgba(255,255,255,0.12); border-left-color:#f7df00; max-width:78%;">
+            <p style="color:#e5edf8;">
+              Navegación:
+              <span class="kbd">←</span> <span class="kbd">→</span>
+              <span class="kbd">F</span> pantalla completa
+            </p>
+          </div>
+          <p class="note" style="margin-top:auto; color:#e5edf8;">
+            Este ejemplo está limitado a Unidad 1: procesos y planificación (FCFS).
+          </p>
+        </div>
+        <div class="footer">
+          <span style="color:#e5edf8;">Sistemas Operativos · Grupo 050</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 2: RÚBRICA ===== -->
+    <section class="slide content-slide" data-title="Rúbrica">
+      <div class="inner">
+        <div class="header">Primera entrega</div>
+        <div class="content">
+          <h2>Rúbrica (100 pts) aplicada al ejemplo</h2>
+          <table>
+            <thead>
+              <tr><th>Criterio</th><th>Puntos</th><th>Qué entrega este ejemplo</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Propuesta técnica</td><td>30</td><td>Problema delimitado + alcance E1/E2/E3 + arquitectura básica + lenguaje</td></tr>
+              <tr><td>Mock funcional / boceto</td><td>20</td><td>Mock simple con pantallas y Gantt</td></tr>
+              <tr><td>Incremento 1 — primer arranque</td><td>30</td><td>Repo con estructura + programa que corre + README mínimo</td></tr>
+              <tr><td>Presentación del equipo</td><td>20</td><td>Guion 2–3 min, cada integrante participa</td></tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <p><b>Objetivo:</b> que mañana cualquier equipo pueda replicar la estructura y entregar sin “inventar” requisitos nuevos.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Sugerencia: respetar lo mínimo alcanzable en 2 días</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 3: PROPUESTA (PDF) ===== -->
+    <section class="slide content-slide" data-title="Propuesta">
+      <div class="inner">
+        <div class="header">Propuesta técnica (30 pts)</div>
+        <div class="content">
+          <h2>docs/propuesta.pdf (1 página)</h2>
+          <div class="code">PROYECTO: Simulador Planificador SO - Equipo 05
+MODALIDAD: Base
+LENGUAJE: C# Console
+
+PROBLEMA:
+Queremos entender cómo el algoritmo FCFS afecta tiempos de espera y retorno.
+
+ALCANCE POR ENTREGAS:
+E1: FCFS funcionando (Gantt y métricas básicas)
+E2: Agregar RR y/o SJF (y mejorar la entrada de datos)
+E3: Extensión del proyecto según modalidad (sin exigirlo en E1)
+
+ARQUITECTURA (BÁSICA):
+Program.cs
+- Define procesos (PID, Burst)
+- Ejecuta FCFS
+- Calcula métricas (T.Retorno, T.Espera, promedios)
+- Imprime resultados
+
+EVIDENCIAS:
+- Repo GitHub con /src, /docs, README
+- Mock (foto o diagrama)</div>
+          <div class="callout">
+            <p><b>Qué se acepta:</b> claridad, no perfección. El alcance está descrito por entregas.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Ubicar este PDF en docs/ dentro del repo</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 4: MOCK ===== -->
+    <section class="slide content-slide" data-title="Mock">
+      <div class="inner">
+        <div class="header">Mock funcional (20 pts)</div>
+        <div class="content">
+          <h2>mock.png (foto papel / Excalidraw / draw.io)</h2>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Requisito mínimo:</b> 3 estados o pantallas visibles.</p>
+              <ul style="margin-top:10px;">
+                <li>Pantalla A: “Ingresar procesos (PID, Burst)”</li>
+                <li>Pantalla B: “Ejecutar FCFS”</li>
+                <li>Pantalla C: “Ver Gantt + métricas”</li>
+              </ul>
+            </div>
+            <div class="card">
+              <p><b>Ejemplo de contenido del mock:</b></p>
+              <div class="code" style="margin-top:10px; max-height:32vh;">SIMULADOR GANTT (FCFS)
+Procesos: P1(3), P2(5), P3(2)
+
+Gantt:
+P1 [###]
+P2     [#####]
+P3           [##]
+
+Métricas:
+T.Retorno: 3, 8, 10
+T.Espera:  0, 3, 8</div>
+            </div>
+          </div>
+          <div class="callout">
+            <p><b>Nota:</b> el mock puede ser una foto del cuaderno. Debe ser legible.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Guardar como mock.png en la raíz del repo</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 5: REPO ===== -->
+    <section class="slide content-slide" data-title="Repositorio">
+      <div class="inner">
+        <div class="header">Incremento 1 (30 pts)</div>
+        <div class="content">
+          <h2>Estructura mínima del repositorio</h2>
+          <div class="code">SO-proyecto-equipo05/
+├── src/
+│   └── Program.cs
+├── docs/
+│   └── propuesta.pdf
+├── mock.png
+└── README.md</div>
+          <div class="callout">
+            <p><b>Qué se evalúa:</b> que exista estructura, que haya un componente que corra y que el README permita ejecutar.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Subir el link del repo por Classroom/GitHub Classroom</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 6: CÓDIGO ===== -->
+    <section class="slide content-slide" data-title="Código FCFS">
+      <div class="inner">
+        <div class="header">Program.cs (funciona)</div>
+        <div class="content">
+          <h2>Simulación FCFS + métricas (Unidad 1)</h2>
+          <div class="code">using System;
+using System.Linq;
+
+class Program
+{
+    static void Main()
+    {
+        Console.WriteLine("=== SIMULADOR FCFS - E1 ===");
+
+        // Unidad 1: PID + Burst Time (CPU burst)
+        var procesos = new (string Pid, int Burst)[]
+        {
+            ("P1", 3),
+            ("P2", 5),
+            ("P3", 2)
+        };
+
+        int tiempo = 0;
+        double[] tRetorno = new double[procesos.Length];
+        double[] tEspera  = new double[procesos.Length];
+
+        // FCFS: se ejecutan en el orden dado
+        for (int i = 0; i &lt; procesos.Length; i++)
+        {
+            tiempo += procesos[i].Burst;
+            tRetorno[i] = tiempo;
+            tEspera[i] = tRetorno[i] - procesos[i].Burst;
+
+            Console.WriteLine($"{procesos[i].Pid}: Burst={procesos[i].Burst}s, " +
+                              $"T.Retorno={tRetorno[i]}, T.Espera={tEspera[i]}");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine($"Promedio T.Retorno: {tRetorno.Average():F1}s");
+        Console.WriteLine($"Promedio T.Espera:  {tEspera.Average():F1}s");
+
+        Console.WriteLine("Presione ENTER para salir...");
+        Console.ReadLine();
+    }
+}</div>
+          <div class="callout">
+            <p><b>Demostrable:</b> ejecuta en consola y muestra resultados al instante.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Para correr: abrir carpeta y ejecutar <span class="kbd">dotnet run</span></span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 7: SALIDA ===== -->
+    <section class="slide content-slide" data-title="Salida esperada">
+      <div class="inner">
+        <div class="header">Evidencia de funcionamiento</div>
+        <div class="content">
+          <h2>Salida esperada (captura opcional)</h2>
+          <div class="code">=== SIMULADOR FCFS - E1 ===
+P1: Burst=3s, T.Retorno=3, T.Espera=0
+P2: Burst=5s, T.Retorno=8, T.Espera=3
+P3: Burst=2s, T.Retorno=10, T.Espera=8
+
+Promedio T.Retorno: 7.0s
+Promedio T.Espera:  3.7s
+Presione ENTER para salir...</div>
+          <div class="callout">
+            <p><b>Relación directa:</b> estos tiempos corresponden a lo que se calcula con Gantt en FCFS.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Opcional: subir captura como evidencia en docs/</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 8: README ===== -->
+    <section class="slide content-slide" data-title="README">
+      <div class="inner">
+        <div class="header">README.md</div>
+        <div class="content">
+          <h2>Instrucciones mínimas de ejecución</h2>
+          <div class="code"># Simulador Planificador SO (FCFS) - Equipo 05
+
+## Qué funciona (E1)
+- Simulación FCFS con 3 procesos
+- Cálculo de T.Retorno y T.Espera
+- Promedios de retorno y espera
+
+## Estructura
+- src/Program.cs
+- docs/propuesta.pdf
+- mock.png
+
+## Cómo ejecutar
+1) Abrir terminal en la carpeta del proyecto
+2) Ejecutar:
+   dotnet run</div>
+          <div class="callout">
+            <p><b>Clave:</b> un README claro evita que el profesor “adivine” cómo correr el proyecto.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Mantenerlo corto, directo y verificable</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 9: PRESENTACIÓN ===== -->
+    <section class="slide content-slide" data-title="Presentación">
+      <div class="inner">
+        <div class="header">Presentación del equipo (20 pts)</div>
+        <div class="content">
+          <h2>Guion 2–3 minutos (todos participan)</h2>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Integrante 1 (30–40s)</b></p>
+              <div class="code" style="max-height:26vh;">Qué hace el proyecto y por qué (problema).
+Qué eligieron: modalidad y lenguaje.
+Qué entra en E1 vs. qué queda para E2/E3.</div>
+            </div>
+            <div class="card">
+              <p><b>Integrante 2/3/4 (30–40s c/u)</b></p>
+              <div class="code" style="max-height:26vh;">Mostrar repo y estructura.
+Mostrar mock.png.
+Ejecutar: dotnet run.
+Explicar qué significa el resultado (T.Espera / T.Retorno).</div>
+            </div>
+          </div>
+          <div class="callout">
+            <p><b>Regla:</b> se entiende qué funciona hoy y cuál es el plan del equipo.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Tiempo recomendado: 2–3 min por equipo</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 10: CHECKLIST ===== -->
+    <section class="slide content-slide" data-title="Checklist">
+      <div class="inner">
+        <div class="header">Checklist final</div>
+        <div class="content">
+          <h2>Antes de subir el link</h2>
+          <table>
+            <thead>
+              <tr><th>Item</th><th>Listo</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Repo creado y accesible</td><td>□</td></tr>
+              <tr><td>/src/Program.cs compila y corre</td><td>□</td></tr>
+              <tr><td>/docs/propuesta.pdf (1 página)</td><td>□</td></tr>
+              <tr><td>mock.png (legible)</td><td>□</td></tr>
+              <tr><td>README.md con pasos de ejecución</td><td>□</td></tr>
+              <tr><td>Link enviado por Classroom/GitHub Classroom</td><td>□</td></tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <p><b>Entrega correcta</b> = evidencia clara, ejecutable y bien organizada.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Siguiente paso (E2): agregar RR/SJF y mejorar entrada</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Botones táctiles -->
+    <div class="touch-nav" id="touchNav">
+      <button id="btnPrev" aria-label="Anterior">&#8592;</button>
+      <button id="btnNext" aria-label="Siguiente">&#8594;</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    const stage = document.getElementById('stage');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    let idx = 0;
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+    function show(i){
+      idx = clamp(i, 0, slides.length - 1);
+      slides.forEach((s,k)=>s.classList.toggle('active', k===idx));
+      const label = (idx+1) + " / " + slides.length;
+      counters.forEach(el => el.textContent = label);
+      history.replaceState(null, "", "#" + (idx+1));
+    }
+
+    function next(){ show(idx+1); }
+    function prev(){ show(idx-1); }
+
+    // Hash inicial
+    const m = (location.hash || "").match(/^#(\d+)$/);
+    if(m){
+      const start = parseInt(m[1], 10);
+      if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1);
+    }
+    show(idx);
+
+    // Botones
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+
+    // Teclado
+    document.addEventListener('keydown', (e)=>{
+      const k = e.key;
+      if(k === 'f' || k === 'F'){
+        if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+        return;
+      }
+      if(k === 'ArrowRight' || k === 'PageDown' || k === ' '){ e.preventDefault(); next(); }
+      else if(k === 'ArrowLeft' || k === 'PageUp'){ e.preventDefault(); prev(); }
+      else if(k === 'Home'){ e.preventDefault(); show(0); }
+      else if(k === 'End'){ e.preventDefault(); show(slides.length-1); }
+    });
+
+    // Swipe (limitado al stage)
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if(isTouch){
+      let x0=null, y0=null, t0=0;
+      const SWIPE_MIN_X = 50;
+      const SWIPE_MAX_Y = 80;
+      const SWIPE_MAX_MS = 800;
+
+      stage.addEventListener('touchstart', (e)=>{
+        const t = e.changedTouches[0];
+        x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+      }, {passive:true});
+
+      stage.addEventListener('touchend', (e)=>{
+        if(x0===null || y0===null) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - x0;
+        const dy = t.clientY - y0;
+        const dt = Date.now() - t0;
+        x0 = null; y0 = null;
+
+        if(dt > SWIPE_MAX_MS) return;
+        if(Math.abs(dy) > SWIPE_MAX_Y) return;
+
+        if(dx <= -SWIPE_MIN_X) next();
+        else if(dx >= SWIPE_MIN_X) prev();
+      }, {passive:true});
+    }
+  })();
+</script>
+</body>
+</html>
