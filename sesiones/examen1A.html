@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Examen Unidad 1</title>
+
+<style>
+body {
+    margin: 0;
+    padding: 40px 0;
+    background-color: #dcdcdc; /* fondo gris suave */
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+}
+
+.contenedor {
+    width: 100%;
+    max-width: 1000px; /* límite máximo en pantallas grandes */
+    display: flex;
+    justify-content: center;
+}
+
+img {
+    width: 100%;       /* se ajusta al ancho disponible */
+    height: auto;      /* mantiene proporción */
+    box-shadow: 0 0 20px rgba(0,0,0,0.15);
+    background: white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="contenedor">
+    <img src="examen_unidad1A.png" alt="Examen Unidad 1">
+</div>
+<script>
+// Bloquear clic derecho
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Bloquear F12, Ctrl+Shift+I, Ctrl+U
+document.addEventListener('keydown', function(e) {
+    if (e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && e.key === "I") ||
+        (e.ctrlKey && e.key === "u")) {
+        e.preventDefault();
+    }
+});
+</script>
+</body>
+</html>
