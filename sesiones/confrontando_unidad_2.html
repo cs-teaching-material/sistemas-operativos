@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Confrontando mi saber - Unidad 2</title>
+
+  <style>
+    :root {
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+      --bg:#f3f6fb;
+    }
+
+    body {
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--texto);
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--white);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      color: var(--azul-medio);
+      text-align: center;
+      margin-top: 0;
+      font-size: 28px;
+    }
+
+    .header-info {
+      background: rgba(5, 173, 188, 0.1);
+      border-left: 4px solid var(--turquesa);
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 30px;
+    }
+
+    .header-info p { margin: 5px 0; }
+
+    .question {
+      background: #ffffff;
+      border: 1px solid #dde2f1;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .question:hover {
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      border-color: var(--turquesa);
+    }
+
+    h3 {
+      margin-top: 0;
+      font-size: 18px;
+      color: var(--texto);
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      background: var(--bg);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    label:hover { background: #e5edf8; }
+
+    input[type="radio"] { margin-top: 4px; }
+
+    .btn-submit {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background: var(--azul-medio);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 30px;
+    }
+
+    .btn-submit:hover { background: #013e61; }
+
+    #results {
+      display: none;
+      margin-top: 30px;
+      padding: 20px;
+      background: #eefdf4;
+      border: 2px solid #10b981;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .score { font-size: 24px; font-weight: bold; color: #10b981; }
+
+    .feedback {
+      margin-top: 10px;
+      font-size: 15px;
+      color: var(--texto);
+      padding: 10px;
+      background: #fff;
+      border-left: 3px solid #10b981;
+      display: none;
+    }
+    .feedback.incorrect { border-left-color: #ef4444; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Confrontando mi saber</h1>
+
+  <div class="header-info">
+    <p><strong>Unidad 2:</strong> Almacenamiento Primario y Secundario</p>
+    <p><strong>Propósito:</strong> Establecer relaciones conceptuales previas sobre memoria y archivos.</p>
+    <p><em>Nota: Esta actividad no tiene calificación, su objetivo es identificar qué tanto recuerdas o intuyes sobre cómo el computador maneja la memoria y guarda tus archivos.</em></p>
+  </div>
+
+  <form id="quizForm">
+    <!-- Pregunta 1 -->
+    <div class="question" id="q1-container">
+      <h3>1. Cuando tu computador está lento o se "congela" al abrir muchas aplicaciones a la vez, el hardware que principalmente se ha saturado (llenado) es:</h3>
+      <div class="options">
+        <label><input type="radio" name="q1" value="A"> A) El Disco Duro (HDD/SSD)</label>
+        <label><input type="radio" name="q1" value="B"> B) La Memoria RAM</label>
+        <label><input type="radio" name="q1" value="C"> C) El procesador (CPU)</label>
+      </div>
+      <div class="feedback" id="f1">
+        <strong>Respuesta B.</strong> Exacto. Cuando la RAM se llena, el sistema operativo se ve forzado a usar el disco duro como memoria temporal (Paginación/Swap), lo que reduce drásticamente la velocidad y causa el "congelamiento".
+      </div>
+    </div>
+
+    <!-- Pregunta 2 -->
+    <div class="question" id="q2-container">
+      <h3>2. Imagina que tienes un documento de Word abierto y, sin guardar, se va la luz. Al reiniciar, el documento desapareció. ¿Por qué ocurre esto?</h3>
+      <div class="options">
+        <label><input type="radio" name="q2" value="A"> A) Porque el procesador borró los datos al quedarse sin energía.</label>
+        <label><input type="radio" name="q2" value="B"> B) Porque el documento estaba en el disco duro pero no tenía nombre.</label>
+        <label><input type="radio" name="q2" value="C"> C) Porque mientras editabas, los datos vivían en la Memoria RAM (que es volátil) y aún no se habían escrito en el Disco (que es persistente).</label>
+      </div>
+      <div class="feedback" id="f2">
+        <strong>Respuesta C.</strong> Correcto. Todo proceso y archivo en edición activa vive en la RAM (que requiere energía para retener datos). Solo al hacer "Guardar", el SO mueve los datos al almacenamiento secundario (Disco).
+      </div>
+    </div>
+
+    <!-- Pregunta 3 -->
+    <div class="question" id="q3-container">
+      <h3>3. A nivel de tu código (C#, Python, Java), cuando indicas <code>open("datos.csv")</code>, ¿Quién es el verdadero responsable de ir físicamente al disco y traer esos bytes?</h3>
+      <div class="options">
+        <label><input type="radio" name="q3" value="A"> A) El Sistema Operativo, tras recibir tu solicitud (Llamada al Sistema / Syscall).</label>
+        <label><input type="radio" name="q3" value="B"> B) El lenguaje de programación (el compilador de C# o el intérprete de Python).</label>
+        <label><input type="radio" name="q3" value="C"> C) El disco duro, que lee el código de tu programa y se auto-ejecuta.</label>
+      </div>
+      <div class="feedback" id="f3">
+        <strong>Respuesta A.</strong> Así es. Ningún programa de usuario puede tocar el hardware directamente. Los lenguajes solo son traductores que envían "peticiones" al Kernel del SO.
+      </div>
+    </div>
+
+    <!-- Pregunta 4 -->
+    <div class="question" id="q4-container">
+      <h3>4. Si tienes un archivo muy pesado (ej. un log de 2 GB) y en tu código haces una instrucción que pide cargarlo completo en una variable string, ¿qué es probable que ocurra?</h3>
+      <div class="options">
+        <label><input type="radio" name="q4" value="A"> A) Nada grave, los computadores modernos lo procesan al instante en el procesador.</label>
+        <label><input type="radio" name="q4" value="B"> B) El programa consumirá 2 GB de Memoria RAM de golpe, y si no hay suficiente, el equipo podría colapsar (Thrashing).</label>
+        <label><input type="radio" name="q4" value="C"> C) El disco duro se dañará físicamente por leer tantos datos juntos.</label>
+      </div>
+      <div class="feedback" id="f4">
+        <strong>Respuesta B.</strong> Correcto. Este es el error de rendimiento más común. Por eso en programación se deben usar "Streams" o "Buffers" para leer archivos masivos por partes pequeñas.
+      </div>
+    </div>
+
+    <button type="button" class="btn-submit" onclick="checkAnswers()">Evaluar mis conocimientos</button>
+  </form>
+
+  <div id="results">
+    <h2>Resultados</h2>
+    <div class="score" id="scoreText">0 / 4</div>
+    <p>¡Gracias por participar! Revisa la retroalimentación de cada pregunta arriba.</p>
+    <button type="button" class="btn-submit" style="margin-top: 15px; padding: 10px; font-size: 16px; background: var(--turquesa);" onclick="location.reload()">Reintentar</button>
+  </div>
+</div>
+
+<script>
+  function checkAnswers() {
+    const answers = { q1: "B", q2: "C", q3: "A", q4: "B" };
+    let score = 0;
+
+    for (let i = 1; i <= 4; i++) {
+      const q = "q" + i;
+      const selected = document.querySelector(`input[name="${q}"]:checked`);
+      const feedback = document.getElementById("f" + i);
+
+      feedback.style.display = "block";
+
+      if (selected) {
+        if (selected.value === answers[q]) {
+          score++;
+          feedback.className = "feedback";
+          document.getElementById(q + "-container").style.borderColor = "#10b981";
+        } else {
+          feedback.className = "feedback incorrect";
+          document.getElementById(q + "-container").style.borderColor = "#ef4444";
+        }
+      } else {
+        feedback.className = "feedback incorrect";
+        feedback.innerHTML = "<strong>No respondiste.</strong> La respuesta correcta era la " + answers[q] + ".";
+        document.getElementById(q + "-container").style.borderColor = "#ef4444";
+      }
+    }
+
+    document.getElementById("results").style.display = "block";
+    document.getElementById("scoreText").innerText = `${score} / 4 Acertadas`;
+    document.querySelector(".btn-submit").style.display = "none";
+  }
+</script>
+
+</body>
+</html>

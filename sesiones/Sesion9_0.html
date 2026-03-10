@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 9: Almacenamiento Primario y Secundario</title>
+
+  <style>
+    :root{
+      /* Tema */
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+
+      /* Safe margins (tal cual) */
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:#ffffff;
+    }
+
+    .deck{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(10px, 2vw, 22px);
+      box-sizing:border-box;
+      background:#ffffff;
+    }
+
+    .stage{
+      width:min(96vw, calc(92vh * (16/9)));
+      aspect-ratio:16/9;
+      position:relative;
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:none;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .slide.active{ display:block; }
+
+    /* Fondos institucionales */
+    .slide.cover{
+      background:url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+    .slide.content-slide{
+      background: url("./Contenido.png") top left/contain no-repeat, #ffffff;
+      color:var(--texto);
+    }
+
+    /* Safe padding por tipo de slide */
+    .inner{
+      height:100%;
+      box-sizing:border-box;
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 18px);
+    }
+    .cover .inner{
+      padding: var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);
+    }
+
+    .content{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 16px);
+      min-height:0;
+    }
+
+    .header{
+      color:var(--azul-medio);
+      font-size:clamp(18px, 1.6vw, 22px);
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    h1{
+      margin:0;
+      font-size:var(--h1);
+      line-height:1.08;
+      color:var(--texto);
+    }
+    h2{
+      margin:0;
+      font-size:var(--h2);
+      line-height:1.15;
+      color:var(--azul-medio);
+    }
+    p{
+      margin:0;
+      font-size:var(--p);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    li{
+      font-size:var(--li);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    ul,ol{
+      margin:0;
+      padding-left:1.2em;
+    }
+
+    .subtitle{
+      color:var(--turquesa);
+      font-weight:800;
+      font-size:clamp(18px, 1.8vw, 24px);
+      margin-top:clamp(6px, 1vw, 10px);
+    }
+
+    /* Portada colores */
+    .cover h1{ color:#ffffff; }
+    .cover p{ color:#e5edf8; }
+    .cover .subtitle{ color:#f7df00; }
+
+    .note{
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+    }
+
+    .callout{
+      background:rgba(255,255,255,0.94);
+      border-left:6px solid var(--turquesa);
+      padding:clamp(10px, 1.1vw, 14px);
+      border-radius:6px;
+    }
+
+    .two-col{
+      display:grid;
+      grid-template-columns:1.15fr 0.9fr;
+      gap:clamp(12px, 1.6vw, 22px);
+      align-items:flex-start;
+      min-height:0;
+    }
+    @media(max-width:980px){
+      .two-col{ grid-template-columns:1fr; }
+    }
+
+    .card{
+      background:rgba(255,255,255,0.96);
+      border:1px solid #dde2f1;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+    }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background:#111827;
+      color:#e5e7eb;
+      padding:2px 8px;
+      border-radius:7px;
+      font-size:clamp(11px, 1vw, 13px);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+      background:#0b1020;
+      color:#e5e7eb;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+      overflow:auto;
+      max-height: 44vh;
+      border:1px solid rgba(17,24,39,.25);
+      white-space:pre-wrap;
+    }
+
+    .imgbox{
+      background:rgba(255,255,255,0.96);
+      border:1px solid #dde2f1;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+    }
+    .imgwrap{
+      width:100%;
+      height: min(34vh, 280px);
+      border-radius:10px;
+      border:1px solid #dde2f1;
+      background:#ffffff;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:8px;
+      box-sizing:border-box;
+    }
+    .imgwrap img, .imgwrap svg{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:rgba(255,255,255,0.96);
+    }
+    th,td{
+      border:1px solid #dde2f1;
+      padding:clamp(8px, 1vw, 12px);
+      font-size:clamp(14px, 1.2vw, 18px);
+      color:var(--texto);
+      vertical-align:top;
+    }
+    th{
+      background:#f3f6fb;
+      text-transform:uppercase;
+      font-size:clamp(12px, 1.1vw, 14px);
+      letter-spacing:.06em;
+      color:var(--azul-medio);
+    }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      gap:14px;
+    }
+    .counter{
+      font-weight:800;
+      color:var(--azul-medio);
+    }
+    .cover .counter{ color:#e5edf8; }
+
+    /* Botones pequeños mouse / touch */
+    .touch-nav{
+      position:absolute;
+      top:50%;
+      left:0;
+      right:0;
+      transform:translateY(-50%);
+      display:flex;
+      justify-content:space-between;
+      padding: 0 12px;
+      pointer-events:none;
+      z-index: 10;
+    }
+    .touch-nav button{
+      pointer-events:auto;
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      padding:0;
+      border:1px solid rgba(221,226,241,0.95);
+      background:rgba(255,255,255,0.92);
+      color:var(--texto);
+      font-weight:900;
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      cursor:pointer;
+    }
+
+    /* En desktop aparecen al pasar el mouse por el stage */
+    #touchNav{
+      opacity:0;
+      transform:translateY(-50%) translateY(6px);
+      transition:.15s ease;
+    }
+    .stage:hover #touchNav{
+      opacity:1;
+      transform:translateY(-50%) translateY(0);
+    }
+
+    /* En touch visibles siempre */
+    @media(hover:none){
+      #touchNav{ opacity:1; transform:translateY(-50%); }
+    }
+  </style>
+</head>
+
+<body>
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <!-- ===== SLIDE 1: PORTADA ===== -->
+    <section class="slide cover active" data-title="Portada">
+      <div class="inner">
+        <div class="content">
+          <h1>Sesión 9<br/>Almacenamiento Primario y Secundario</h1>
+          <div class="subtitle">Memoria Virtual, Archivos y Directorios</div>
+          <div class="callout" style="background:rgba(255,255,255,0.12); border-left-color:#f7df00; max-width:78%; margin-top: auto;">
+            <p style="color:#e5edf8;">
+              Navegación:
+              <span class="kbd">←</span> <span class="kbd">→</span>
+              <span class="kbd">F</span> pantalla completa
+            </p>
+          </div>
+          <p class="note" style="margin-top:auto; color:#e5edf8;">
+            Unidad 2 - Sistemas Operativos
+          </p>
+        </div>
+        <div class="footer">
+          <span style="color:#e5edf8;">Sistemas Operativos · Grupo 050</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 2 ===== -->
+    <section class="slide content-slide" data-title="Contexto">
+      <div class="inner">
+        <div class="header">El problema del almacenamiento</div>
+        <div class="content">
+          <h2>¿Dónde viven los procesos?</h2>
+          <p>En la Unidad 1 analizamos cómo la CPU ejecuta procesos (FCFS, SJF, RR). Sin embargo, omitimos una pregunta crítica: <b>¿De dónde saca la CPU las instrucciones y los datos?</b></p>
+          <ul>
+            <li>La CPU no puede ejecutar un programa directamente desde el disco duro.</li>
+            <li>Todo programa debe convertirse en <b>proceso</b> y cargarse en la <b>Memoria Principal (RAM)</b>.</li>
+            <li>Pero la RAM es limitada, costosa y volátil. El disco es masivo, barato y persistente.</li>
+          </ul>
+          <div class="callout">
+            <p><b>El Rol del SO:</b> Orquestar el movimiento de datos entre medios lentos/masivos y medios rápidos/limitados de manera transparente para el usuario y el programador.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Transición Unidad 1 → Unidad 2</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 3 ===== -->
+    <section class="slide content-slide" data-title="Jerarquia">
+      <div class="inner">
+        <div class="header">Fundamentos de Hardware</div>
+        <div class="content">
+          <h2>La Jerarquía de Memoria</h2>
+          <p>Los sistemas organizan el almacenamiento en una pirámide de compromiso entre Velocidad vs. Capacidad y Costo:</p>
+          <div class="two-col">
+            <div class="card">
+              <ol>
+                <li><b>Registros de CPU:</b> Bytes. Velocidad de reloj.</li>
+                <li><b>Memoria Caché:</b> Megabytes. En el procesador.</li>
+                <li><b>Memoria RAM:</b> Gigabytes. Direccionable por bytes.</li>
+                <li><b>Almacenamiento:</b> Terabytes. Direccionable por bloques.</li>
+              </ol>
+            </div>
+            <div class="card">
+              <p><b>Principio de Localidad:</b></p>
+              <ul>
+                <li><i>Espacial:</i> Si accedes a una dirección, pronto accederás a las contiguas (Carga de Bloques).</li>
+                <li><i>Temporal:</i> Si accedes a un dato, es probable que vuelvas a usarlo (Caché).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">El SO sube los datos en la pirámide cuando se necesitan.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 4 ===== -->
+    <section class="slide content-slide" data-title="Latencia">
+      <div class="inner">
+        <div class="header">Fundamentos de Hardware</div>
+        <div class="content">
+          <h2>El Abismo de la Latencia</h2>
+          <p>Escale los tiempos de acceso a tiempos comprensibles para un humano (asumiendo 1 ciclo de CPU = 1 segundo):</p>
+          <table>
+            <thead>
+              <tr><th>Medio de almacenamiento</th><th>Tiempo real aprox.</th><th>A escala humana</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Registro de CPU</td><td>0.3 ns</td><td>1 segundo</td></tr>
+              <tr><td>Caché L1</td><td>1 ns</td><td>3 segundos</td></tr>
+              <tr><td>Memoria RAM</td><td>100 ns</td><td>3 minutos</td></tr>
+              <tr><td>Disco SSD (NVMe)</td><td>20,000 ns</td><td>14 horas</td></tr>
+              <tr><td>Disco Mecánico (HDD)</td><td>10,000,000 ns</td><td><b>¡10 Meses!</b></td></tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <p><b>Reflexión:</b> Cuando un proceso necesita un dato del disco (un "Page Fault"), la CPU tiene que esperar una eternidad. Por eso el proceso pasa a <b>Waiting</b>.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">La planificación de procesos cobra sentido aquí.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 5 ===== -->
+    <section class="slide content-slide" data-title="Memoria Primaria">
+      <div class="inner">
+        <div class="header">Memoria Principal (RAM)</div>
+        <div class="content">
+          <h2>Espacio de Direccionamiento Físico</h2>
+          <p>La RAM es una secuencia enorme de bytes, cada uno con una <b>dirección física</b> única. El procesador pone esta dirección en el bus para leer o escribir.</p>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Limitaciones reales:</b></p>
+              <ul>
+                <li>Es un recurso escaso (Ej. PC con 8GB de RAM).</li>
+                <li>Un solo IDE puede requerir 12GB.</li>
+                <li>¿Cómo evitamos el colapso si pedimos más RAM de la que existe?</li>
+              </ul>
+            </div>
+            <div class="card">
+              <p><b>Problema de multiprogramación:</b></p>
+              <ul>
+                <li>Si P1 y P2 están en RAM, ¿cómo garantizamos seguridad?</li>
+                <li>¿Cómo evitamos que un bug en P1 sobreescriba a P2?</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Seguridad y limitación de recursos</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 6 ===== -->
+    <section class="slide content-slide" data-title="Memoria Virtual 1">
+      <div class="inner">
+        <div class="header">El concepto clave</div>
+        <div class="content">
+          <h2>Memoria Virtual: La gran ilusión</h2>
+          <p>El SO, con ayuda de la unidad MMU del hardware, crea una abstracción llamada <b>Memoria Virtual</b>.</p>
+          <ul>
+            <li><b>Aislamiento:</b> Cada proceso cree que tiene su propia memoria completa (iniciando en 0). No sabe de otros procesos.</li>
+            <li><b>Direcciones Lógicas vs Físicas:</b> Tu código trabaja siempre con direcciones lógicas. La MMU las traduce a direcciones físicas reales.</li>
+            <li><b>Expansión (Swap):</b> Lo que no cabe en RAM física, se guarda temporalmente en el Disco Duro (Archivo de paginación o Swap).</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span class="note">Abstracción fundamental de Sistemas Operativos modernos</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 7 ===== -->
+    <section class="slide content-slide" data-title="Paginacion">
+      <div class="inner">
+        <div class="header">Técnicas de Administración</div>
+        <div class="content">
+          <h2>Paginación (Paging) bajo el capó</h2>
+          <p>Para gestionar la ilusión sin fragmentar, el SO mueve bloques fijos enteros:</p>
+          <div class="two-col">
+            <div>
+              <ul>
+                <li><b>Páginas (Pages):</b> La memoria virtual del proceso se divide en bloques (típicamente 4 KB).</li>
+                <li><b>Marcos (Frames):</b> La RAM física se divide en contenedores del mismo tamaño.</li>
+                <li><b>Tabla de Páginas:</b> Un diccionario (en el PCB) que mapea la <i>Página Lógica</i> al <i>Marco Físico</i>.</li>
+              </ul>
+            </div>
+            <div class="code">Proceso A (Lógicas)
+Pag 0: [Main]      -> Marco 5 (RAM)
+Pag 1: [Variables] -> Marco 12 (RAM)
+Pag 2: [Textura 4K]-> No mapeado! (Disco)
+
+Proceso B (Lógicas)
+Pag 0: [Main]      -> Marco 2 (RAM)</div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Paginación evita la fragmentación externa de la RAM</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 8 ===== -->
+    <section class="slide content-slide" data-title="Page Faults">
+      <div class="inner">
+        <div class="header">Rendimiento y UX</div>
+        <div class="content">
+          <h2>Fallos de Página y Thrashing</h2>
+          <p>¿Qué pasa si el programa lee la <i>"Página 2"</i> (enviada al disco para ahorrar espacio)?</p>
+          <ol>
+            <li>El procesador lanza una interrupción (<b>Page Fault Trap</b>).</li>
+            <li>El SO bloquea el proceso, busca la página en disco y la carga en un Marco libre de RAM.</li>
+            <li>Mientras el disco gira, el SO da la CPU a otro proceso. Al finalizar, reanuda el original.</li>
+          </ol>
+          <div class="callout">
+            <p><b>Thrashing (Hiperpaginación):</b> Ocurre cuando hay tan poca RAM libre que el sistema pasa más tiempo intercambiando páginas con el disco que ejecutando código. El PC "se congela".</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Por qué un PC colapsa al abrir demasiadas pestañas de Chrome.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 9 ===== -->
+    <section class="slide content-slide" data-title="Almacenamiento Secundario">
+      <div class="inner">
+        <div class="header">Persistencia</div>
+        <div class="content">
+          <h2>Del mundo volátil al persistente</h2>
+          <p>Para conservar código y datos tras apagar el equipo, necesitamos Almacenamiento Secundario.</p>
+          <p>Sin embargo, el hardware del disco (HDD/SSD) solo entiende de <b>Bloques físicos y arreglos de bytes</b>. Trabajar enviando bytes al "Bloque físico 4,091,822" es imposible para un desarrollador.</p>
+          <div class="callout">
+            <p><b>Solución del SO:</b> Crear otra abstracción masiva llamada <b>Sistema de Archivos (File System)</b>. Convierte bloques en entidades lógicas llamadas <b>Archivos y Directorios</b>.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Abstracción sobre Hardware Lento</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 10 ===== -->
+    <section class="slide content-slide" data-title="Archivos">
+      <div class="inner">
+        <div class="header">Conceptos Lógicos</div>
+        <div class="content">
+          <h2>¿Qué es exactamente un Archivo?</h2>
+          <p>Un archivo es una unidad lógica de almacenamiento nombrada. El Sistema de Archivos lo divide internamente en dos estructuras críticas:</p>
+          <div class="two-col">
+            <div class="card">
+              <p><b>1. El Contenido (Payload):</b></p>
+              <p>La secuencia de bytes real (el texto de tu código C#, los pixeles de tu .png). Puede estar fragmentado por el disco duro.</p>
+            </div>
+            <div class="card">
+              <p><b>2. Los Metadatos (Inodo/FCB):</b></p>
+              <p>Estructura gestionada por el SO que almacena la "receta" de cómo reconstruir y proteger el contenido.</p>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Si los metadatos se corrompen, el archivo se vuelve inaccesible.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 11 ===== -->
+    <section class="slide content-slide" data-title="Atributos">
+      <div class="inner">
+        <div class="header">Metadatos de Archivos</div>
+        <div class="content">
+          <h2>Atributos Básicos</h2>
+          <p>Esta "receta" administrada por el Kernel (ej. ext4, NTFS) incluye:</p>
+          <ul>
+            <li><b>Nombre:</b> El identificador legible (con o sin extensión obligatoria).</li>
+            <li><b>Identificador único:</b> El Inode Number (solo en Linux/Unix).</li>
+            <li><b>Punteros de ubicación:</b> Lista de direcciones de bloque físico.</li>
+            <li><b>Tamaño Real vs Ocupado:</b> Bytes vs Bloques reservados.</li>
+            <li><b>Permisos (r, w, x):</b> Listas de control de acceso (Quién puede leer, escribir o ejecutar). <i>*Vital para Shell*.</i></li>
+            <li><b>Marcas de tiempo:</b> Creación, Último acceso (atime) y Modificación (mtime).</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span class="note">El comando 'stat' en la terminal permite visualizarlos.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 12 ===== -->
+    <section class="slide content-slide" data-title="Operaciones">
+      <div class="inner">
+        <div class="header">Interfaz del Programador (API)</div>
+        <div class="content">
+          <h2>Syscalls: Operaciones Universales</h2>
+          <p>Un proceso no toca el disco, le pide al SO mediante Llamadas al Sistema:</p>
+          <div class="two-col">
+            <div>
+              <ul>
+                <li><b>Open():</b> Copia metadatos a la RAM y devuelve un <i>Handle</i>.</li>
+                <li><b>Read() / Write():</b> Transfiere memoria usando el <i>Handle</i>.</li>
+                <li><b>Seek():</b> Mueve el puntero lógico.</li>
+                <li><b>Close():</b> Destruye el <i>Handle</i> y voltea buffers a disco.</li>
+              </ul>
+            </div>
+            <div class="code">// PYTHON
+f = open("datos.csv", "w") # Open
+f.write("PID,CPU")         # Write
+f.close()                  # Close
+
+// C (El padre de todo)
+int fd = open("datos.csv", O_WRONLY);
+write(fd, "PID,CPU", 7);
+close(fd);</div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">C#, Java y JS ocultan estos pasos en clases (File, fs) por comodidad.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 13 ===== -->
+    <section class="slide content-slide" data-title="Directorios">
+      <div class="inner">
+        <div class="header">Estructura Lógica</div>
+        <div class="content">
+          <h2>Directorios (Carpetas)</h2>
+          <p>Tener 2 millones de archivos en una sola lista plana haría la búsqueda (Open) insoportablemente lenta. Los directorios resuelven esto agrupando lógicamente.</p>
+          <div class="callout">
+            <p><b>Verdad técnica:</b> Un directorio es solo un <b>Archivo Especial</b>. Si abres el código binario de una "carpeta", solo verás una tabla de texto con dos columnas: <i>[Nombre de archivo] -> [Puntero al Inodo]</i>.</p>
+          </div>
+          <ul>
+            <li>Permiten organización jerárquica en forma de árbol invertido.</li>
+            <li>Permiten archivos homónimos (ej. `main.cs`) siempre que sus "tablas padre" sean distintas.</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span class="note">El SO solo busca nombres archivo por archivo dentro del directorio.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 14 ===== -->
+    <section class="slide content-slide" data-title="Rutas">
+      <div class="inner">
+        <div class="header">Navegación</div>
+        <div class="content">
+          <h2>Rutas (Paths) - El mapa del tesoro</h2>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Ruta Absoluta:</b><br/>Inicia desde la raíz del disco. Es inmutable.</p>
+              <div class="code"># Linux
+/home/user/proyecto/src/main.cs
+
+# Windows
+C:\Users\user\proyecto\src\main.cs</div>
+            </div>
+            <div class="card">
+              <p><b>Ruta Relativa:</b><br/>Inicia desde el <i>Directorio de Trabajo Actual</i> (CWD) en RAM. Portable.</p>
+              <div class="code"># Desde 'proyecto'
+./src/main.cs
+
+# Subiendo un nivel
+../logs/error.log</div>
+            </div>
+          </div>
+          <p style="margin-top:10px;"><b>Variables de Directorio Especiales:</b><br/>
+          <code>.</code> (Un punto) = Directorio actual.<br/>
+          <code>..</code> (Dos puntos) = Padre jerárquico del directorio actual.</p>
+        </div>
+        <div class="footer">
+          <span class="note">Usar rutas absolutas hará que tu código falle en otro PC.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 15 ===== -->
+    <section class="slide content-slide" data-title="Impacto Codigo 1">
+      <div class="inner">
+        <div class="header">Rendimiento en Programación</div>
+        <div class="content">
+          <h2>Leer archivos masivos vs RAM</h2>
+          <p>Analicemos un error crítico de código al procesar bases de datos masivas (ej. CSV de 4GB):</p>
+          <div class="code">// MALA PRÁCTICA: Pedir al SO traer todo a Memoria Virtual
+
+// Python
+contenido = open("base_datos_4GB.csv").read()
+
+// C#
+string cont = File.ReadAllText("base_datos_4GB.csv");
+
+// Consecuencia: Crash por OutOfMemory o Thrashing.</div>
+          <div class="callout">
+            <p><b>Fallo de diseño:</b> Forzamos a la MMU a encontrar 4GB de páginas lógicas contiguas en RAM para un proceso que tal vez solo necesita leer línea por línea.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">El hardware no es infinito, el código debe respetarlo.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 16 ===== -->
+    <section class="slide content-slide" data-title="Impacto Codigo 2">
+      <div class="inner">
+        <div class="header">Rendimiento en Programación</div>
+        <div class="content">
+          <h2>Solución: Streams y Buffers</h2>
+          <p>La forma correcta de leer sin destruir la memoria virtual es usar <b>Flujos (Streams)</b>:</p>
+          <div class="code">// BUENA PRÁCTICA: Buffer cíclico
+// C#
+using (StreamReader sr = new StreamReader("datos_4GB.csv")) {
+    string linea;
+    while ((linea = sr.ReadLine()) != null) { Analizar(linea); }
+}
+
+# Python
+with open("datos_4GB.csv", "r") as f:
+    for linea in f: # Iterador por stream
+        analizar(linea)</div>
+          <div class="callout">
+            <p>El Sistema de Archivos lee un bloque del disco a la RAM, el programa lo procesa, y el SO <b>reutiliza ese mismo espacio de RAM</b> para cargar el siguiente. Impacto RAM: Casi Cero.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Base para desarrollo backend, big data y servidores.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 17 ===== -->
+    <section class="slide content-slide" data-title="Ejemplo Práctico 1">
+      <div class="inner">
+        <div class="header">Ejemplo Integrador (Proyecto E2)</div>
+        <div class="content">
+          <h2>Arquitectura Lógica del Gestor</h2>
+          <p>Para la E2, el Gestor de Procesos no usará datos quemados. Diseñaremos una estructura lógica que el SO entienda:</p>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Árbol de Directorios:</b></p>
+              <div class="code">Equipo05-SO/
+├── src/                  
+│   └── Program.cs
+├── data/                 <-- Lectura
+│   └── procesos.csv
+└── logs/                 <-- Escritura
+    └── sistema.log</div>
+            </div>
+            <div class="card">
+              <p><b>Interacciones del Proceso:</b></p>
+              <ol>
+                <li>Usuario ejecuta, SO carga a Memoria Virtual.</li>
+                <li>Código hace Open leyendo ruta relativa <code>../data/procesos.csv</code> (Modo Read).</li>
+                <li>Inicia simulación, escribiendo estado en <code>../logs/sistema.log</code>.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Diseño de proyectos alineado a sistemas operativos.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 18 ===== -->
+    <section class="slide content-slide" data-title="Ejemplo Práctico 2">
+      <div class="inner">
+        <div class="header">Ejemplo Integrador (Proyecto E2)</div>
+        <div class="content">
+          <h2>Modos de Apertura: Sistema de Logs</h2>
+          <p>Si abres el archivo log en <b>modo Escritura ("w")</b>, el SO borra el archivo cada vez que inicia el programa. Debemos usar <b>Modo Anexar (Append/"a")</b>.</p>
+          <div class="two-col">
+            <div class="code"># PYTHON - Helper
+import time
+
+def log_evento(msg):
+    with open("logs/sys.log", "a") as f:
+        ts = time.strftime("%H:%M:%S")
+        f.write(f"[{ts}] {msg}\n")
+
+log_evento("P1 pasa a CPU")</div>
+            <div class="code">// C# - Método
+using System.IO;
+
+static void LogEvento(string msj)
+{
+    string r = "logs/sys.log";
+    string ts = DateTime.Now.ToString("T");
+    File.AppendAllText(r, $"[{ts}] {msj}\n");
+}
+
+LogEvento("P2 expulsado");</div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Estas funciones generan la pista de auditoría solicitada.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 19 ===== -->
+    <section class="slide content-slide" data-title="Detalle Técnico">
+      <div class="inner">
+        <div class="header">El problema invisible del Kernel</div>
+        <div class="content">
+          <h2>File Buffering y Flush()</h2>
+          <p>Cuando el código hace <code>f.write("P1 finalizado")</code>, ¿El dato llega inmediatamente al disco magnético?</p>
+          <div class="callout">
+            <p><b>NO.</b> Escribir cada letra físicamente mataría el rendimiento. El Kernel "miente": Guarda el texto en un segmento de RAM oculto (Buffer del FS) y le dice a tu programa "Ya lo guardé".</p>
+          </div>
+          <ul>
+            <li>El SO espera a que el Buffer se llene para volcarlo al disco de un golpe (<b>Flush</b>).</li>
+            <li><b>Riesgo:</b> Si hay pantallazo azul, el log que estaba en el buffer volátil se pierde.</li>
+            <li>En aplicaciones financieras, el programador invoca <code>f.flush()</code> para forzar al disco.</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <span class="note">Por esto "Extraer con seguridad" el USB es vital.</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 20 ===== -->
+    <section class="slide content-slide" data-title="Cierre">
+      <div class="inner">
+        <div class="header">Resumen de la Sesión</div>
+        <div class="content">
+          <h2>Conceptos Base Unidad 2</h2>
+          <table>
+            <thead>
+              <tr><th>Dominio</th><th>Propósito Fundamental en el SO</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><b>Memoria Virtual (MMU)</b></td><td>Aislar procesos y evitar colapsos por falta de RAM física mediante Traducción y Paginación (Swap).</td></tr>
+              <tr><td><b>Archivos (Files)</b></td><td>Enmascarar estructuras físicas crudas como bloques lógicos con Datos + Atributos.</td></tr>
+              <tr><td><b>Directorios y Rutas</b></td><td>Árbol relacional (Archivo Especial) para búsquedas. Exige uso de <b>Rutas Relativas</b>.</td></tr>
+              <tr><td><b>Flujos (Streams)</b></td><td>Puente de amortiguación entre RAM y Discos para no colapsar la memoria al leer datos pesados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer">
+          <span class="note">Fin Sesión 9. Próxima clase: Interfaz de Línea de Comandos (Shell).</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Botones táctiles -->
+    <div class="touch-nav" id="touchNav">
+      <button id="btnPrev" aria-label="Anterior">&#8592;</button>
+      <button id="btnNext" aria-label="Siguiente">&#8594;</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    const stage = document.getElementById('stage');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    let idx = 0;
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+    function show(i){
+      idx = clamp(i, 0, slides.length - 1);
+      slides.forEach((s,k)=>s.classList.toggle('active', k===idx));
+      const label = (idx+1) + " / " + slides.length;
+      counters.forEach(el => el.textContent = label);
+      history.replaceState(null, "", "#" + (idx+1));
+    }
+
+    function next(){ show(idx+1); }
+    function prev(){ show(idx-1); }
+
+    // Hash inicial
+    const m = (location.hash || "").match(/^#(\d+)$/);
+    if(m){
+      const start = parseInt(m[1], 10);
+      if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1);
+    }
+    show(idx);
+
+    // Botones
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+
+    // Teclado
+    document.addEventListener('keydown', (e)=>{
+      const k = e.key;
+      if(k === 'f' || k === 'F'){
+        if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+        return;
+      }
+      if(k === 'ArrowRight' || k === 'PageDown' || k === ' '){ e.preventDefault(); next(); }
+      else if(k === 'ArrowLeft' || k === 'PageUp'){ e.preventDefault(); prev(); }
+      else if(k === 'Home'){ e.preventDefault(); show(0); }
+      else if(k === 'End'){ e.preventDefault(); show(slides.length-1); }
+    });
+
+    // Swipe (limitado al stage)
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if(isTouch){
+      let x0=null, y0=null, t0=0;
+      const SWIPE_MIN_X = 50;
+      const SWIPE_MAX_Y = 80;
+      const SWIPE_MAX_MS = 800;
+
+      stage.addEventListener('touchstart', (e)=>{
+        const t = e.changedTouches[0];
+        x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+      }, {passive:true});
+
+      stage.addEventListener('touchend', (e)=>{
+        if(x0===null || y0===null) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - x0;
+        const dy = t.clientY - y0;
+        const dt = Date.now() - t0;
+        x0 = null; y0 = null;
+
+        if(dt > SWIPE_MAX_MS) return;
+        if(Math.abs(dy) > SWIPE_MAX_Y) return;
+
+        if(dx <= -SWIPE_MIN_X) next();
+        else if(dx >= SWIPE_MIN_X) prev();
+      }, {passive:true});
+    }
+  })();
+</script>
+</body>
+</html>
