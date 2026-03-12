@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 10: Memoria Virtual y Sistemas de Archivos</title>
+
+  <style>
+    :root{
+      /* Tema */
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+
+      /* Safe margins (tal cual) */
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:#ffffff;
+    }
+
+    .deck{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(10px, 2vw, 22px);
+      box-sizing:border-box;
+      background:#ffffff;
+    }
+
+    .stage{
+      width:min(96vw, calc(92vh * (16/9)));
+      aspect-ratio:16/9;
+      position:relative;
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:none;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .slide.active{ display:block; }
+
+    /* Fondos institucionales */
+    .slide.cover{
+      background:url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+    .slide.content-slide{
+      background: url("./Contenido.png") top left/contain no-repeat, #ffffff;
+      color:var(--texto);
+    }
+
+    /* Safe padding por tipo de slide */
+    .inner{
+      height:100%;
+      box-sizing:border-box;
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 18px);
+    }
+    .cover .inner{
+      padding: var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);
+    }
+
+    .content{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 16px);
+      min-height:0;
+    }
+
+    .header{
+      color:var(--azul-medio);
+      font-size:clamp(18px, 1.6vw, 22px);
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    h1{
+      margin:0;
+      font-size:var(--h1);
+      line-height:1.08;
+      color:var(--texto);
+    }
+    h2{
+      margin:0;
+      font-size:var(--h2);
+      line-height:1.15;
+      color:var(--azul-medio);
+    }
+    p{
+      margin:0;
+      font-size:var(--p);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    li{
+      font-size:var(--li);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    ul,ol{
+      margin:0;
+      padding-left:1.2em;
+    }
+
+    .subtitle{
+      color:var(--turquesa);
+      font-weight:800;
+      font-size:clamp(18px, 1.8vw, 24px);
+      margin-top:clamp(6px, 1vw, 10px);
+    }
+
+    /* Portada colores */
+    .cover h1{ color:#ffffff; }
+    .cover p{ color:#e5edf8; }
+    .cover .subtitle{ color:#f7df00; }
+
+    .note{
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+    }
+
+    .callout{
+      background:rgba(255,255,255,0.94);
+      border-left:6px solid var(--turquesa);
+      padding:clamp(10px, 1.1vw, 14px);
+      border-radius:6px;
+    }
+
+    .two-col{
+      display:grid;
+      grid-template-columns:1.15fr 0.9fr;
+      gap:clamp(12px, 1.6vw, 22px);
+      align-items:flex-start;
+      min-height:0;
+    }
+    @media(max-width:980px){
+      .two-col{ grid-template-columns:1fr; }
+    }
+
+    .card{
+      background:rgba(255,255,255,0.96);
+      border:1px solid #dde2f1;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+    }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background:#111827;
+      color:#e5e7eb;
+      padding:2px 8px;
+      border-radius:7px;
+      font-size:clamp(11px, 1vw, 13px);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+      background:#0b1020;
+      color:#e5e7eb;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+      overflow:auto;
+      max-height: 44vh;
+      border:1px solid rgba(17,24,39,.25);
+      white-space:pre-wrap;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:rgba(255,255,255,0.96);
+    }
+    th,td{
+      border:1px solid #dde2f1;
+      padding:clamp(8px, 1vw, 12px);
+      font-size:clamp(14px, 1.2vw, 18px);
+      color:var(--texto);
+      vertical-align:top;
+    }
+    th{
+      background:#f3f6fb;
+      text-transform:uppercase;
+      font-size:clamp(12px, 1.1vw, 14px);
+      letter-spacing:.06em;
+      color:var(--azul-medio);
+    }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      gap:14px;
+    }
+    .counter{
+      font-weight:800;
+      color:var(--azul-medio);
+    }
+    .cover .counter{ color:#e5edf8; }
+
+    /* Botones pequeños mouse / touch */
+    .touch-nav{
+      position:absolute;
+      top:50%;
+      left:0;
+      right:0;
+      transform:translateY(-50%);
+      display:flex;
+      justify-content:space-between;
+      padding: 0 12px;
+      pointer-events:none;
+      z-index: 10;
+    }
+    .touch-nav button{
+      pointer-events:auto;
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      padding:0;
+      border:1px solid rgba(221,226,241,0.95);
+      background:rgba(255,255,255,0.92);
+      color:var(--texto);
+      font-weight:900;
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      cursor:pointer;
+    }
+
+    /* En desktop aparecen al pasar el mouse por el stage */
+    #touchNav{
+      opacity:0;
+      transform:translateY(-50%) translateY(6px);
+      transition:.15s ease;
+    }
+    .stage:hover #touchNav{
+      opacity:1;
+      transform:translateY(-50%) translateY(0);
+    }
+
+    /* En touch visibles siempre */
+    @media(hover:none){
+      #touchNav{ opacity:1; transform:translateY(-50%); }
+    }
+  </style>
+</head>
+
+<body>
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <!-- SLIDE 1: PORTADA -->
+    <section class="slide cover active" data-title="Portada">
+      <div class="inner">
+        <div class="content">
+          <h1>Sesión 10<br/>Memoria Virtual y Sistemas de Archivos</h1>
+          <div class="subtitle">Paginación, Segmentación y Estructuras de Directorios</div>
+          <p style="margin-top:20px; font-size: 1.1em;">Unidad 2 - Clase 2</p>
+          <div class="callout" style="background:rgba(255,255,255,0.12); border-left-color:#f7df00; max-width:78%; margin-top: auto;">
+            <p style="color:#e5edf8;">
+              Navegación:
+              <span class="kbd">←</span> <span class="kbd">→</span>
+              <span class="kbd">F</span> pantalla completa
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <span style="color:#e5edf8;">Sistemas Operativos · Grupo 050</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: CONEXIÓN CON CLASE ANTERIOR -->
+    <section class="slide content-slide" data-title="Recap">
+      <div class="inner">
+        <div class="header">Conexión con Sesión 9</div>
+        <div class="content">
+          <h2>De la RAM al Disco: El puente</h2>
+          <p>La clase anterior estableció que la RAM es rápida pero limitada/volátil, y el disco es lento pero masivo/persistente. Hoy profundizamos <b>cómo el SO</b> hace que un proceso "vea" un espacio de memoria gigante y cómo administra los archivos en disco.</p>
+          <ul>
+            <li>¿Qué es **Memoria Virtual** y por qué es esencial para la multiprogramación?</li>
+            <li>¿Cómo se implementa con **Paginación** y **Segmentación**?</li>
+            <li>¿Cómo el **Sistema de Archivos** organiza miles de millones de bloques en carpetas y archivos legibles?</li>
+          </ul>
+          <div class="callout">
+            <p><b>Objetivo de hoy:</b> Entender los algoritmos de paginación/segmentación y las estructuras de archivos/directorio para justificar decisiones de diseño en el proyecto E2.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Indicadores A-II, B-II, C-II [file:113]</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: PAGINACIÓN DETALLADA -->
+    <section class="slide content-slide" data-title="Paginación">
+      <div class="inner">
+        <div class="header">Algoritmos de Paginación</div>
+        <div class="content">
+          <h2>Paginación: División en bloques fijos</h2>
+          <p>Para evitar fragmentación externa, la memoria virtual se divide en **Páginas** (lógicas, tamaño fijo 4KB) y la RAM en **Marcos** (físicos, mismo tamaño). El SO mantiene una **Tabla de Páginas** que mapea cada página a un marco.</p>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Ventajas:</b></p>
+              <ul>
+                <li>Sin fragmentación externa (solo interna ≤4KB).</li>
+                <li>Intercambio eficiente de páginas (I/O de bloques fijos).</li>
+              </ul>
+            </div>
+            <div class="card">
+              <p><b>Ejemplo de Dirección Lógica:</b></p>
+              <div class="code">Dirección Lógica (32 bits): 0x0012ABCD
+Páginas de 4KB (12 bits offset): 0x0012AB | CD
+→ Busca Página 0x0012AB en Tabla → Marco 0x000A
+Dirección Física: 0x000A | CD</div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">La MMU hace esta traducción en hardware</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: SEGMENTACIÓN -->
+    <section class="slide content-slide" data-title="Segmentación">
+      <div class="inner">
+        <div class="header">Algoritmos de Segmentación</div>
+        <div class="content">
+          <h2>Segmentación: División lógica variable</h2>
+          <p>Alternativa a la paginación: divide la memoria en **Segmentos** de tamaño variable (código, datos, pila). Cada segmento tiene su propia tabla con base y límite.</p>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Ventajas:</b></p>
+              <ul>
+                <li>Segmentos semánticos (código separado de datos).</li>
+                <li>Compartición fácil entre procesos (bibliotecas compartidas).</li>
+              </ul>
+            </div>
+            <div class="card">
+              <p><b>Desventajas:</b></p>
+              <ul>
+                <li>Fragmentación externa (huecos entre segmentos).</li>
+                <li>Problemas de compacidad (necesita compactor).</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout">
+            <p><b>Moderno:</b> Muchos SO combinan ambos (Paginación + Segmentación = Paged Segmentation).</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Indicadores C-II [file:113]</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: TABLA COMPARATIVA -->
+    <section class="slide content-slide" data-title="Comparación">
+      <div class="inner">
+        <div class="header">Comparación Paginación vs Segmentación</div>
+        <div class="content">
+          <h2>¿Cuándo usar cada técnica?</h2>
+          <table>
+            <thead>
+              <tr><th>Criterio</th><th>Paginación</th><th>Segmentación</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Tamaño de bloques</td><td>Fijo (4KB)</td><td>Variable</td></tr>
+              <tr><td>Fragmentación</td><td>Solo interna (≤4KB)</td><td>Externa (huecos grandes)</td></tr>
+              <tr><td>Traducciones</td><td>1 Tabla (rápida)</td><td>Tabla por segmento (lenta)</td></tr>
+              <tr><td>Compartición</td><td>Por página (compleja)</td><td>Por segmento (natural)</td></tr>
+              <tr><td>Uso en Proyecto</td><td>Swap de logs pesados</td><td>Código vs Datos del Gestor</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer">
+          <span class="note">Elegir según rendimiento y semántica del código</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: FALLOS DE PÁGINA -->
+    <section class="slide content-slide" data-title="Page Fault">
+      <div class="inner">
+        <div class="header">Mecánica de Page Fault</div>
+        <div class="content">
+          <h2>Algoritmo de Reemplazo de Páginas</h2>
+          <p>Cuando la RAM está llena y llega una nueva página, el SO debe decidir cuál página vieja expulsar. Algoritmos comunes:</p>
+          <ul>
+            <li><b>FIFO (First In First Out):</b> Expulsa la más antigua. Simple pero sufre "anomalía de Belady".</li>
+            <li><b>LRU (Least Recently Used):</b> Expulsa la menos usada recientemente. Excelente pero requiere hardware de contadores.</li>
+            <li><b>OPT (Óptimo):</b> Expulsa la que se usará más tarde (imposible en práctica, solo teórico).</li>
+          </ul>
+          <div class="callout">
+            <p><b>En tu PC:</b> Windows usa LRU aproximado. Linux usa variantes como Clock Algorithm.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Relación directa con rendimiento percibido</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: EJEMPLO PRÁCTICO PAGINACIÓN -->
+    <section class="slide content-slide" data-title="Ejemplo Paginación">
+      <div class="inner">
+        <div class="header">Ejemplo Práctico</div>
+        <div class="content">
+          <h2>Simulación de Paginación (4KB páginas)</h2>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Estado Inicial RAM (3 Marcos libres):</b></p>
+              <table>
+                <tr><th>Marco</th><th>Página Lógica</th></tr>
+                <tr><td>0</td><td>P0 del Proceso A</td></tr>
+                <tr><td>1</td><td>P1 del Proceso A</td></tr>
+                <tr><td>2</td><td>P0 del Proceso B</td></tr>
+              </table>
+            </div>
+            <div class="card">
+              <p><b>Proceso A pide P2 (Page Fault):</b></p>
+              <div class="code">LRU: Expulsa P0 de A (menos usada)
+Nuevo estado:
+Marco 0: P2 de A ← Nueva página del disco
+Marco 1: P1 de A
+Marco 2: P0 de B</div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Ejecutar en pizarra para la clase</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: SISTEMAS DE ARCHIVOS -->
+    <section class="slide content-slide" data-title="File Systems">
+      <div class="inner">
+        <div class="header">Sistemas de Almacenamiento</div>
+        <div class="content">
+          <h2>Sistemas de Archivos (FAT, NTFS, ext4)</h2>
+          <p>El SO organiza el disco en bloques y crea una capa lógica:</p>
+          <ul>
+            <li><b>FAT (File Allocation Table):</b> Simple, cadenas enlazadas. Bueno para USBs pequeños.</li>
+            <li><b>NTFS (Windows):</b> Inodos avanzados, journaling (recuperación), compresión, encriptación.</li>
+            <li><b>ext4 (Linux):</b> Extensible, gran rendimiento, soporte snapshots.</li>
+          </ul>
+          <div class="callout">
+            <p><b>Común:</b> Todos usan **Inodos** para metadatos + punteros a bloques de datos.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Indicadores D-II [file:113]</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: ASIGNACIÓN DE ESPACIO -->
+    <section class="slide content-slide" data-title="Asignación">
+      <div class="inner">
+        <div class="header">Asignación de Espacio a Archivos</div>
+        <div class="content">
+          <h2>Métodos de Asignación</h2>
+          <p>¿Cómo asigna el SO bloques del disco a un archivo de 10GB?</p>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Contigua:</b></p>
+              <ul>
+                <li>Bloques consecutivos en disco.</li>
+                <li>Acceso ultra-rápido (sin saltos).</li>
+                <li>Fragmentación externa grave.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <p><b>Enlazada:</b></p>
+              <ul>
+                <li>Cada bloque apunta al siguiente.</li>
+                <li>Sin fragmentación externa.</li>
+                <li>Lento para acceso aleatorio.</li>
+              </ul>
+            </div>
+          </div>
+          <p style="margin-top:10px;"><b>Indexada (Mejor):</b> Inodo con array de punteros a bloques. NTFS/ext4.</p>
+        </div>
+        <div class="footer">
+          <span class="note">Relación con rendimiento de I/O</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: DIRECTORIOS ESTRUCTURA -->
+    <section class="slide content-slide" data-title="Directorios">
+      <div class="inner">
+        <div class="header">Directorios Internos</div>
+        <div class="content">
+          <h2>Estructura Física de Directorios</h2>
+          <p>Un directorio es un archivo especial con tabla [Nombre → Inodo]. Ejemplo de entrada:</p>
+          <div class="code">Nombre: "main.cs" → Inodo: 40582
+Nombre: "." → Inodo: 40580 (Auto-referencia)
+Nombre: ".." → Inodo: 40001 (Padre)
+
+Estructura en Disco:
+Bloque 40580: ["main.cs" → 40582, "datos.csv" → 40612]</div>
+          <div class="callout">
+            <p><b>Operación Open("src/main.cs"):</b> SO lee directorios padre hasta encontrar el Inodo 40582, carga metadatos, devuelve Handle.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Por esto listar un directorio con 1M archivos toma tiempo</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: EJEMPLO ARCHIVO EN DISCO -->
+    <section class="slide content-slide" data-title="Ejemplo Archivo">
+      <div class="inner">
+        <div class="header">Ejemplo Práctico</div>
+        <div class="content">
+          <h2>¿Qué pasa al guardar "log.txt"?</h2>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Flujo físico:</b></p>
+              <ol>
+                <li>SO busca/aloca Inodo libre (ej. #40583).</li>
+                <li>Asigna bloques libres (ej. 500-510).</li>
+                <li>Escribe metadatos en Inodo.</li>
+                <li>Actualiza Directorio padre con nueva entrada.</li>
+              </ol>
+            </div>
+            <div class="code">Inodo 40583 de log.txt:
+Tamaño: 1KB
+Bloques: [500, 501]
+Permisos: rw-r--r--
+Creado: 2026-03-11 21:00
+
+Directorio logs/: 
+["log.txt" → 40583]</div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Diagrama en pizarra: Inodo → Bloques → Directorio</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12: EJEMPLO CODIGO SISTEMA ARCHIVOS -->
+    <section class="slide content-slide" data-title="Código FS">
+      <div class="inner">
+        <div class="header">Código Práctico</div>
+        <div class="content">
+          <h2>Creando estructura para Proyecto E2</h2>
+          <div class="code"># PYTHON - Crear árbol de archivos para Gestor
+import os
+
+# Rutas relativas desde cwd del proyecto
+os.makedirs("data", exist_ok=True)
+os.makedirs("logs", exist_ok=True)
+
+with open("data/procesos.csv", "w") as f:
+    f.write("PID,Burst,Arrival\n1,5,0\n2,3,1\n")
+
+print("Estructura lista para simulación")</div>
+          <div class="callout">
+            <p><b>¿Qué Syscalls genera?</b> mkdir → create → open → write → close (x2).</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Ejecutar en VS Code Terminal para demo</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 13: ALGORITMOS REEMPLAZO -->
+    <section class="slide content-slide" data-title="Reemplazo">
+      <div class="inner">
+        <div class="header">Algoritmos Avanzados</div>
+        <div class="content">
+          <h2>Reemplazo de Páginas (Profundización)</h2>
+          <table>
+            <tr><th>Algoritmo</th><th>Política</th><th>Ventaja</th><th>Desventaja</th></tr>
+            <tr><td>FIFO</td><td>Más antigua</td><td>Simple</td><td>Anomalía Belady</td></tr>
+            <tr><td>LRU</td><td>Menos usada</td><td>Óptimo práctico</td><td>Hardware caro</td></tr>
+            <tr><td>Clock</td><td>Bit de referencia</td><td>Aproximación LRU barata</td><td>Complejidad media</td></tr>
+          </table>
+          <div class="callout">
+            <p><b>En tu Gestor E2:</b> Usar streams para evitar saturar páginas con logs pesados.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Linux usa variante Clock</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 14: COMPARACIÓN FS -->
+    <section class="slide content-slide" data-title="Comparación FS">
+      <div class="inner">
+        <div class="header">Sistemas de Archivos</div>
+        <div class="content">
+          <h2>FAT vs NTFS vs ext4</h2>
+          <table>
+            <tr><th>FS</th><th>Asignación</th><th>Recuperación</th><th>Seguridad</th><th>Uso</th></tr>
+            <tr><td>FAT32</td><td>Enlazada</td><td>No</td><td>Básica</td><td>USB</td></tr>
+            <tr><td>NTFS</td><td>Indexada + Journal</td><td>Sí (Journaling)</td><td>ACLs, Encriptación</td><td>Windows</td></tr>
+            <tr><td>ext4</td><td>Indexada + Extent</td><td>Sí</td><td>Permisos Unix</td><td>Linux</td></tr>
+          </table>
+        </div>
+        <div class="footer">
+          <span class="note">Journaling = Registro de transacciones para recuperación</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 15: EJEMPLO SEGMENTACIÓN -->
+    <section class="slide content-slide" data-title="Ejemplo Segmentación">
+      <div class="inner">
+        <div class="header">Ejemplo Práctico</div>
+        <div class="content">
+          <h2>Segmentación en tu Gestor</h2>
+          <div class="code">Segmento 0: Código (Main + FCFS) - 32KB
+Segmento 1: Datos (Lista Procesos) - 16KB  
+Segmento 2: Pila (Variables locales) - 8KB
+Segmento 3: Heap (Logs dinámicos) - Variable
+
+Acceso a heap[100]:
+Tabla Seg 3 → Base: 0x4000, Límite: 64KB
+0x4000 + 100 = Dirección Física</div>
+          <p>Si Heap crece más allá del límite → **Segmentation Fault** (kill del proceso).</p>
+        </div>
+        <div class="footer">
+          <span class="note">Semántica natural para código estructurado</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 16: RELACIÓN PROYECTO -->
+    <section class="slide content-slide" data-title="Proyecto">
+      <div class="inner">
+        <div class="header">Aplicación al Proyecto</div>
+        <div class="content">
+          <h2>Impacto en E2 del Gestor</h2>
+          <ul>
+            <li><b>Logs pesados:</b> Usar streams (no ReadAllText) para evitar thrashing al simular 1000+ procesos.</li>
+            <li><b>CSV de entrada:</b> Leer línea por línea, mapear a objetos sin cargar todo en memoria.</li>
+            <li><b>Persistencia:</b> Append a "logs/auditoria.log" con timestamps (modo 'a').</li>
+            <li><b>Estructura:</b> Usar rutas relativas `./data/procesos.csv` para portabilidad.</li>
+          </ul>
+          <div class="callout">
+            <p><b>Buena práctica:</b> `File.AppendAllText("logs/log.txt", entry)` genera solo Syscalls mínimas.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Directamente aplicable a rúbrica de E2</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 17: PROBLEMAS COMUNES -->
+    <section class="slide content-slide" data-title="Problemas">
+      <div class="inner">
+        <div class="header">Errores Comunes</div>
+        <div class="content">
+          <h2>Fragmentación y Thrashing en la Práctica</h2>
+          <div class="two-col">
+            <div class="card">
+              <p><b>Fragmentación Externa (Segmentación):</b></p>
+              <ul>
+                <li>Huecos pequeños inutilizables entre segmentos.</li>
+                <li>Solución: Compactor de memoria (costoso).</li>
+              </ul>
+            </div>
+            <div class="card">
+              <p><b>Thrashing en Desarrollo:</b></p>
+              <ul>
+                <li>Debuggear con VS Code + Docker + Chrome abierto → Swap constante.</li>
+                <li>Solución: Cerrar apps, usar streams para datos.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Por qué tu PC "llora" al compilar proyectos grandes</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 18: RECURSO PRÁCTICO -->
+    <section class="slide content-slide" data-title="Demo">
+      <div class="inner">
+        <div class="header">Demo en Terminal</div>
+        <div class="content">
+          <h2>Observar Memoria Virtual en Acción</h2>
+          <div class="code"># Linux - Ver uso de Swap (Paginación)
+free -h
+# Ver procesos y memoria
+top # Presiona 1 para ver núcleos
+
+# Windows PowerShell
+Get-Process | Sort-Object WS | Select -Last 10
+
+# Monitorear en tiempo real
+watch -n 1 free -h</div>
+          <div class="callout">
+            <p><b>Actividad clase:</b> Abrir 10 pestañas Chrome + VS Code → Observar Swap crecer.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Ejecutar en laboratorio</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 19: CUESTIONES ABIERTAS -->
+    <section class="slide content-slide" data-title="Preguntas">
+      <div class="inner">
+        <div class="header">Para Reflexión</div>
+        <div class="content">
+          <h2>¿Por qué importa esto para programadores?</h2>
+          <ul>
+            <li>¿Por qué `File.ReadAllText(2GB)` colapsa pero streams no?</li>
+            <li>¿Por qué rutas relativas en lugar de absolutas en código?</li>
+            <li>¿Cómo paginación explica el lag al debuggear proyectos grandes?</li>
+            <li>¿Por qué `AppendText` es mejor que `WriteAllText` para logs?</li>
+          </ul>
+          <div class="callout">
+            <p><b>Conexión E2:</b> Tu Gestor leerá CSV pesado → Streams + rutas relativas obligatorias.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Discusión plenaria 10 min</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 20: CIERRE -->
+    <section class="slide content-slide" data-title="Cierre">
+      <div class="inner">
+        <div class="header">Resumen Unidad 2 - Clase 2</div>
+        <div class="content">
+          <h2>Conceptos Clave Cubiertos</h2>
+          <table>
+            <tr><th>Concepto</th><th>Implementación</th><th>Impacto en Proyecto</th></tr>
+            <tr><td>Paginación</td><td>Bloques fijos 4KB</td><td>Evitar thrashing con streams</td></tr>
+            <tr><td>Segmentación</td><td>Bloques variables</td><td>Código/datos separados</td></tr>
+            <tr><td>Inodos</td><td>Metadatos + punteros</td><td>Base de archivos log/CSV</td></tr>
+            <tr><td>Asignación Indexada</td><td>Tabla en Inodo</td><td>Rendimiento I/O logs</td></tr>
+          </table>
+          <p style="text-align:center; font-weight:bold; color:var(--azul-medio); margin-top:20px;">Próxima: Actividad 3 - Práctica con estructuras de archivos. ¡Prepárense para terminal!</p>
+        </div>
+        <div class="footer">
+          <span class="note">Indicadores A-II a E-II cubiertos [file:113]</span>
+          <span class="counter"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Botones táctiles -->
+    <div class="touch-nav" id="touchNav">
+      <button id="btnPrev" aria-label="Anterior">&#8592;</button>
+      <button id="btnNext" aria-label="Siguiente">&#8594;</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    const stage = document.getElementById('stage');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    let idx = 0;
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+    function show(i){
+      idx = clamp(i, 0, slides.length - 1);
+      slides.forEach((s,k)=>s.classList.toggle('active', k===idx));
+      const label = (idx+1) + " / " + slides.length;
+      counters.forEach(el => el.textContent = label);
+      history.replaceState(null, "", "#" + (idx+1));
+    }
+
+    function next(){ show(idx+1); }
+    function prev(){ show(idx-1); }
+
+    // Hash inicial
+    const m = (location.hash || "").match(/^#(\d+)$/);
+    if(m){
+      const start = parseInt(m[1], 10);
+      if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1);
+    }
+    show(idx);
+
+    // Botones
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+
+    // Teclado
+    document.addEventListener('keydown', (e)=>{
+      const k = e.key;
+      if(k === 'f' || k === 'F'){
+        if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+        return;
+      }
+      if(k === 'ArrowRight' || k === 'PageDown' || k === ' '){ e.preventDefault(); next(); }
+      else if(k === 'ArrowLeft' || k === 'PageUp'){ e.preventDefault(); prev(); }
+      else if(k === 'Home'){ e.preventDefault(); show(0); }
+      else if(k === 'End'){ e.preventDefault(); show(slides.length-1); }
+    });
+
+    // Swipe
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if(isTouch){
+      let x0=null, y0=null, t0=0;
+      const SWIPE_MIN_X = 50;
+      const SWIPE_MAX_Y = 80;
+      const SWIPE_MAX_MS = 800;
+
+      stage.addEventListener('touchstart', (e)=>{
+        const t = e.changedTouches[0];
+        x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+      }, {passive:true});
+
+      stage.addEventListener('touchend', (e)=>{
+        if(x0===null || y0===null) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - x0;
+        const dy = t.clientY - y0;
+        const dt = Date.now() - t0;
+        x0 = null; y0 = null;
+
+        if(dt > SWIPE_MAX_MS) return;
+        if(Math.abs(dy) > SWIPE_MAX_Y) return;
+
+        if(dx <= -SWIPE_MIN_X) next();
+        else if(dx >= SWIPE_MIN_X) prev();
+      }, {passive:true});
+    }
+  })();
+</script>
+</body>
+</html>
