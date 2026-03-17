@@ -1,0 +1,1480 @@
+﻿<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 11: Taller avanzado de memoria virtual y sistemas de archivos</title>
+
+  <style>
+    :root {
+      /* Tema */
+      --texto: #201F4B;
+      --azul-medio: #015583;
+      --turquesa: #05ADBC;
+      --muted: #6b7280;
+      --white: #ffffff;
+
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p: clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+
+      /* Safe margins (tal cual) */
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #ffffff;
+    }
+
+    .deck {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(10px, 2vw, 22px);
+      box-sizing: border-box;
+      background: #ffffff;
+    }
+
+    .stage {
+      width: min(96vw, calc(92vh * (16/9)));
+      aspect-ratio: 16/9;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, .35);
+      overflow: hidden;
+    }
+
+    .slide.active {
+      display: block;
+    }
+
+    /* Fondos institucionales */
+    .slide.cover {
+      background: url("./Portada.png") center/cover no-repeat;
+      color: #ffffff;
+    }
+
+    .slide.content-slide {
+      background:
+        url("./Contenido.png") top left/contain no-repeat,
+        #ffffff;
+      color: var(--texto);
+    }
+
+    /* Safe padding por tipo de slide */
+    .inner {
+      height: 100%;
+      box-sizing: border-box;
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(10px, 1.1vw, 18px);
+    }
+
+    .cover .inner {
+      padding:
+        var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(10px, 1.1vw, 16px);
+      min-height: 0;
+    }
+
+    .header {
+      color: var(--azul-medio);
+      font-size: clamp(18px, 1.6vw, 22px);
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: var(--h1);
+      line-height: 1.08;
+      color: var(--texto);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: var(--h2);
+      line-height: 1.15;
+      color: var(--azul-medio);
+    }
+
+    p {
+      margin: 0;
+      font-size: var(--p);
+      line-height: 1.4;
+      color: var(--texto);
+    }
+
+    li {
+      font-size: var(--li);
+      line-height: 1.4;
+      color: var(--texto);
+    }
+
+    ul,
+    ol {
+      margin: 0;
+      padding-left: 1.2em;
+    }
+
+    .subtitle {
+      color: var(--turquesa);
+      font-weight: 800;
+      font-size: clamp(18px, 1.8vw, 24px);
+      margin-top: clamp(6px, 1vw, 10px);
+    }
+
+    /* Portada: colores */
+    .cover h1 {
+      color: #ffffff;
+    }
+
+    .cover p {
+      color: #e5edf8;
+    }
+
+    .cover .subtitle {
+      color: #f7df00;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: clamp(12px, 1.05vw, 14px);
+      line-height: 1.35;
+    }
+
+    .callout {
+      background: rgba(255, 255, 255, 0.94);
+      border-left: 6px solid var(--turquesa);
+      padding: clamp(10px, 1.1vw, 14px);
+      border-radius: 6px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.15fr 0.9fr;
+      gap: clamp(12px, 1.6vw, 22px);
+      align-items: flex-start;
+      min-height: 0;
+    }
+
+    @media(max-width:980px) {
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #dde2f1;
+      border-radius: 10px;
+      padding: clamp(10px, 1.1vw, 14px);
+    }
+
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: #111827;
+      color: #e5e7eb;
+      padding: 2px 8px;
+      border-radius: 7px;
+      font-size: clamp(11px, 1vw, 13px);
+      border: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: clamp(12px, 1.05vw, 14px);
+      line-height: 1.35;
+      background: #0b1020;
+      color: #e5e7eb;
+      border-radius: 10px;
+      padding: clamp(10px, 1.1vw, 14px);
+      overflow: auto;
+      max-height: 44vh;
+      border: 1px solid rgba(17, 24, 39, .25);
+      white-space: pre-wrap;
+    }
+
+    .imgbox {
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #dde2f1;
+      border-radius: 10px;
+      padding: clamp(10px, 1.1vw, 14px);
+    }
+
+    .imgwrap {
+      width: 100%;
+      height: min(34vh, 280px);
+      border-radius: 10px;
+      border: 1px solid #dde2f1;
+      background: #ffffff;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    .imgwrap img,
+    .imgwrap svg {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(255, 255, 255, 0.96);
+    }
+
+    th,
+    td {
+      border: 1px solid #dde2f1;
+      padding: clamp(8px, 1vw, 12px);
+      font-size: clamp(14px, 1.2vw, 18px);
+      color: var(--texto);
+      vertical-align: top;
+    }
+
+    th {
+      background: #f3f6fb;
+      text-transform: uppercase;
+      font-size: clamp(12px, 1.1vw, 14px);
+      letter-spacing: .06em;
+      color: var(--azul-medio);
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: clamp(12px, 1.05vw, 14px);
+      gap: 14px;
+    }
+
+    .counter {
+      font-weight: 800;
+      color: var(--azul-medio);
+    }
+
+    .cover .counter {
+      color: #e5edf8;
+    }
+
+    /* Botones pequeños (mouse + touch) */
+    .touch-nav {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      transform: translateY(-50%);
+      display: flex;
+      justify-content: space-between;
+      padding: 0 12px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .touch-nav button {
+      pointer-events: auto;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      padding: 0;
+      border: 1px solid rgba(221, 226, 241, 0.95);
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--texto);
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, .12);
+      cursor: pointer;
+    }
+
+    /* En desktop: aparecen al pasar el mouse por el stage */
+    #touchNav {
+      opacity: 0;
+      transform: translateY(-50%) translateY(6px);
+      transition: .15s ease;
+    }
+
+    .stage:hover #touchNav {
+      opacity: 1;
+      transform: translateY(-50%) translateY(0);
+    }
+
+    /* En touch: visibles siempre */
+    @media (hover: none) {
+      #touchNav {
+        opacity: 1;
+        transform: translateY(-50%);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="deck">
+    <div class="stage" id="stage">
+
+      <!-- SLIDE 1: PORTADA -->
+      <section class="slide cover active" data-title="Portada">
+        <div class="inner">
+          <div class="content">
+            <h1>Sesión 11</h1>
+            <h1>Taller avanzado de memoria virtual y sistemas de archivos</h1>
+            <div class="subtitle">Traducción de direcciones, fallos de página y estructuras de almacenamiento</div>
+            <p style="margin-top:20px; font-size:1.05em;">
+              Unidad 2 · Almacenamiento primario y secundario
+            </p>
+            <p style="margin-top:10px; max-width:80%;">
+              En esta sesión resolvemos, paso a paso, ejercicios del tipo:
+              “Analizando memoria virtual y técnicas de administración de memoria”
+              para que puedas enfrentar la tarea de la Unidad 2 con soltura.
+            </p>
+
+            <div class="callout"
+              style="background:rgba(255,255,255,0.12); border-left-color:#f7df00; max-width:78%; margin-top:auto;">
+              <p style="color:#e5edf8;">
+                Usa <span class="kbd">←</span> <span class="kbd">→</span> para navegar ·
+                <span class="kbd">F</span> para alternar pantalla completa.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span style="color:#e5edf8;">Sistemas Operativos · Unidad 2</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 2: OBJETIVOS Y CONEXIÓN -->
+      <section class="slide content-slide" data-title="Objetivos">
+        <div class="inner">
+          <div class="header">Ruta de la sesión</div>
+          <div class="content">
+            <h2>¿Qué vamos a hacer en esta sesión?</h2>
+            <p>
+              En esta sesión pasamos de la teoría a la práctica. Trabajaremos con
+              ejercicios resueltos paso a paso sobre los temas de Unidad 2:
+            </p>
+            <ul>
+              <li>
+                Traducir direcciones lógicas a físicas con
+                <b>paginación y segmentación</b> usando números concretos.
+              </li>
+              <li>
+                Simular <b>algoritmos de reemplazo de páginas</b> (FIFO, LRU, Óptimo)
+                y contar cuántos fallos se producen para una secuencia dada.
+              </li>
+              <li>
+                Entender cómo los <b>fallos de página</b> afectan el rendimiento
+                real de un sistema (thrashing, working set).
+              </li>
+              <li>
+                Mapear un byte dentro de un archivo a su <b>bloque físico de disco</b>
+                usando la estructura de inodos.
+              </li>
+            </ul>
+
+            <div class="callout">
+              <p>
+                Al terminar esta sesión serás capaz de resolver ejercicios de
+                memoria virtual y sistemas de archivos con todos los pasos
+                visibles y bien justificados.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Sesión 11 · Unidad 2: Almacenamiento primario y secundario</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 3: MODELO FORMAL DE PAGINACIÓN -->
+      <section class="slide content-slide" data-title="Modelo paginación">
+        <div class="inner">
+          <div class="header">Modelo matemático de paginación</div>
+          <div class="content">
+            <h2>Cómo se parte una dirección lógica en página + desplazamiento</h2>
+
+            <div class="two-col">
+              <div class="card">
+                <p><b>Suposiciones del ejercicio base:</b></p>
+                <ul>
+                  <li>Direcciones lógicas de 16 bits (0 a 65.535).</li>
+                  <li>Tamaño de página: 1 KB = 2<sup>10</sup> bytes.</li>
+                  <li>Número de páginas lógicas: 2<sup>16</sup> / 2<sup>10</sup> = 2<sup>6</sup> = 64.</li>
+                  <li>Cada marco físico también es de 1 KB.</li>
+                </ul>
+                <p style="margin-top:8px;">
+                  Entonces, una dirección lógica de 16 bits se descompone en:
+                </p>
+                <ul>
+                  <li>6 bits más significativos: número de página (<code>p</code>).</li>
+                  <li>10 bits menos significativos: desplazamiento (<code>d</code>).</li>
+                </ul>
+              </div>
+
+              <div class="card">
+                <p><b>Ejemplo numérico:</b></p>
+                <div class="code">
+                  Dirección lógica: 0x2AF3 (hex) = 0010 1010 1111 0011 (bin)
+
+                  Tomamos:
+                  p = 6 bits de más peso → 001010 = 0x0A = 10
+                  d = 10 bits restantes → 1011110011 (bin) = 0x2F3 = 755
+
+                  Interpretación:
+                  Página lógica #10, desplazamiento 755 dentro de la página.
+                </div>
+                <p style="margin-top:6px;">
+                  Si la tabla de páginas dice que la página 10 está en el marco físico 3,
+                  la dirección física será: <code>marco 3 · 1024 + 755</code>.
+                </p>
+              </div>
+            </div>
+
+            <div class="callout">
+              <p>
+                <b>Método para resolver cualquier ejercicio de paginación:</b><br>
+                1) Identifica el tamaño de página y calcula cuántos bits necesita (log₂).<br>
+                2) Los bits restantes son el número de página (p).<br>
+                3) Consulta la tabla de páginas con p → obtén el marco físico.<br>
+                4) Dirección física = marco × tamaño_página + desplazamiento (d).
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Paginación — dirección lógica → dirección física</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 4: EJERCICIO GUIADO DE PAGINACIÓN -->
+      <section class="slide content-slide" data-title="Ejercicio paginación 1">
+        <div class="inner">
+          <div class="header">Ejercicio 1 (guiado): traducción de direcciones</div>
+          <div class="content">
+            <h2>Paginación simple con tabla de páginas dada</h2>
+
+            <p><b>Datos del ejercicio:</b></p>
+            <ul>
+              <li>Direcciones lógicas de 16 bits, páginas de 1 KB.</li>
+              <li>Tabla de páginas del proceso P:</li>
+            </ul>
+
+            <div class="code">
+              Página lógica → Marco físico
+              0 → 5
+              1 → 9
+              2 → 1
+              3 → (no mapeada, genera fallo de página)
+              4 → 7
+            </div>
+
+            <p style="margin-top:6px;"><b>Traduce las siguientes direcciones lógicas:</b></p>
+            <ul>
+              <li>a) 0x04F2</li>
+              <li>b) 0x11A0</li>
+              <li>c) 0x0D10</li>
+            </ul>
+
+            <div class="two-col" style="margin-top:10px;">
+              <div class="card">
+                <p><b>Resolución a) 0x04F2</b></p>
+                <div class="code">
+                  0x04F2 = 0000 0100 1111 0010 (bin)
+
+                  p = 6 bits altos: 000001 = 1
+                  d = 10 bits bajos: 0011110010 = 0x1F2 = 498
+
+                  Tabla de páginas:
+                  p = 1 → marco 9
+
+                  Dirección física:
+                  base marco 9 = 9 · 1024 = 9216
+                  física = 9216 + 498 = 9714 (dec) = 0x25F2
+                </div>
+              </div>
+
+              <div class="card">
+                <p><b>Resolución b) y c):</b></p>
+                <div class="code">
+                  b) 0x11A0 = 4512 dec
+                  p = 4512 / 1024 = 4 &rarr; marco 7
+                  d = 4512 % 1024 = 416
+                  física = 7 &middot; 1024 + 416 = 7584
+
+                  c) 0x0D10 = 3344 dec
+                  p = 3344 / 1024 = 3 &rarr; NO MAPEADA
+                  d = 3344 % 1024 = 272
+                  &rarr; PAGE FAULT (página 3 no está en RAM)</div>
+              </div>
+            </div>
+
+            <div class="callout">
+              <p>
+                Buen hábito de examen: <b>escribe primero p y d</b>, luego la fila
+                de la tabla de páginas, y finalmente la dirección física. Evita
+                hacer todo “de cabeza”.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Ejercicio guiado 1 — Paginaci&#243;n directa</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 5: MODELO FORMAL DE SEGMENTACIÓN -->
+      <section class="slide content-slide" data-title="Modelo segmentación">
+        <div class="inner">
+          <div class="header">Modelo formal de segmentación</div>
+          <div class="content">
+            <h2>Segmento + desplazamiento con base y límite</h2>
+
+            <div class="two-col">
+              <div class="card">
+                <p><b>Idea clave:</b></p>
+                <ul>
+                  <li>Cada dirección lógica se compone de: <code>&lt;id_segmento, desplazamiento&gt;</code>.</li>
+                  <li>La tabla de segmentos tiene, por entrada: <code>base</code> y <code>límite</code>.</li>
+                  <li>Traducción:</li>
+                </ul>
+                <div class="code">
+                  Si desplazamiento &lt; límite:
+                  dirección física = base + desplazamiento
+                  Si no:
+                  error: violación de segmento (segmentation fault)
+                </div>
+              </div>
+
+              <div class="card">
+                <p><b>Ejemplo de tabla de segmentos:</b></p>
+                <div class="code">
+                  Segmento | Base | Límite (tamaño)
+                  -------------------------------------
+                  0 | 1000 | 400 (código)
+                  1 | 2000 | 200 (datos)
+                  2 | 3000 | 300 (pila)
+                </div>
+                <p style="margin-top:6px;">
+                  Una referencia lógica <code>&lt;1, 150&gt;</code> se traduce en:
+                  física = 2000 + 150 = 2150, siempre que 150 &lt; 200.
+                </p>
+              </div>
+            </div>
+
+            <div class="callout">
+              <p>
+                A diferencia de la paginación, aquí los segmentos tienen significado semántico
+                (código, datos, pila). Implicaciones: seguridad, protección,
+                posibilidad de compartir código entre procesos.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Parte (2) de la tarea: ejemplo de segmentación con base y límite</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 6: EJERCICIO DE SEGMENTACIÓN -->
+      <section class="slide content-slide" data-title="Ejercicio segmentación">
+        <div class="inner">
+          <div class="header">Ejercicio 2: validando accesos con segmentación</div>
+          <div class="content">
+            <h2>Decidir si un acceso es válido y obtener la dirección física</h2>
+
+            <p><b>Tabla de segmentos del proceso Q:</b></p>
+            <div class="code">
+              Segmento | Base | Límite
+              ------------------------
+              0 | 400 | 300 (código: 0..299)
+              1 | 1000 | 100 (datos: 0..99)
+              2 | 2000 | 200 (pila: 0..199)
+            </div>
+
+            <p style="margin-top:6px;"><b>Evalúa las siguientes referencias lógicas:</b></p>
+            <ul>
+              <li>a) <code>&lt;0, 120&gt;</code></li>
+              <li>b) <code>&lt;1, 150&gt;</code></li>
+              <li>c) <code>&lt;2, 199&gt;</code></li>
+            </ul>
+
+            <div class="two-col" style="margin-top:10px;">
+              <div class="card">
+                <p><b>Resolución a):</b></p>
+                <div class="code">
+                  &lt;0, 120&gt; → segmento = 0, desplazamiento = 120
+
+                  Tabla:
+                  base(0) = 400
+                  límite(0) = 300
+
+                  Verificación:
+                  120 &lt; 300 → acceso VÁLIDO
+
+                  Dirección física:
+                  400 + 120 = 520
+                </div>
+              </div>
+
+              <div class="card">
+                <p><b>Resolución b):</b></p>
+                <div class="code">
+                  &lt;1, 150&gt; → segmento = 1, desplazamiento = 150
+
+                  Tabla:
+                  base(1) = 1000
+                  límite(1) = 100
+
+                  Verificación:
+                  150 &gt;= 100 → acceso INVÁLIDO
+
+                  Conclusión:
+                  El proceso intenta leer/escribir fuera del segmento de datos.
+                  Esto genera una violación de segmento (segmentation fault).
+                </div>
+              </div>
+            </div>
+
+            <div class="callout">
+              <p>
+                Pide al grupo que discuta qué tipo de bugs en C/C++ se modelan como
+                accesos fuera de segmento (overflows de buffer, escribir más allá de un array, etc.).
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">En la tarea se espera al menos un ejemplo de este estilo bien argumentado</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 7: FALLOS DE PÁGINA Y RENDIMIENTO -->
+      <section class="slide content-slide" data-title="Fallos de página">
+        <div class="inner">
+          <div class="header">Fallos de página: análisis fino de rendimiento</div>
+          <div class="content">
+            <h2>Cuánto “cuesta” realmente un fallo de página</h2>
+
+            <div class="two-col">
+              <div class="card">
+                <p><b>Costos típicos de acceso:</b></p>
+                <ul>
+                  <li>Acceso a registro CPU: orden de nanosegundos.</li>
+                  <li>Acceso a RAM: decenas de nanosegundos.</li>
+                  <li>Acceso a disco SSD: microsegundos a milisegundos.</li>
+                  <li>Acceso a disco HDD: varios milisegundos.</li>
+                </ul>
+                <p style="margin-top:8px;">
+                  Un fallo de página implica <b>al menos una lectura de bloque de disco</b> (4 KB),
+                  muchas veces también una escritura si hay que expulsar una página sucia.
+                </p>
+              </div>
+
+              <div class="card">
+                <p><b>Modelo simplificado de tiempo:</b></p>
+                <div class="code">
+                  Supón:
+                  T_hit_RAM = 100 ns
+                  T_pagefault = 8 ms = 8 000 000 ns
+
+                  Si tasa de fallos = 0.1% (0.001):
+                  T_efectivo ≈ 0.999 · 100 ns + 0.001 · 8 000 000 ns
+                  ≈ 100 ns + 8 000 ns
+                  ≈ 8 100 ns (81× más lento)
+
+                  Si tasa de fallos = 1%:
+                  T_efectivo ≈ 0.99 · 100 ns + 0.01 · 8 000 000 ns
+                  ≈ 100 ns + 80 000 ns
+                  ≈ 80 100 ns (801× más lento)
+                </div>
+                <p style="margin-top:6px;">
+                  Pequeños incrementos en la tasa de fallos disparan el tiempo medio de acceso.
+                </p>
+              </div>
+            </div>
+
+            <div class="callout">
+              <p>
+                Esta es la base teórica para justificar, en tu informe, por qué un patrón de acceso
+                “malo” (por ejemplo aleatorio sobre una estructura grande) degrada tanto el rendimiento.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Conecta directamente con la reflexión de la tarea sobre impacto en rendimiento</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 8: EJERCICIO DE REEMPLAZO DE PÁGINAS -->
+      <section class="slide content-slide" data-title="Reemplazo: ejercicio">
+        <div class="inner">
+          <div class="header">Ejercicio 3: comparando algoritmos de reemplazo</div>
+          <div class="content">
+            <h2>FIFO, Óptimo y LRU sobre la misma secuencia</h2>
+
+            <p><b>Datos:</b></p>
+            <ul>
+              <li>Marcos de página disponibles: 3.</li>
+              <li>Secuencia de referencias (en términos de número de página):</li>
+            </ul>
+
+            <div class="code">
+              Referencia: 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5
+              Marcos: [ _ , _ , _ ]
+            </div>
+
+            <div class="two-col" style="margin-top:10px;">
+              <div class="card">
+                <p><b>FIFO (First In, First Out):</b></p>
+                <div class="code">
+                  Paso | Ref | Marcos | Fallo?
+                  -----+-----+------------- +--------
+                  1 | 1 | [1, _, _] | F
+                  2 | 2 | [1, 2, _] | F
+                  3 | 3 | [1, 2, 3] | F
+                  4 | 4 | [4, 2, 3] | F (expulsa 1)
+                  5 | 1 | [4, 1, 3] | F (expulsa 2)
+                  6 | 2 | [4, 1, 2] | F (expulsa 3)
+                  7 | 5 | [5, 1, 2] | F (expulsa 4)
+                  8 | 1 | [5, 1, 2] | -
+                  9 | 2 | [5, 1, 2] | -
+                  10 | 3 | [3, 1, 2] | F (expulsa 5)
+                  11 | 4 | [3, 4, 2] | F (expulsa 1)
+                  12 | 5 | [3, 4, 5] | F (expulsa 2)
+
+                  Total fallos FIFO = 10
+                </div>
+              </div>
+
+              <div class="card">
+                <p><b>Óptimo (para comparar):</b></p>
+                <div class="code">
+                  Idea:
+                  En un fallo, expulsar la página cuyo PRÓXIMO uso esté
+                  más lejos en el futuro, o que no se vuelva a usar.
+
+                  Se puede construir una tabla similar, pero indicando
+                  en cada expulsión qué página se usará más tarde.
+
+                  Actividad:
+                  - Rellenar la tabla para Óptimo.
+                  - Luego, comparar el número de fallos con FIFO.
+                  - Finalmente, discutir por qué LRU se acerca a Óptimo
+                  usando sólo información del pasado, no del futuro.
+                </div>
+
+              </div>
+            </div>
+
+            <div class="callout">
+              <p>
+                Este tipo de tabla es exactamente lo que se espera cuando se pide:
+                “simula un algoritmo simple de reemplazo de páginas con pseudocódigo
+                o trazas” en el nivel extendido de la tarea.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Apoyo para la parte “algoritmo de reemplazo de páginas” del nivel extendido</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 9: PSEUDOCÓDIGO DE LRU APROXIMADO -->
+      <section class="slide content-slide" data-title="Pseudocódigo LRU">
+        <div class="inner">
+          <div class="header">Diseñando un algoritmo simple de reemplazo</div>
+          <div class="content">
+            <h2>Pseudocódigo de LRU basado en contador de “último uso”</h2>
+
+            <div class="code">
+              estructura Marco {
+              entero pagina;
+              entero ultima_vez_usada;
+              }
+
+              procedimiento simular_LRU(secuencia, num_marcos):
+              marcos ← arreglo de tamaño num_marcos, inicializado con pagina = -1
+              tiempo ← 0
+              fallos ← 0
+
+              para cada ref en secuencia:
+              tiempo ← tiempo + 1
+
+              // 1. ¿La página ya está en algún marco?
+              si existe i tal que marcos[i].pagina = ref entonces
+              marcos[i].ultima_vez_usada ← tiempo
+              continuar con la siguiente ref
+              fin si
+
+              // 2. Fallo de página: buscar marco libre o expulsar LRU
+              fallos ← fallos + 1
+
+              si existe i tal que marcos[i].pagina = -1 entonces
+              // hay marco libre
+              marcos[i].pagina ← ref
+              marcos[i].ultima_vez_usada ← tiempo
+              si no
+              // seleccionar LRU
+              idx_LRU ← índice i que minimiza marcos[i].ultima_vez_usada
+              marcos[idx_LRU].pagina ← ref
+              marcos[idx_LRU].ultima_vez_usada ← tiempo
+              fin si
+              fin para
+
+              devolver fallos
+            </div>
+
+            <div class="callout">
+              <p>
+                En la parte extendida de la tarea, no es necesario implementar este
+                pseudocódigo en un lenguaje real, pero sí mostrar que entiendes la
+                lógica de cómo se elegiría la página a expulsar en cada paso.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Pseudocódigo directo para incluir en informe si se pide el nivel extendido</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 10: SISTEMAS DE ARCHIVOS: PROFUNDIZACIÓN -->
+      <section class="slide content-slide" data-title="FS profundo">
+        <div class="inner">
+          <div class="header">Sistemas de archivos</div>
+          <div class="content">
+            <h2>Inodos, bloques de datos y estructuras indexadas</h2>
+
+            <div class="two-col">
+              <div class="card">
+                <p><b>Componentes conceptuales:</b></p>
+                <ul>
+                  <li><b>Inodo:</b> estructura que guarda metadatos (tamaño, propietario, tiempos) y punteros a bloques.
+                  </li>
+                  <li><b>Bloques de datos:</b> donde realmente se almacena el contenido del archivo.</li>
+                  <li><b>Bloques de índices:</b> usados para punteros indirectos (árboles, listas, etc.).</li>
+                  <li><b>Bitmap de bloques libres:</b> vector de bits para saber qué bloques están disponibles.</li>
+                </ul>
+                <p style="margin-top:8px;">
+                  Sistemas modernos (ext4, NTFS) usan combinaciones de punteros directos,
+                  indirectos y estructuras tipo árbol B+ para soportar archivos enormes con buen rendimiento.
+                </p>
+              </div>
+
+              <div class="card">
+                <p><b>Ejemplo de inodo con punteros directos + indirectos:</b></p>
+                <div class="code">
+                  Inodo #500:
+                  tamaño = 80 KB
+                  direct[0..11] = [1000, 1001, ..., 1011]
+                  indirect_simple = 2000
+
+                  Bloque 2000 (indirecto):
+                  [3000, 3001, 3002, 3003, ...]
+
+                  Significado:
+                  - Los primeros 12 bloques de datos (48 KB) están en 1000–1011.
+                  - El resto de bloques se consultan a través del bloque 2000,
+                  que actúa como una “tabla extra” de punteros.
+                </div>
+              </div>
+            </div>
+
+            <div class="callout">
+              <p>
+                En ejercicios, te pueden pedir: “Dado un desplazamiento dentro del archivo,
+                determina qué bloque de datos se usa y qué número de bloque físico corresponde”.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Cubre la parte de “asignación de espacio” e “inodos” de los saberes A‑II/B‑II</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 11: EJERCICIO DE UBICACIÓN EN ARCHIVO -->
+      <section class="slide content-slide" data-title="Ejercicio archivo">
+        <div class="inner">
+          <div class="header">Ejercicio 4: ¿en qué bloque está este byte?</div>
+          <div class="content">
+            <h2>Mapear un desplazamiento lógico a un bloque de disco</h2>
+
+            <p><b>Datos:</b></p>
+            <ul>
+              <li>Tamaño de bloque de sistema de archivos: 4 KB.</li>
+              <li>Estructura de inodo:</li>
+            </ul>
+
+            <div class="code">
+              Inodo #800:
+              direct[0..2] = [500, 501, 502] (hasta 3 * 4KB = 12 KB)
+              indirect_simple = 900 (tabla con más bloques)
+              tamaño archivo = 20 KB
+            </div>
+
+            <p style="margin-top:6px;"><b>Pregunta:</b> ¿en qué bloque físico se encuentra el byte en posición 16.000
+              (desplazamiento 16 KB)?</p>
+
+            <div class="two-col" style="margin-top:10px;">
+              <div class="card">
+                <p><b>Resolución conceptual:</b></p>
+                <ol>
+                  <li>Calcula qué bloque lógico del archivo contiene ese desplazamiento:
+                    <code>bloque_log = 16000 / 4096</code>.
+                  </li>
+                  <li>Calcula el desplazamiento dentro de ese bloque: <code>off_bloque = 16000 % 4096</code>.</li>
+                  <li>Decide si ese bloque lógico está cubierto por punteros directos o indirectos.</li>
+                  <li>Si es indirecto, localiza la entrada adecuada en el bloque índice.</li>
+                </ol>
+              </div>
+
+              <div class="card">
+                <p><b>Cálculo numérico rápido:</b></p>
+                <div class="code">
+                  16000 / 4096 ≈ 3 con resto:
+
+                  4096 * 3 = 12288
+                  16000 - 12288 = 3712
+
+                  → bloque_lógico = 3
+                  → off_bloque = 3712
+
+                  Bloques lógicos:
+                  0 → direct[0] = 500
+                  1 → direct[1] = 501
+                  2 → direct[2] = 502
+                  3 → (primera entrada de indirecto_simple)
+
+                  Por tanto:
+                  - El bloque físico es la primera entrada del bloque 900.
+                  - Dentro de ese bloque, el byte está a desplazamiento 3712.
+                </div>
+              </div>
+            </div>
+
+            <div class="callout">
+              <p>
+                Este tipo de razonamiento es el análogo, en archivos, a traducir
+                direcciones lógicas en esquemas de paginación/segmentación.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Ejercicio típico para “asignación de espacio a un archivo”</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 12: CONEXIÓN DIRECTA CON LA TAREA -->
+      <section class="slide content-slide" data-title="Conexión tarea">
+        <div class="inner">
+          <div class="header">Cómo usar estos ejemplos en la tarea</div>
+          <div class="content">
+            <h2>Checklist para “Analizando memoria virtual y técnicas de administración de memoria”</h2>
+
+            <table>
+              <tr>
+                <th>Parte de la tarea</th>
+                <th>Qué debes entregar</th>
+                <th>De qué slide sacar ideas</th>
+              </tr>
+              <tr>
+                <td>1) Traducción en paginación</td>
+                <td>Tabla con varias direcciones, indicando p, d y dirección física o fallo.</td>
+                <td>Slides 3 y 4 (modelo + ejercicio guiado).</td>
+              </tr>
+              <tr>
+                <td>2) Ejemplo con segmentación</td>
+                <td>Tabla con base/límite, varios accesos; marcar válidos y fallos.</td>
+                <td>Slides 5 y 6 (modelo + ejercicio).</td>
+              </tr>
+              <tr>
+                <td>3) Escenario de fallos de página</td>
+                <td>Descripción de qué ocurre, conteo aproximado, impacto en T_efectivo.</td>
+                <td>Slide 7 (análisis de tiempos), Slide 8 si comparas algoritmos.</td>
+              </tr>
+              <tr>
+                <td>4) Comparación paginación vs segmentación</td>
+                <td>Texto corto (media página) con ventajas y desventajas.</td>
+                <td>Lo ya visto más tabla mental que puedes construir en clase.</td>
+              </tr>
+              <tr>
+                <td>5) Nivel extendido</td>
+                <td>Pseudocódigo de un algoritmo de reemplazo simple (LRU, FIFO).</td>
+                <td>Slide 9 (pseudocódigo LRU comentado).</td>
+              </tr>
+            </table>
+
+            <div class="callout" style="margin-top:10px;">
+              <p>
+                Sugerencia para la sesión: trabajar en equipos pequeños, y luego socializar las soluciones para
+                refinar el nivel de detalle y rigor que se espera en la entrega.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Todo alineado con la descripción oficial de la tarea de la Unidad 2</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 13: APLICACIÓN A CÓDIGO REAL -->
+      <section class="slide content-slide" data-title="Código real">
+        <div class="inner">
+          <div class="header">De los modelos al código de aplicaciones</div>
+          <div class="content">
+            <h2>Cómo tus decisiones de E/S afectan a la memoria virtual</h2>
+
+            <div class="two-col">
+              <div class="card">
+                <p><b>Patrón ineficiente (forzando fallos de página):</b></p>
+                <div class="code">
+                  // Leer archivo de 1 GB en memoria de una sola vez (C#)
+                  byte[] buffer = File.ReadAllBytes("datos_grandes.bin");
+                  // Procesar buffer de forma aleatoria
+                  Random r = new Random();
+                  for (int i = 0; i < 10_000_000; i++) { int idx=r.Next(buffer.Length); byte b=buffer[idx]; // ... }
+                    </div>
+                    <p style="margin-top:6px;">
+                      Cargar todo en un array gigante y acceder de forma aleatoria aumenta
+                      la probabilidad de expulsar constantemente páginas de ese array
+                      cuando la RAM es limitada.
+                    </p>
+                </div>
+
+                <div class="card">
+                  <p><b>Patrón eficiente (minimizando fallos):</b></p>
+                  <div class="code">
+                    // Leer y procesar el archivo en bloques de 4 KB (streaming)
+                    using (FileStream fs = new FileStream("datos_grandes.bin", FileMode.Open))
+                    {
+                    byte[] bloque = new byte[4096];
+                    int leidos;
+                    while ((leidos = fs.Read(bloque, 0, bloque.Length)) > 0)
+                    {
+                    // Procesar sólo los 'leidos' bytes de este bloque
+                    for (int i = 0; i < leidos; i++) { byte b=bloque[i]; // ... } } } </div>
+                      <p style="margin-top:6px;">
+                        Aquí el working set se mantiene pequeño, compatible con pocos marcos,
+                        y los accesos son secuenciales, favoreciendo caches y TLB.
+                      </p>
+                  </div>
+                </div>
+
+                <div class="callout">
+                  <p>
+                    Conectar estas decisiones con experiencias
+                    reales: scripts que “se comen toda la RAM”, consultas de bases de datos
+                    mal diseñadas, etc.
+                  </p>
+                </div>
+              </div>
+              <div class="footer">
+                <span class="note">Da insumos para la parte de reflexión sobre rendimiento percibido</span>
+                <span class="counter"></span>
+              </div>
+            </div>
+      </section>
+
+      <!-- SLIDE 14: ACTIVIDAD PRÁCTICA – EXPLORAR ARCHIVOS CON PYTHON -->
+      <section class="slide content-slide" data-title="Práctica terminal (Python)">
+        <div class="inner">
+          <div class="header">Actividad práctica — ¡Abre tu terminal!</div>
+          <div class="content">
+            <h2>Explorando sistemas de archivos con Python</h2>
+
+            <p><b>Ejecuta este script en tu terminal:</b> <code>python explorar_fs.py</code></p>
+
+            <div class="two-col">
+              <div class="card">
+                <p><b>explorar_fs.py</b></p>
+                <div class="code">
+                  import os, stat, time
+
+                  # Ruta a explorar (cambia a tu carpeta de proyecto)
+                  ruta = "."
+
+                  print(f"{'Nombre':<25} {'Tamaño (B)':>12} {'Tipo':<6} {'Últ. modificación'}") print("-" * 65) for
+                      entrada in sorted(os.scandir(ruta), key=lambda e: e.name): info=entrada.stat() tipo="DIR " if
+                      entrada.is_dir() else "FILE" tamanio=info.st_size mod=time.strftime("%Y-%m-%d %H:%M",
+                      time.localtime(info.st_mtime)) print(f"{entrada.name:<25} {tamanio:>12} {tipo:<6} {mod}") print()
+                        # Calcular inodo (en Linux/macOS) o ID de archivo (Windows) for entrada in os.scandir(ruta):
+                        info=entrada.stat() print(f"Inodo/FileID de '{entrada.name}' : {info.st_ino}") </div>
+                </div>
+
+                <div class="card">
+                  <p><b>¿Qué observarás?</b></p>
+                  <ul>
+                    <li>Nombre, tamaño en bytes y tipo de cada entrada del directorio.</li>
+                    <li>Última fecha de modificación (metadato guardado en el inodo).</li>
+                    <li><code>st_ino</code>: el número de inodo real del sistema de archivos (en Linux/macOS; en Windows
+                      es el File Index del NTFS).</li>
+                  </ul>
+                  <p style="margin-top:8px;"><b>Desafío grupal:</b></p>
+                  <ol>
+                    <li>Modifica el script para mostrar sólo archivos con extensión <code>.py</code> o <code>.cs</code>.
+                    </li>
+                    <li>Ordena el resultado de mayor a menor por tamaño.</li>
+                    <li>Calcula el tamaño total de la carpeta en KB.</li>
+                  </ol>
+                  <div class="callout" style="margin-top:8px;">
+                    <p>
+                      <b>Conexión con la teoría:</b> cada llamada a
+                      <code>os.stat()</code> consulta al SO el inodo del archivo,
+                      que contiene los mismos campos de metadatos que vimos en el
+                      slide de sistemas de archivos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="footer">
+              <span class="note">Requiere Python 3.6+ · funciona en Windows, Linux y macOS</span>
+              <span class="counter"></span>
+            </div>
+          </div>
+      </section>
+
+      <!-- SLIDE 15: ACTIVIDAD PRÁCTICA – SIMULACIÓN LRU EN PYTHON -->
+      <section class="slide content-slide" data-title="Práctica LRU (Python)">
+        <div class="inner">
+          <div class="header">Actividad práctica — Simula LRU en tu terminal</div>
+          <div class="content">
+            <h2>Algoritmo de reemplazo LRU — código ejecutable en Python</h2>
+
+            <p><b>Guarda como</b> <code>lru_sim.py</code> y ejecuta: <code>python lru_sim.py</code></p>
+
+            <div class="two-col">
+              <div class="card">
+                <p><b>lru_sim.py</b></p>
+                <div class="code">
+                  def simular_lru(secuencia, num_marcos):
+                  marcos = {} # pagina -> tiempo_ultimo_uso
+                  fallos = 0
+                  tiempo = 0
+
+                  print(f"{'Paso':>4} {'Ref':>4} {'Marcos':<30} {'¿Fallo?'}") print("-" * 55) for ref in secuencia:
+                    tiempo +=1 if ref in marcos: marcos[ref]=tiempo # hit: actualiza tiempo estado=list(marcos.keys())
+                    print(f"{tiempo:>4} {ref:>4} {str(estado):<30} (hit)") else: fallos +=1 if len(marcos)>= num_marcos:
+                      # expulsar la LRU (menor tiempo de último uso)
+                      lru_pag = min(marcos, key=marcos.get)
+                      del marcos[lru_pag]
+                      marcos[ref] = tiempo
+                      estado = list(marcos.keys())
+                      print(f"{tiempo:>4} {ref:>4} {str(estado):<30} FALLO") print(f"\nTotal de fallos de página:
+                        {fallos}") return fallos # Misma secuencia del ejercicio de clase: secuencia=[1, 2, 3, 4, 1, 2,
+                        5, 1, 2, 3, 4, 5] simular_lru(secuencia, num_marcos=3) </div>
+                </div>
+
+                <div class="card">
+                  <p><b>Salida esperada (extracto):</b></p>
+                  <div class="code">
+                    Paso Ref Marcos ¿Fallo?
+                    -------------------------------------------------------
+                    1 1 [1] FALLO
+                    2 2 [1, 2] FALLO
+                    3 3 [1, 2, 3] FALLO
+                    4 4 [2, 3, 4] FALLO
+                    5 1 [3, 4, 1] FALLO
+                    6 2 [4, 1, 2] FALLO
+                    7 5 [1, 2, 5] FALLO
+                    8 1 [1, 2, 5] (hit)
+                    9 2 [1, 2, 5] (hit)
+                    10 3 [2, 5, 3] FALLO
+                    11 4 [5, 3, 4] FALLO
+                    12 5 [5, 3, 4] (hit)
+
+                    Total de fallos de página: 9
+                  </div>
+                  <p style="margin-top:6px;"><b>Desafío:</b> cambia <code>num_marcos=4</code> y compara. ¿Cuántos fallos
+                    se producen? ¿Mejora respecto a FIFO (10 fallos)?</p>
+                </div>
+              </div>
+            </div>
+            <div class="footer">
+              <span class="note">Compara: FIFO tuvo 10 fallos · LRU con 3 marcos produce 9 · Óptimo produce 8</span>
+              <span class="counter"></span>
+            </div>
+          </div>
+      </section>
+
+      <!-- SLIDE 16: ACTIVIDAD PRÁCTICA – PATRONES DE E/S EN C# -->
+      <section class="slide content-slide" data-title="Práctica E/S (C#)">
+        <div class="inner">
+          <div class="header">Actividad práctica — Midiendo el impacto de tus decisiones de E/S</div>
+          <div class="content">
+            <h2>C# · ReadAllBytes vs. streaming por bloques</h2>
+
+            <p><b>Crea un proyecto:</b> <code>dotnet new console -n benchmark_io</code> · luego ejecuta:
+              <code>dotnet run</code>
+            </p>
+
+            <div class="two-col">
+              <div class="card">
+                <p><b>Program.cs</b></p>
+                <div class="code">
+                  using System;
+                  using System.Diagnostics;
+                  using System.IO;
+
+                  // 1. Genera un archivo de prueba de ~5 MB
+                  string ruta = "test_5mb.bin";
+                  if (!File.Exists(ruta))
+                  {
+                  var rng = new Random(42);
+                  var data = new byte[5 * 1024 * 1024];
+                  rng.NextBytes(data);
+                  File.WriteAllBytes(ruta, data);
+                  Console.WriteLine("Archivo de 5 MB creado.\n");
+                  }
+
+                  var sw = new Stopwatch();
+
+                  // --- Patrón INEFICIENTE: carga completa en RAM ---
+                  sw.Restart();
+                  byte[] buffer = File.ReadAllBytes(ruta);
+                  long suma1 = 0;
+                  foreach (byte b in buffer) suma1 += b;
+                  sw.Stop();
+                  Console.WriteLine($"ReadAllBytes → suma={suma1}, tiempo={sw.ElapsedMilliseconds} ms");
+
+                  // --- Patrón EFICIENTE: streaming por bloques de 4 KB ---
+                  sw.Restart();
+                  long suma2 = 0;
+                  using (FileStream fs = new FileStream(ruta, FileMode.Open,
+                  FileAccess.Read, FileShare.Read,
+                  bufferSize: 4096, useAsync: false))
+                  {
+                  byte[] bloque = new byte[4096];
+                  int leidos;
+                  while ((leidos = fs.Read(bloque, 0, bloque.Length)) > 0)
+                  for (int i = 0; i < leidos; i++) suma2 +=bloque[i]; } sw.Stop(); Console.WriteLine($"Streaming 4KB →
+                    suma={suma2}, tiempo={sw.ElapsedMilliseconds} ms"); </div>
+                </div>
+
+                <div class="card">
+                  <p><b>¿Por qué los tiempos difieren?</b></p>
+                  <ul>
+                    <li><b>ReadAllBytes:</b> el SO carga todo el archivo en RAM de una vez. Con archivos grandes, esto
+                      aumenta la presión sobre los marcos de página disponibles y puede provocar fallos si otros
+                      procesos también necesitan memoria.</li>
+                    <li><b>Streaming 4 KB:</b> el <i>working set</i> del proceso se mantiene pequeño (1 bloque activo).
+                      El SO puede mantener el resto en disco sin afectar la ejecución.</li>
+                  </ul>
+                  <p style="margin-top:8px;"><b>Desafío grupal:</b></p>
+                  <ol>
+                    <li>Aumenta el archivo a 50 MB y repite. ¿Cambia la diferencia?</li>
+                    <li>Mide con <code>dotnet-counters</code>:<br>
+                      <code>dotnet-counters monitor --process-id &lt;PID&gt;</code><br>
+                      Observa <code>GC Heap Size</code> en cada patrón.
+                    </li>
+                  </ol>
+                  <div class="callout" style="margin-top:8px;">
+                    <p>El comportamiento de <code>GC Heap Size</code> y los tiempos que miden <b>conectan
+                        directamente</b> con el modelo de fallos de página del slide 7.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="footer">
+              <span class="note">Requiere .NET 6+ · dotnet CLI disponible en Windows, Linux y macOS</span>
+              <span class="counter"></span>
+            </div>
+          </div>
+      </section>
+
+      <!-- SLIDE 17: CIERRE DEL TALLER -->
+      <section class="slide content-slide" data-title="Cierre">
+        <div class="inner">
+          <div class="header">Cierre del taller y siguientes pasos</div>
+          <div class="content">
+            <h2>Qué deberías ser capaz de hacer al terminar esta sesión</h2>
+
+            <ul>
+              <li>
+                Traducir con seguridad direcciones lógicas en esquemas de paginación
+                y segmentación con los datos de un enunciado.
+              </li>
+              <li>
+                Estimar el impacto de diferentes tasas de fallos de página sobre
+                el tiempo medio de acceso a memoria.
+              </li>
+              <li>
+                <b>Ejecutar</b> la simulación LRU en Python y comparar los fallos
+                obtenidos ante distintas cantidades de marcos.
+              </li>
+              <li>
+                <b>Medir</b> en C# la diferencia de tiempo entre leer un archivo
+                completo vs. procesarlo por streaming, y relacionarlo con los
+                modelos de memoria virtual vistos en clase.
+              </li>
+              <li>
+                Inspeccionar metadatos reales de archivos (inodos, tamaños, tiempos)
+                desde la terminal con Python.
+              </li>
+            </ul>
+
+            <div class="callout" style="margin-top:10px;">
+              <p>
+                Los scripts <code>explorar_fs.py</code>, <code>lru_sim.py</code>
+                y el proyecto <code>benchmark_io</code> (C#) son puntos de partida:
+                modifícalos, experimenta con los parámetros y documenta tus
+                observaciones en la tarea de Unidad 2.
+              </p>
+            </div>
+          </div>
+          <div class="footer">
+            <span class="note">Teoría + práctica en terminal — Sesión 11 completa</span>
+            <span class="counter"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Navegación táctil -->
+      <div class="touch-nav" id="touchNav">
+        <button id="btnPrev" aria-label="Anterior">&#8592;</button>
+        <button id="btnNext" aria-label="Siguiente">&#8594;</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll('.slide'));
+      const counters = Array.from(document.querySelectorAll('.counter'));
+      const stage = document.getElementById('stage');
+
+      const btnPrev = document.getElementById('btnPrev');
+      const btnNext = document.getElementById('btnNext');
+
+      let idx = 0;
+
+      function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+
+      function show(i) {
+        idx = clamp(i, 0, slides.length - 1);
+        slides.forEach((s, k) => s.classList.toggle('active', k === idx));
+        const label = (idx + 1) + " / " + slides.length;
+        counters.forEach(el => el.textContent = label);
+        history.replaceState(null, "", "#" + (idx + 1));
+      }
+
+      function next() { show(idx + 1); }
+      function prev() { show(idx - 1); }
+
+      // Hash inicial
+      const m = (location.hash || "").match(/^#(\d+)$/);
+      if (m) {
+        const start = parseInt(m[1], 10);
+        if (!isNaN(start)) idx = clamp(start - 1, 0, slides.length - 1);
+      }
+      show(idx);
+
+      // Botones (mouse/touch)
+      btnPrev.addEventListener('click', prev);
+      btnNext.addEventListener('click', next);
+
+      // Teclado
+      document.addEventListener('keydown', (e) => {
+        const k = e.key;
+
+        if (k === 'f' || k === 'F') {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen?.();
+          } else {
+            document.exitFullscreen?.();
+          }
+          return;
+        }
+
+        if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') {
+          e.preventDefault(); next();
+        } else if (k === 'ArrowLeft' || k === 'PageUp') {
+          e.preventDefault(); prev();
+        } else if (k === 'Home') {
+          e.preventDefault(); show(0);
+        } else if (k === 'End') {
+          e.preventDefault(); show(slides.length - 1);
+        }
+      });
+
+      // Swipe (limitado al stage para evitar conflictos)
+      const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+      if (isTouch) {
+        let x0 = null, y0 = null, t0 = 0;
+        const SWIPE_MIN_X = 50;
+        const SWIPE_MAX_Y = 80;
+        const SWIPE_MAX_MS = 800;
+
+        stage.addEventListener('touchstart', (e) => {
+          const t = e.changedTouches[0];
+          x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+        }, { passive: true });
+
+        stage.addEventListener('touchend', (e) => {
+          if (x0 === null || y0 === null) return;
+          const t = e.changedTouches[0];
+          const dx = t.clientX - x0;
+          const dy = t.clientY - y0;
+          const dt = Date.now() - t0;
+          x0 = null; y0 = null;
+
+          if (dt > SWIPE_MAX_MS) return;
+          if (Math.abs(dy) > SWIPE_MAX_Y) return;
+
+          if (dx <= -SWIPE_MIN_X) next();
+          else if (dx >= SWIPE_MIN_X) prev();
+        }, { passive: true });
+      }
+    })();
+  </script>
+</body>
+
+</html>
