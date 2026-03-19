@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sistemas Operativos - Sesión 12: Conceptos Fundamentales de Archivos</title>
+
+    <style>
+        :root {
+            /* Tema institucional */
+            --texto: #201F4B;
+            --azul-medio: #015583;
+            --turquesa: #05ADBC;
+            --muted: #6b7280;
+            --white: #ffffff;
+
+            --h1: clamp(30px, 3.4vw, 48px);
+            --h2: clamp(22px, 2.3vw, 34px);
+            --p: clamp(15px, 1.3vw, 19px);
+            --li: clamp(15px, 1.3vw, 19px);
+            --code: clamp(12px, 1.1vw, 15px);
+
+            /* Safe margins (tal cual) */
+            --safe-top-cover: clamp(208px, 9vh, 128px);
+            --safe-left-cover: clamp(585px, 5.5vw, 110px);
+            --safe-right-cover: clamp(28px, 3vw, 72px);
+            --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+            --safe-top: clamp(100px, 9vh, 132px);
+            --safe-side: clamp(66px, 5.5vw, 108px);
+            --safe-bottom: clamp(52px, 6vh, 90px);
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #ffffff;
+        }
+
+        .deck {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(10px, 2vw, 22px);
+            box-sizing: border-box;
+            background: #ffffff;
+        }
+
+        .stage {
+            width: min(96vw, calc(92vh * (16/9)));
+            aspect-ratio: 16/9;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: none;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, .35);
+            overflow: hidden;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        /* Fondos institucionales */
+        .slide.cover {
+            background: url("./Portada.png") center/cover no-repeat;
+            color: #ffffff;
+        }
+
+        .slide.content-slide {
+            background:
+                url("./Contenido.png") top left/contain no-repeat,
+                #ffffff;
+            color: var(--texto);
+        }
+
+        /* Safe padding por tipo de slide */
+        .inner {
+            height: 100%;
+            box-sizing: border-box;
+            padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+            display: flex;
+            flex-direction: column;
+            gap: clamp(10px, 1.1vw, 18px);
+        }
+
+        .cover .inner {
+            padding:
+                var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: clamp(10px, 1.1vw, 16px);
+            min-height: 0;
+        }
+
+        .header {
+            color: var(--azul-medio);
+            font-size: clamp(18px, 1.6vw, 22px);
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: var(--h1);
+            line-height: 1.08;
+            color: var(--texto);
+        }
+
+        h2 {
+            margin: 0;
+            font-size: var(--h2);
+            line-height: 1.15;
+            color: var(--azul-medio);
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--p);
+            line-height: 1.4;
+            color: var(--texto);
+        }
+
+        li {
+            font-size: var(--li);
+            line-height: 1.4;
+            color: var(--texto);
+        }
+
+        ul,
+        ol {
+            margin: 0;
+            padding-left: 1.2em;
+        }
+
+        .subtitle {
+            color: var(--turquesa);
+            font-weight: 800;
+            font-size: clamp(18px, 1.8vw, 24px);
+            margin-top: clamp(6px, 1vw, 10px);
+        }
+
+        /* Portada: colores */
+        .cover h1 {
+            color: #ffffff;
+        }
+
+        .cover p {
+            color: #e5edf8;
+        }
+
+        .cover .subtitle {
+            color: #f7df00;
+        }
+
+        .note {
+            color: var(--muted);
+            font-size: clamp(12px, 1.05vw, 14px);
+            line-height: 1.35;
+        }
+
+        .callout {
+            background: rgba(255, 255, 255, 0.94);
+            border-left: 6px solid var(--turquesa);
+            padding: clamp(10px, 1.1vw, 14px);
+            border-radius: 6px;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: clamp(12px, 1.6vw, 22px);
+            align-items: flex-start;
+            min-height: 0;
+        }
+
+        @media(max-width:980px) {
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid #dde2f1;
+            border-radius: 10px;
+            padding: clamp(10px, 1.1vw, 14px);
+        }
+
+        .kbd {
+            font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+            background: #111827;
+            color: #e5e7eb;
+            padding: 2px 8px;
+            border-radius: 7px;
+            font-size: clamp(11px, 1vw, 13px);
+            border: 1px solid rgba(255, 255, 255, .08);
+        }
+        
+        .code {
+            font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+            font-size: var(--code);
+            line-height: 1.35;
+            background: #0b1020;
+            color: #e5e7eb;
+            border-radius: 10px;
+            padding: clamp(10px, 1.1vw, 14px);
+            overflow: auto;
+            border: 1px solid rgba(17, 24, 39, .25);
+            white-space: pre;
+            margin: 0;
+        }
+
+        .highlight-c { color: #f7df00; font-weight: bold; }
+        .highlight-b { color: #5eead4; }
+        .highlight-r { color: #f56565; }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--muted);
+            font-size: clamp(12px, 1.05vw, 14px);
+            gap: 14px;
+        }
+
+        .counter {
+            font-weight: 800;
+            color: var(--azul-medio);
+        }
+
+        .cover .counter {
+            color: #e5edf8;
+        }
+
+        /* Nav botones */
+        .touch-nav {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            display: flex;
+            justify-content: space-between;
+            padding: 0 12px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .touch-nav button {
+            pointer-events: auto;
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            padding: 0;
+            border: 1px solid rgba(221, 226, 241, 0.95);
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--texto);
+            font-weight: 900;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, .12);
+            cursor: pointer;
+        }
+
+        #touchNav {
+            opacity: 0;
+            transform: translateY(-50%) translateY(6px);
+            transition: .15s ease;
+        }
+
+        .stage:hover #touchNav {
+            opacity: 1;
+            transform: translateY(-50%) translateY(0);
+        }
+
+        @media (hover: none) {
+            #touchNav {
+                opacity: 1;
+                transform: translateY(-50%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="deck">
+        <div class="stage" id="stage">
+
+            <!-- SLIDE 1: PORTADA -->
+            <section class="slide cover active" data-title="Portada">
+                <div class="inner">
+                    <div class="content">
+                        <h1>Sesión 12</h1>
+                        <h1>Conceptos Fundamentales de Sistemas de Archivos</h1>
+                        <div class="subtitle">Ingeniería Interna: Archivos, Metadatos y Estructuras</div>
+                        <p style="margin-top:20px; font-size:1.05em;">
+                            Unidad 2 · Almacenamiento Primario y Secundario
+                        </p>
+                        <p style="margin-top:10px; max-width:80%;">
+                            Un archivo no es simplemente un ícono en una interfaz gráfica. 
+                            En esta sesión exploraremos la abstracción técnica del Kernel, 
+                            analizando atributos reales, números mágicos (Magic Numbers), 
+                            y la diferencia radical entre el identificador lógico del disco y el nombre que vemos como usuarios.
+                        </p>
+
+                        <div class="callout"
+                            style="background:rgba(255,255,255,0.12); border-left-color:#f7df00; max-width:78%; margin-top:auto;">
+                            <p style="color:#e5edf8;">
+                                Usa <span class="kbd">←</span> <span class="kbd">→</span> para navegar ·
+                                <span class="kbd">F</span> para alternar pantalla completa.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <span style="color:#e5edf8;">Sistemas Operativos · Unidad 2</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 2: ABSTRACCION -->
+            <section class="slide content-slide" data-title="El Archivo">
+                <div class="inner">
+                    <div class="header">La Abstracción Fundamental</div>
+                    <div class="content">
+                        <h2>El problema del hardware vs El modelo Lógico</h2>
+                        <p>
+                            Los dispositivos de almacenamiento masivo (Discos Duros, SSDs) no entienden qué es un PDF o una foto. 
+                            Solo "ven" sectores y bloques crudos (ej. sector 0 al sector 1000000) llenos de 0s y 1s.
+                        </p>
+
+                        <div class="two-col" style="margin-top:20px;">
+                            <div class="card">
+                                <h3>La Visión Lógica (El Archivo)</h3>
+                                <ul>
+                                    <li>Un espacio lógico de direcciones contiguas.</li>
+                                    <li>Posee un nombre humano entendible y límites definidos.</li>
+                                    <li>Brinda un método estándar estructurado para Persistencia.</li>
+                                </ul>
+                            </div>
+                            <div class="card">
+                                <h3>La Visión Física (El Disco)</h3>
+                                <ul>
+                                    <li>Miles de bloques dispersos y desordenados por todo el almacenamiento magnético o de estado sólido.</li>
+                                    <li>Es el <b>Sistema de Archivos (File System)</b> el que enmascara esta fragmentación al usuario.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="callout" style="margin-top:auto;">
+                            <p><b>Principio clave:</b> El SO aísla a los programas de la complejidad del hardware ruteando las llamadas al disco mediante llamadas al API de archivos (Sistema de Entrada/Salida).</p>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <span class="note">Identificando el modelo virtual provisto por el Kernel.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 3: ATRIBUTOS -->
+            <section class="slide content-slide" data-title="Atributos">
+                <div class="inner">
+                    <div class="header">Anatomía de un Archivo</div>
+                    <div class="content">
+                        <h2>Metadatos y Atributos de Control</h2>
+                        <p>
+                            Para gestionar un archivo, el sistema operativo necesita guardar información "sobre" la información. 
+                            Esta metadata determina cada regla de interacción.
+                        </p>
+
+                        <div class="card" style="margin-top:10px;">
+                            <ul style="column-count: 2; column-gap: 40px;">
+                                <li><b>Nombre:</b> Referencia humana (único dato guardado en la carpeta, no en el archivo per se).</li>
+                                <li><b>Identificador Interno:</b> El ID o "I-node", el verdadero nombre para el sistema.</li>
+                                <li><b>Tipo:</b> Para SO que soportan diferentes formatos estructurales.</li>
+                                <li><b>Ubicación Lógica:</b> Puntero hacia el dispositivo y ubicación en el disco.</li>
+                                <li><b>Tamaño Real vs Bloques:</b> Cantidad exacta en bytes frente a los bloques ocupados físicamente.</li>
+                                <li><b>Protección:</b> Roles y permisos (`rwx`) para lectura/escritura/ejecución.</li>
+                                <li><b>Marcas Temporales:</b> Creación, último acceso, última modificación (Vital en análisis forense).</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <span class="note">Parámetros organizacionales de los datos persistentes.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 4: ESTRUCTURA INTERNA -->
+            <section class="slide content-slide" data-title="Estructura">
+                <div class="inner">
+                    <div class="header">Bajo el Capó del Sistema</div>
+                    <div class="content">
+                        <h2>Estructura de Datos: I-Nodes y Bloques</h2>
+                        <p>
+                            Un archivo <b>no</b> es monolítico. Internamente (en sistemas tipo UNIX como Linux/macOS), el kernel separa tajantemente el contenido de la información técnica. 
+                        </p>
+
+                        <div class="two-col" style="margin-top:10px;">
+                            <div class="card">
+                                <h3>1. Bloques de Datos (Data Blocks)</h3>
+                                <p>Cajas fuertes en el disco donde caen los bytes reales. Curiosamente, un bloque de datos <b>no tiene ni idea a qué archivo pertenece.</b> Solo contiene ceros y unos puros.</p>
+                            </div>
+                            <div class="card">
+                                <h3>2. Nodo de Índice (I-Node / MFT)</h3>
+                                <p>Un registro de tamaño fijo que almacena <b>todos los atributos</b> previamente vistos y mantiene la lista de punteros hacia dónde están escondidos los Bloques de Datos.</p>
+                            </div>
+                        </div>
+
+                        <div class="callout" style="margin-top:auto;">
+                            <p><b>Dato Contraintuitivo:</b> El I-node contiene casi todo sobre el archivo... excepto el Nombre del Archivo. El nombre es gestionado estrictamente por el Directorio (carpeta).</p>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <span class="note">Comprendiendo la separación entre metadato y payload.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 5: EJEMPLO STAT PASO A PASO -->
+            <section class="slide content-slide" data-title="Ejemplo Stat">
+                <div class="inner">
+                    <div class="header">Ingeniería Aplicada: Análisis Forense de Metadatos</div>
+                    <div class="content">
+                        <h2>Ejemplo Práctico 1: Inspección de I-Nodes con `stat`</h2>
+                        <p>
+                            En nuestra terminal local/WSL procedemos a ver el "alma" técnica de un archivo recién creado, obviando la interfaz gráfica de explorador de archivos.
+                        </p>
+                        
+                        <div class="code" style="margin-top:10px;">
+<span class="highlight-b"># 1. Creamos un archivo corto de apenas 13 caracteres de texto (13 bytes).</span>
+$ echo "Hola Sistemas" > demo.txt
+
+<span class="highlight-b"># 2. Invocamos la llamada al sistema que lee las propiedades directas del i-node.</span>
+$ stat demo.txt
+  File: demo.txt
+  Size: <span class="highlight-c">14</span>              Blocks: <span class="highlight-r">8</span>          IO Block: 4096   regular file
+Device: 802h/2050d      <span class="highlight-b">Inode: 4791023</span>     Links: 1
+Access: (0644/-rw-r--r--)  Uid: ( 1000/    user)   Gid: ( 1000/    user)
+Access: 2026-03-24 10:15:00.120000000 -0500
+Modify: 2026-03-24 10:15:00.120000000 -0500
+Change: 2026-03-24 10:15:00.120000000 -0500
+                        </div>
+
+                        <div class="callout" style="margin-top:auto;">
+                            <p><b>Pregunta de análisis:</b> El texto pesa 14 bytes (letras + salto de línea), pero el SO asignó <b>8 Bloques físicos</b>. Esto se debe a que el disco duro se maneja en sectores indivisibles de 512 Bytes o 4096 Bytes (aquí 4096). Este fenómeno genera <b>Fragmentación Interna</b>.</p>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <span class="note">Extracción práctica de metadatos del File System.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 6: TIPOS DE ARCHIVO (EXTENSIONES) -->
+            <section class="slide content-slide" data-title="Tipos">
+                <div class="inner">
+                    <div class="header">Reconocimiento del Formato</div>
+                    <div class="content">
+                        <h2>Comportamiento del SO frente a Tipos de Archivos</h2>
+                        <p>
+                            ¿Cómo sabe la computadora diferenciar entre una canción en MP3, un texto y un virus binario ejecutable? Aquí las filosofías tecnológicas se bifurcan agresivamente.
+                        </p>
+
+                        <div class="two-col" style="margin-top:15px;">
+                            <div class="card">
+                                <h3 style="margin-top:0;">Windows (Por Extensión)</h3>
+                                <ul>
+                                    <li>Mecanismo rígido y amigable con el usuario.</li>
+                                    <li>Depende 100% del sufijo post-último punto (ej. <code>.docx</code>, <code>.exe</code>, <code>.dll</code>).</li>
+                                    <li>El registro de Windows lanza programas según esta lista. Si engañas la extensión, el SO falla abriéndolo.</li>
+                                </ul>
+                            </div>
+                            <div class="card">
+                                <h3 style="margin-top:0;">UNIX / Linux (Magic Numbers)</h3>
+                                <ul>
+                                    <li>Mecanismo técnico profundo.</li>
+                                    <li>Total ignorancia de las extensiones de archivo (son puramente estéticas).</li>
+                                    <li>El Kernel <b>lee los primeros bytes hexadecimales</b> reales del archivo para saber qué es (Firma Técnica).</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <span class="note">Identificando el comportamiento del núcleo frente al payload.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 7: EJEMPLO MAGIC NUMBERS -->
+            <section class="slide content-slide" data-title="Ejemplo Magic">
+                <div class="inner">
+                    <div class="header">Ingeniería Aplicada: Revelando el Engaño</div>
+                    <div class="content">
+                        <h2>Ejemplo Práctico 2: Evadiendo Extensiones con Magic Numbers</h2>
+                        <p>
+                            ¿Qué pasa si un atacante sube a un servidor Web un <code>virus_oculto.png</code> que por dentro no es una imagen, sino código ejecutable? ¿Cómo lo detecta el SO Unix de forma forense?
+                        </p>
+                        
+                        <div class="code" style="margin-top:10px;">
+<span class="highlight-b"># 1. Tenemos una auténtica foto PNG renombrada maliciosamente a .txt para confundir.</span>
+$ mv mi_imagen.png documento_falso.txt
+
+<span class="highlight-b"># 2. Usamos el comando "file" que lee la cabecera real ignorando el nombre:</span>
+$ file documento_falso.txt
+<span class="highlight-c">documento_falso.txt: PNG image data, 1920 x 1080, 8-bit/color RGB</span>
+
+<span class="highlight-b"># 3. Inspeccionamos a nivel de bits con un editor hexadecimal (xxd)</span>
+$ xxd documento_falso.txt | head -n 1
+00000000: <span class="highlight-r">8950 4e47</span> 0d0a 1a0a 0000 000d 4948 4452  <span class="highlight-c">.PNG........IHDR</span>
+                        </div>
+
+                        <div class="callout" style="margin-top:auto;">
+                            <p><b>Análisis Técnico:</b> Independiente de lo que diga el nombre, Unix lee el código hexadecimal `89 50 4e 47` (P N G) como el <b>Número Mágico</b>. En servidores en producción, jamás se confía de la extensión para validar archivos seguros.</p>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <span class="note">Cabeceras y firmas hexadecimales (Magic Numbers).</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section> 
+
+            <!-- SLIDE 8: OPERACIONES -->
+            <section class="slide content-slide" data-title="Operaciones">
+                <div class="inner">
+                    <div class="header">Interacción con el Sistema de Archivos</div>
+                    <div class="content">
+                        <h2>Syscalls: Operaciones Básicas sobre Archivos</h2>
+                        <p>
+                            A nivel de programación (ej. C, C++, Python), no tocamos el I-Node. Lanzamos interrupciones de software conocidas como <i>System Calls</i> al SO.
+                        </p>
+
+                        <div class="card" style="margin-top:10px;">
+                            <ul>
+                                <li><b>Create():</b> Busca bloque libre, reserva un I-Node nuevo y actualiza el catálogo del directorio.</li>
+                                <li><b>Open():</b> El SO mapea los permisos y trae la estructura a memoria principal (crea un <i>File Descriptor</i>). Importantísimo para rendimiento.</li>
+                                <li><b>Read() / Write():</b> Flujo de bytes en la posición que indica el puntero lógico del buffer.</li>
+                                <li><b>Reposition / Seek():</b> Mueve el puntero internamente sin alterar los datos, para saltar a áreas precisas del disco físico.</li>
+                                <li><b>Close():</b> Destruye el FD en la memoria, vacía buffers pendientes al disco y libera bloqueos para otros procesos.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <span class="note">Llamadas al sistema (Syscalls) hacia el soporte secundario.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 9: TABLA DE ARCHIVOS ABIERTOS -->
+            <section class="slide content-slide" data-title="File Descriptor">
+                <div class="inner">
+                    <div class="header">Punteros de Sistema</div>
+                    <div class="content">
+                        <h2>El costo del `Open` y la Tabla de Archivos Abiertos</h2>
+                        <p>
+                            Las búsquedas en directorios toman mucho tiempo porque consultan el disco. 
+                            La función `Open()` alivia el procesador cargando el archivo en la <b>Tabla de Archivos Abiertos</b> del sistema (Open File Table), viviendo enteramente en RAM.
+                        </p>
+
+                        <div class="two-col" style="margin-top:10px;">
+                            <div class="card">
+                                <p>Por cada archivo <b>abierto</b>, el SO mantiene vivo:</p>
+                                <ul>
+                                    <li><b>Puntero del archivo:</b> Ubicación del último byte escrito o leído para un proceso específico que lo consumió.</li>
+                                    <li><b>Conteo de aperturas:</b> Si 5 programas tienen abierto un `.log`, el SO incrementa el contador. Al llegar a cero (Close), se baja de memoria.</li>
+                                </ul>
+                            </div>
+                            <div class="card">
+                                <p><b>¿Por qué es vital el `Close()`?</b></p>
+                                <p>Si tu código en C# o Python entra en bucles `Open` y olvida el `Close()`, se agotan los <b>File Descriptors</b>, provocando un Memory Leak a nivel del SO, congelando o tumbando el servidor.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="footer">
+                        <span class="note">Rendimiento e interbloqueos debido a descriptores saturados.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 10: DIRECTORIOS -->
+            <section class="slide content-slide" data-title="Directorios">
+                <div class="inner">
+                    <div class="header">Resolución de Nombres</div>
+                    <div class="content">
+                        <h2>Directorios: ¿Qué es "una Carpeta"?</h2>
+                        <p>
+                            Como hemos dicho, los bloques de datos no tienen nombre. Para esto existe el <b>Directorio</b>: un archivo logístico especializado cuyo único trabajo es mantener el "Directorio Telefónico" en formato lista.
+                        </p>
+
+                        <div class="card" style="margin-top:10px;">
+                            <h3>El contenido bruto de un directorio es apenas esto:</h3>
+                            <div class="code">
+Contenido de "MisDocumentos":
+"tarea.pdf"          -> <span class="highlight-c">I-node 58129</span>
+"tesis_final.docx"   -> <span class="highlight-c">I-node 58200</span>
+"Carpeta_Memes"      -> <span class="highlight-c">I-node 59001</span>  <span class="highlight-b"># Esto es otro catálogo interno!</span>
+                            </div>
+                        </div>
+
+                        <div class="callout" style="margin-top:15px;">
+                            <p><b>Aterrizando el concepto:</b> Renombrar un archivo de 100 GB. ¿Por qué <code>mv archivo1 archivo2</code> es instantáneo? Porque el SO no mueve 100 GB. ¡Sencillamente agarra la tablita del directorio, cambia la cadena "archivo1" por "archivo2" dejando exactamente el mismo número de I-Node atado!</p>
+                        </div>
+
+                    </div>
+                    <div class="footer">
+                        <span class="note">Los directorios re-definidos como Listas de Punteros Lógicos.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 11: ARBOLES Y RUTAS -->
+            <section class="slide content-slide" data-title="Rutas">
+                <div class="inner">
+                    <div class="header">Organización Lógica de Búsqueda</div>
+                    <div class="content">
+                        <h2>Estructura Jerárquica e Indexación Lógica</h2>
+                        <p>
+                            Los sistemas comerciales operan usando Grafos Acíclicos Dirigidos o en formaciones de <b>Árbol Extendido</b>. Cada usuario y sub-usuario recibe un nodo de control donde ramificar sus datos.
+                        </p>
+
+                        <div class="two-col" style="margin-top:10px;">
+                            <div class="card">
+                                <h3>Rutas Absolutas</h3>
+                                <ul>
+                                    <li>Inician obligatoriamente desde la Raíz Suprema.</li>
+                                    <li>Windows: <code>C:\Usuarios\Juan\foto.png</code></li>
+                                    <li>Linux/Mac: <code>/home/juan/foto.png</code></li>
+                                </ul>
+                            </div>
+                            <div class="card">
+                                <h3>Rutas Relativas</h3>
+                                <ul>
+                                    <li>Inician desde nuestro estado actual (Directorio de Trabajo / Working Directory).</li>
+                                    <li><code>./foto.png</code> <i>(aquí mismo)</i></li>
+                                    <li><code>../pepe/foto.png</code> <i>(sube un nivel al padre, baja a pepe)</i></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="footer">
+                        <span class="note">Navegabilidad algorítmica y eficiencia en el recorrido de rutas (path traversal).</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 12: ENLACES -->
+            <section class="slide content-slide" data-title="Enlaces">
+                <div class="inner">
+                    <div class="header">Magia del Sistema de Archivos</div>
+                    <div class="content">
+                        <h2>Enlaces Duros (Hard Links) vs Simbólicos (Soft Links)</h2>
+                        <p>
+                            Al separar el Nombre (Directorio) del Identificador (I-node), el SO nos otorga el poder 
+                            de tener múltiples nombres apuntando hacia los mismos datos en el disco.
+                        </p>
+
+                        <div class="two-col" style="margin-top:10px;">
+                            <div class="card">
+                                <h3>Hard Links</h3>
+                                <p>Un nuevo nombre que está amarrado al Mismo `I-Node` fundamental.</p>
+                                <ul>
+                                    <li>Son "iguales" frente a los ojos del núcleo en todo nivel.</li>
+                                    <li>Si borras el archivo original, <b>los datos no se borran</b>. El sistema mantiene vivos los datos hasta que todos los hard-links bajen a 0.</li>
+                                </ul>
+                            </div>
+                            <div class="card">
+                                <h3>Soft Links (Accesos Directos)</h3>
+                                <p>Es un I-Node distinto, diminuto, que cuyo único bloque de datos posee texto que dice: "Por favor dirígete a X ruta".</p>
+                                <ul>
+                                    <li>Si borras el archivo original, el link simbólico queda <b>roto / huérfano</b> apuntando a la nada.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="footer">
+                        <span class="note">Punteros referenciales hacia hardware: clonación lógica de información.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 13: EJEMPLO DE LINKS -->
+            <section class="slide content-slide" data-title="Ejemplo Links">
+                <div class="inner">
+                    <div class="header">Ingeniería Aplicada: Comportamiento Posicional</div>
+                    <div class="content">
+                        <h2>Ejemplo Práctico 3: Creación y Destrucción de Enlaces</h2>
+                        <p>
+                            Simularemos crear respaldos lógicos. La clave aquí es leer la primera columna del comando <code>ls -li</code>, la cual nos delata el I-node de la máquina real en vivo.
+                        </p>
+                        
+                        <div class="code" style="margin-top:10px;">
+<span class="highlight-b"># 1. Creamos Data importante y miramos su i-node (-i)</span>
+$ echo "Clave123" > db.txt
+$ ls -li db.txt
+<span class="highlight-c">551020</span> -rw-r--r-- 1 user 9 db.txt
+
+<span class="highlight-b"># 2. Creamos un Hard Link (ln), y un Accesos Simbólico (ln -s)</span>
+$ ln db.txt hard_bd.txt
+$ ln -s db.txt soft_bd.txt
+$ ls -li *.txt
+<span class="highlight-c">551020</span> -rw-r--r-- <span class="highlight-r">2</span> user 9 db.txt        <span class="highlight-b"><- Original   (Links saltó a 2)</span>
+<span class="highlight-c">551020</span> -rw-r--r-- <span class="highlight-r">2</span> user 9 hard_bd.txt   <span class="highlight-b"><- Hard Link  (¡Mismo Inode!)</span>
+623315 lrwxrwxrwx 1 user 6 soft_bd.txt -> db.txt   <span class="highlight-b"><- Soft Link  (Inode distinto 623315)</span>
+
+<span class="highlight-b"># 3. Borramos (Delete) el archivo principal! </span>
+$ rm db.txt
+$ cat hard_bd.txt 
+Clave123               <span class="highlight-b"><- Los datos sobreviven intactos en el Hard Link!</span>
+$ cat soft_bd.txt
+cat: soft_bd.txt: <span class="highlight-r">No such file or directory</span> <span class="highlight-b"><- El puntero simbólico ha "muerto".</span>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <span class="note">Validando la indestructibilidad referencial asimétrica de los Hard links.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section> 
+
+            <!-- SLIDE 14: RESUMEN -->
+            <section class="slide content-slide" data-title="Actividades">
+                <div class="inner">
+                    <div class="header">Consolidación</div>
+                    <div class="content">
+                        <h2>Resumen y Proyección del Conocimiento</h2>
+                        <p>
+                            El manejo de la persistencia de datos oculta asombrosas capas de ingeniería algorítmica. Entender las verdaderas limitantes y comportamientos forenses distingue a un instalador de software de un verdadero Arquitecto e Ingeniero de Sistemas.
+                        </p>
+                        
+                        <div class="two-col" style="margin-top:20px;">
+                            <div class="card">
+                                <h3>Para la Práctica Semanal:</h3>
+                                <ul>
+                                    <li>El uso inapropiado de múltiples <code>Open Files</code> en tus desarrollos puede destruir la memoria del servidor.</li>
+                                    <li>Las búsquedas profundas de archivos son costosas, porque cada carpeta escaneada recorre decenas de MFT/inodes en disco físico, matando el I/O.</li>
+                                </ul>
+                            </div>
+                            <div class="card" style="border: 2px solid var(--turquesa);">
+                                <h3>La Siguiente Sesión (S13)</h3>
+                                <p>
+                                    Ya vimos el comportamiento "Lógico" y el File System. Pero... ¿Y cómo metemos esos gigantescos de Bloques a la fuerza a zonas físicas rotas e incompletas en un disco duro magnético que gira ruidosamente? Lo abordaremos en las Estrategias de <b>Asignación Enlazada, Contigua e Indexada.</b>
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="footer">
+                        <span class="note">Conceptos asimilados y proyección al siguiente encuentro.</span>
+                        <span class="counter"></span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <div class="touch-nav" id="touchNav">
+        <button id="btnPrev" aria-label="Anterior">◀</button>
+        <button id="btnNext" aria-label="Siguiente">▶</button>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll(".slide");
+        const btnPrev = document.getElementById("btnPrev");
+        const btnNext = document.getElementById("btnNext");
+        const counters = document.querySelectorAll(".counter");
+        let currentSlide = 0;
+
+        function updateDeck() {
+            slides.forEach((s, i) => {
+                s.classList.toggle("active", i === currentSlide);
+            });
+            counters.forEach((c) => {
+                c.textContent = `${currentSlide + 1} / ${slides.length}`;
+            });
+            btnPrev.style.opacity = currentSlide === 0 ? "0.3" : "1";
+            btnNext.style.opacity = currentSlide === slides.length - 1 ? "0.3" : "1";
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateDeck();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateDeck();
+            }
+        }
+
+        btnNext.addEventListener("click", nextSlide);
+        btnPrev.addEventListener("click", prevSlide);
+
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowRight") nextSlide();
+            if (e.key === "ArrowLeft") prevSlide();
+            if (e.key === "f" || e.key === "F") {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.log(`Error: ${err.message}`);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+        });
+
+        updateDeck();
+    </script>
+</body>
+</html>

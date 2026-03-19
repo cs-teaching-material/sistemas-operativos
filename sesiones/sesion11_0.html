@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 
 <head>
@@ -1074,12 +1074,14 @@
               <div class="card">
                 <p><b>Patrón ineficiente (forzando fallos de página):</b></p>
                 <div class="code">
-                  // Leer archivo de 1 GB en memoria de una sola vez (C#)
-                  byte[] buffer = File.ReadAllBytes("datos_grandes.bin");
-                  // Procesar buffer de forma aleatoria
-                  Random r = new Random();
-                  for (int i = 0; i < 10_000_000; i++) { int idx=r.Next(buffer.Length); byte b=buffer[idx]; // ... }
-                    </div>
+// Leer archivo de 1 GB en memoria de una sola vez (C#)
+byte[] buffer = File.ReadAllBytes("datos_grandes.bin");
+// Procesar buffer de forma aleatoria
+Random r = new Random();
+for (int i = 0; i < 10_000_000; i++) {
+    int idx = r.Next(buffer.Length);
+    byte b = buffer[idx]; // ...
+}</div>
                     <p style="margin-top:6px;">
                       Cargar todo en un array gigante y acceder de forma aleatoria aumenta
                       la probabilidad de expulsar constantemente páginas de ese array
@@ -1089,16 +1091,20 @@
 
                 <div class="card">
                   <p><b>Patrón eficiente (minimizando fallos):</b></p>
-                  <div class="code">
-                    // Leer y procesar el archivo en bloques de 4 KB (streaming)
-                    using (FileStream fs = new FileStream("datos_grandes.bin", FileMode.Open))
-                    {
-                    byte[] bloque = new byte[4096];
-                    int leidos;
-                    while ((leidos = fs.Read(bloque, 0, bloque.Length)) > 0)
-                    {
-                    // Procesar sólo los 'leidos' bytes de este bloque
-                    for (int i = 0; i < leidos; i++) { byte b=bloque[i]; // ... } } } </div>
+                <div class="code">
+// Leer y procesar el archivo en bloques de 4 KB (streaming)
+using (FileStream fs = new FileStream("datos_grandes.bin", FileMode.Open))
+{
+    byte[] bloque = new byte[4096];
+    int leidos;
+    while ((leidos = fs.Read(bloque, 0, bloque.Length)) > 0)
+    {
+        // Procesar sólo los 'leidos' bytes de este bloque
+        for (int i = 0; i < leidos; i++) {
+            byte b = bloque[i]; // ...
+        }
+    }
+}</div>
                       <p style="margin-top:6px;">
                         Aquí el working set se mantiene pequeño, compatible con pocos marcos,
                         y los accesos son secuenciales, favoreciendo caches y TLB.
@@ -1134,17 +1140,25 @@
               <div class="card">
                 <p><b>explorar_fs.py</b></p>
                 <div class="code">
-                  import os, stat, time
+import os, stat, time
 
-                  # Ruta a explorar (cambia a tu carpeta de proyecto)
-                  ruta = "."
+# Ruta a explorar (cambia a tu carpeta de proyecto)
+ruta = "."
 
-                  print(f"{'Nombre':<25} {'Tamaño (B)':>12} {'Tipo':<6} {'Últ. modificación'}") print("-" * 65) for
-                      entrada in sorted(os.scandir(ruta), key=lambda e: e.name): info=entrada.stat() tipo="DIR " if
-                      entrada.is_dir() else "FILE" tamanio=info.st_size mod=time.strftime("%Y-%m-%d %H:%M",
-                      time.localtime(info.st_mtime)) print(f"{entrada.name:<25} {tamanio:>12} {tipo:<6} {mod}") print()
-                        # Calcular inodo (en Linux/macOS) o ID de archivo (Windows) for entrada in os.scandir(ruta):
-                        info=entrada.stat() print(f"Inodo/FileID de '{entrada.name}' : {info.st_ino}") </div>
+print(f"{'Nombre':<25} {'Tamaño (B)':>12} {'Tipo':<6} {'Últ. modificación'}")
+print("-" * 65)
+for entrada in sorted(os.scandir(ruta), key=lambda e: e.name):
+    info = entrada.stat()
+    tipo = "DIR " if entrada.is_dir() else "FILE"
+    tamanio = info.st_size
+    mod = time.strftime("%Y-%m-%d %H:%M", time.localtime(info.st_mtime))
+    print(f"{entrada.name:<25} {tamanio:>12} {tipo:<6} {mod}")
+
+print()
+# Calcular inodo (en Linux/macOS) o ID de archivo (Windows)
+for entrada in os.scandir(ruta):
+    info = entrada.stat()
+    print(f"Inodo/FileID de '{entrada.name}' : {info.st_ino}")</div>
                 </div>
 
                 <div class="card">
@@ -1193,22 +1207,34 @@
               <div class="card">
                 <p><b>lru_sim.py</b></p>
                 <div class="code">
-                  def simular_lru(secuencia, num_marcos):
-                  marcos = {} # pagina -> tiempo_ultimo_uso
-                  fallos = 0
-                  tiempo = 0
+def simular_lru(secuencia, num_marcos):
+    marcos = {} # pagina -> tiempo_ultimo_uso
+    fallos = 0
+    tiempo = 0
 
-                  print(f"{'Paso':>4} {'Ref':>4} {'Marcos':<30} {'¿Fallo?'}") print("-" * 55) for ref in secuencia:
-                    tiempo +=1 if ref in marcos: marcos[ref]=tiempo # hit: actualiza tiempo estado=list(marcos.keys())
-                    print(f"{tiempo:>4} {ref:>4} {str(estado):<30} (hit)") else: fallos +=1 if len(marcos)>= num_marcos:
-                      # expulsar la LRU (menor tiempo de último uso)
-                      lru_pag = min(marcos, key=marcos.get)
-                      del marcos[lru_pag]
-                      marcos[ref] = tiempo
-                      estado = list(marcos.keys())
-                      print(f"{tiempo:>4} {ref:>4} {str(estado):<30} FALLO") print(f"\nTotal de fallos de página:
-                        {fallos}") return fallos # Misma secuencia del ejercicio de clase: secuencia=[1, 2, 3, 4, 1, 2,
-                        5, 1, 2, 3, 4, 5] simular_lru(secuencia, num_marcos=3) </div>
+    print(f"{'Paso':>4} {'Ref':>4} {'Marcos':<30} {'¿Fallo?'}")
+    print("-" * 55)
+    for ref in secuencia:
+        tiempo += 1
+        if ref in marcos:
+            marcos[ref] = tiempo # hit: actualiza tiempo
+            estado = list(marcos.keys())
+            print(f"{tiempo:>4} {ref:>4} {str(estado):<30} (hit)")
+        else:
+            fallos += 1
+            if len(marcos) >= num_marcos:
+                # expulsar la LRU (menor tiempo de último uso)
+                lru_pag = min(marcos, key=marcos.get)
+                del marcos[lru_pag]
+            marcos[ref] = tiempo
+            estado = list(marcos.keys())
+            print(f"{tiempo:>4} {ref:>4} {str(estado):<30} FALLO")
+    print(f"\nTotal de fallos de página: {fallos}")
+    return fallos
+
+# Misma secuencia del ejercicio de clase
+secuencia = [1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5]
+simular_lru(secuencia, num_marcos=3)</div>
                 </div>
 
                 <div class="card">
@@ -1258,43 +1284,47 @@
               <div class="card">
                 <p><b>Program.cs</b></p>
                 <div class="code">
-                  using System;
-                  using System.Diagnostics;
-                  using System.IO;
+using System;
+using System.Diagnostics;
+using System.IO;
 
-                  // 1. Genera un archivo de prueba de ~5 MB
-                  string ruta = "test_5mb.bin";
-                  if (!File.Exists(ruta))
-                  {
-                  var rng = new Random(42);
-                  var data = new byte[5 * 1024 * 1024];
-                  rng.NextBytes(data);
-                  File.WriteAllBytes(ruta, data);
-                  Console.WriteLine("Archivo de 5 MB creado.\n");
-                  }
+// 1. Genera un archivo de prueba de ~5 MB
+string ruta = "test_5mb.bin";
+if (!File.Exists(ruta))
+{
+    var rng = new Random(42);
+    var data = new byte[5 * 1024 * 1024];
+    rng.NextBytes(data);
+    File.WriteAllBytes(ruta, data);
+    Console.WriteLine("Archivo de 5 MB creado.\n");
+}
 
-                  var sw = new Stopwatch();
+var sw = new Stopwatch();
 
-                  // --- Patrón INEFICIENTE: carga completa en RAM ---
-                  sw.Restart();
-                  byte[] buffer = File.ReadAllBytes(ruta);
-                  long suma1 = 0;
-                  foreach (byte b in buffer) suma1 += b;
-                  sw.Stop();
-                  Console.WriteLine($"ReadAllBytes → suma={suma1}, tiempo={sw.ElapsedMilliseconds} ms");
+// --- Patrón INEFICIENTE: carga completa en RAM ---
+sw.Restart();
+byte[] buffer = File.ReadAllBytes(ruta);
+long suma1 = 0;
+foreach (byte b in buffer) suma1 += b;
+sw.Stop();
+Console.WriteLine($"ReadAllBytes → suma={suma1}, tiempo={sw.ElapsedMilliseconds} ms");
 
-                  // --- Patrón EFICIENTE: streaming por bloques de 4 KB ---
-                  sw.Restart();
-                  long suma2 = 0;
-                  using (FileStream fs = new FileStream(ruta, FileMode.Open,
-                  FileAccess.Read, FileShare.Read,
-                  bufferSize: 4096, useAsync: false))
-                  {
-                  byte[] bloque = new byte[4096];
-                  int leidos;
-                  while ((leidos = fs.Read(bloque, 0, bloque.Length)) > 0)
-                  for (int i = 0; i < leidos; i++) suma2 +=bloque[i]; } sw.Stop(); Console.WriteLine($"Streaming 4KB →
-                    suma={suma2}, tiempo={sw.ElapsedMilliseconds} ms"); </div>
+// --- Patrón EFICIENTE: streaming por bloques de 4 KB ---
+sw.Restart();
+long suma2 = 0;
+using (FileStream fs = new FileStream(ruta, FileMode.Open,
+       FileAccess.Read, FileShare.Read,
+       bufferSize: 4096, useAsync: false))
+{
+    byte[] bloque = new byte[4096];
+    int leidos;
+    while ((leidos = fs.Read(bloque, 0, bloque.Length)) > 0)
+    {
+        for (int i = 0; i < leidos; i++) suma2 += bloque[i];
+    }
+}
+sw.Stop();
+Console.WriteLine($"Streaming 4KB → suma={suma2}, tiempo={sw.ElapsedMilliseconds} ms");</div>
                 </div>
 
                 <div class="card">
