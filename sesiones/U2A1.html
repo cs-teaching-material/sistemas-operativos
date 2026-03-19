@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analizando sincronización e interbloqueo — Sistemas Operativos</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6f9;
+      color: #1a1a2e;
+      padding: 30px 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* ── ENCABEZADO ── */
+    .page-header {
+      background: #1a1a2e;
+      color: #fff;
+      border-radius: 10px;
+      padding: 26px 30px;
+      margin-bottom: 18px;
+    }
+    .page-header h1 { font-size: 1.45rem; font-weight: 700; margin-bottom: 4px; }
+    .page-header .subtitle { font-size: 0.88rem; color: #a0aec0; margin-bottom: 14px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .info-box { background: rgba(255,255,255,0.07); border-radius: 6px; padding: 10px 14px; }
+    .info-box label { display: block; font-size: 0.7rem; color: #718096; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .info-box input {
+      background: transparent; border: none;
+      border-bottom: 1px solid rgba(255,255,255,0.25);
+      color: #e2e8f0; font-size: 0.9rem; font-weight: 600;
+      width: 100%; outline: none; padding: 2px 0;
+    }
+    .info-box input::placeholder { color: #4a5568; }
+
+    /* ── BARRA DE ACCIONES ── */
+    .action-bar {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .btn {
+      padding: 9px 18px; border-radius: 8px;
+      font-size: 0.86rem; font-weight: 600;
+      cursor: pointer; border: none; transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-dark { background: #1a1a2e; color: #fff; }
+    .btn-green { background: #38a169; color: #fff; }
+    .btn-gray { background: #e2e8f0; color: #1a1a2e; }
+    .save-ok { font-size: 0.8rem; color: #38a169; align-self: center; display: none; }
+
+    /* ── INSTRUCCIONES ── */
+    .instrucciones {
+      background: #fff8e1; border-left: 4px solid #ecc94b;
+      border-radius: 8px; padding: 14px 18px;
+      margin-bottom: 20px; font-size: 0.88rem; line-height: 1.7;
+    }
+    .instrucciones ul { margin-top: 6px; padding-left: 18px; }
+    .instrucciones li { margin-bottom: 3px; }
+
+    /* ── PROGRESO ── */
+    .progress-wrap {
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;
+    }
+    .progress-label {
+      font-size: 0.72rem; font-weight: 700; color: #718096;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+    }
+    .dots { display: flex; gap: 8px; flex-wrap: wrap; }
+    .dot {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700;
+      border: 2px solid #e2e8f0; color: #a0aec0;
+      cursor: pointer; transition: all 0.2s;
+      text-decoration: none;
+    }
+    .dot.done { background: #38a169; border-color: #38a169; color: #fff; }
+
+    /* ── SECCIÓN TITLE ── */
+    .section-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #718096;
+      margin: 26px 0 10px;
+    }
+
+    /* ── TARJETAS (details/summary) ── */
+    details {
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 10px; margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    summary {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px; cursor: pointer;
+      list-style: none; user-select: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary:hover { background: #f9fafb; }
+
+    .num {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.86rem; color: #fff; flex-shrink: 0;
+    }
+    .n1 { background: #48bb78; }
+    .n2 { background: #4299e1; }
+    .n3 { background: #ed8936; }
+    .n4 { background: #9f7aea; }
+
+    .meta { flex: 1; }
+    .meta h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 3px; }
+    .tags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .tag { font-size: 0.69rem; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
+    .t-tema { background: #ebf8ff; color: #2b6cb0; }
+    .t-time { background: #f0fff4; color: #276749; }
+    .t-bas  { background: #f0fff4; color: #276749; }
+    .t-med  { background: #fffbeb; color: #92400e; }
+    .t-adv  { background: #fff5f5; color: #c53030; }
+
+    .chk { color: #38a169; font-size: 1rem; display: none; }
+    details.done .chk { display: block; }
+
+    .arrow { color: #a0aec0; font-size: 0.85rem; transition: transform 0.2s; }
+    details[open] .arrow { transform: rotate(180deg); }
+
+    /* ── CUERPO DEL RETO ── */
+    .body { padding: 18px; border-top: 1px solid #f0f4f8; }
+
+    .enunciado { font-size: 0.9rem; line-height: 1.75; color: #2d3748; margin-bottom: 12px; }
+
+    .cond {
+      background: #f7fafc; border-radius: 6px;
+      padding: 11px 15px; margin-bottom: 12px; font-size: 0.86rem;
+    }
+    .cond p {
+      font-weight: 700; font-size: 0.74rem; color: #4a5568;
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;
+    }
+    .cond ul { padding-left: 16px; line-height: 1.8; color: #4a5568; }
+
+    .code-block {
+      background: #1a1a2e; color: #a8d8a8;
+      font-family: 'Courier New', monospace; font-size: 0.81rem;
+      border-radius: 6px; padding: 11px 15px;
+      margin-bottom: 12px; line-height: 1.7;
+      white-space: pre; overflow-x: auto;
+    }
+    .code-block .cm { color: #718096; }
+
+    .resp-label {
+      display: block; font-size: 0.74rem; font-weight: 700;
+      color: #4a5568; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 5px;
+    }
+
+    textarea {
+      width: 100%; min-height: 150px;
+      border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 10px 12px; font-family: 'Courier New', monospace;
+      font-size: 0.86rem; color: #1a1a2e;
+      background: #f9fafb; resize: vertical; outline: none;
+      line-height: 1.6; transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: #4299e1; background: #fff; }
+
+    .ta-footer {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 5px; margin-bottom: 10px;
+    }
+    .cc { font-size: 0.73rem; color: #a0aec0; }
+    .btn-done {
+      padding: 5px 13px; background: #f0fff4;
+      color: #276749; border: 1px solid #9ae6b4;
+      border-radius: 6px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-done:hover { background: #c6f6d5; }
+    details.done .btn-done { background: #38a169; color: #fff; border-color: #38a169; }
+
+    /* ── TABLA DE TRAZA ── */
+    .prueba { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin: 10px 0; }
+    .prueba-title {
+      background: #edf2f7; padding: 7px 13px;
+      font-size: 0.74rem; font-weight: 700;
+      color: #4a5568; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th {
+      background: #f7fafc; padding: 7px 11px; text-align: left;
+      font-weight: 600; color: #4a5568;
+      border-bottom: 1px solid #e2e8f0; font-size: 0.75rem;
+    }
+    td { padding: 6px 10px; border-bottom: 1px solid #f0f4f8; color: #4a5568; }
+    td input[type="text"] {
+      width: 100%; border: none; background: transparent;
+      font-size: 0.82rem; outline: none; color: #2d3748;
+      border-bottom: 1px dashed #cbd5e0; padding: 1px 0;
+    }
+
+    /* ── EXTRA ── */
+    .extra {
+      background: #faf5ff; border-left: 3px solid #9f7aea;
+      border-radius: 0 6px 6px 0; padding: 9px 13px;
+      margin-top: 10px; font-size: 0.84rem; color: #553c9a;
+    }
+    .extra strong { font-size: 0.73rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── REFLEXIÓN ── */
+    .reflexion {
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 10px; padding: 20px; margin-bottom: 18px;
+    }
+    .reflexion h3 { font-size: 0.92rem; font-weight: 600; margin-bottom: 14px; }
+    .ref-item { margin-bottom: 14px; }
+    .ref-item p { font-size: 0.87rem; color: #2d3748; margin-bottom: 5px; line-height: 1.5; }
+    .ref-item textarea { min-height: 65px; }
+
+    /* ── FOOTER ── */
+    .footer {
+      background: #1a1a2e; color: #718096;
+      border-radius: 10px; padding: 14px 20px;
+      font-size: 0.8rem; text-align: center; margin-top: 20px;
+    }
+
+    /* ── DESCRIPCIÓN OFICIAL DEL CASO ── */
+    .caso-oficial {
+      background: #fff;
+      border: 2px solid #4299e1;
+      border-radius: 10px;
+      padding: 22px 26px;
+      margin-bottom: 24px;
+    }
+    .caso-oficial .caso-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px;
+    }
+    .caso-oficial .caso-badge {
+      background: #4299e1; color: #fff;
+      font-size: 0.7rem; font-weight: 700;
+      padding: 3px 11px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      white-space: nowrap;
+    }
+    .caso-oficial h2 {
+      font-size: 1rem; font-weight: 700; color: #1a1a2e; margin: 0;
+    }
+    .caso-oficial .caso-body { font-size: 0.88rem; line-height: 1.75; color: #2d3748; }
+    .caso-oficial .recurso-row {
+      display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 14px;
+    }
+    .caso-oficial .recurso-pill {
+      background: #1a1a2e; color: #e2e8f0;
+      font-size: 0.78rem; font-weight: 600;
+      padding: 4px 14px; border-radius: 20px;
+    }
+    .caso-oficial .proceso-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px; margin-bottom: 14px;
+    }
+    .caso-oficial .proceso-card {
+      border-radius: 8px; padding: 12px 15px;
+      border: 1px solid #e2e8f0;
+    }
+    .caso-oficial .proceso-card.p1 { background: #f0fff4; border-color: #9ae6b4; }
+    .caso-oficial .proceso-card.p2 { background: #ebf8ff; border-color: #90cdf4; }
+    .caso-oficial .proceso-card.p3 { background: #faf5ff; border-color: #d6bcfa; }
+    .caso-oficial .proceso-card h4 {
+      font-size: 0.82rem; font-weight: 700; margin-bottom: 7px; color: #1a1a2e;
+    }
+    .caso-oficial .proceso-card ol {
+      padding-left: 16px; font-size: 0.81rem; line-height: 1.8; color: #4a5568;
+    }
+    .caso-oficial .alerta-deadlock {
+      background: #fff5f5; border-left: 4px solid #fc8181;
+      border-radius: 0 6px 6px 0; padding: 11px 15px;
+      margin-top: 4px; font-size: 0.84rem; color: #742a2a; line-height: 1.75;
+    }
+    .caso-oficial .alerta-deadlock strong {
+      display: block; font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 5px; color: #c53030;
+    }
+    .caso-oficial .caso-footer {
+      margin-top: 13px; font-size: 0.83rem; color: #4a5568;
+      background: #f7fafc; border-radius: 6px; padding: 9px 13px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ENCABEZADO -->
+<div class="page-header">
+  <h1>Analizando sincronización e interbloqueo — Sistemas Operativos</h1>
+  <div class="subtitle">Unidad 2 · Actividad 2 · Tarea guiada · Concurrencia y sincronización</div>
+  <div class="info-grid">
+    <div class="info-box">
+      <label for="n1">Nombre estudiante 1</label>
+      <input type="text" id="n1" placeholder="Tu nombre completo">
+    </div>
+    <div class="info-box">
+      <label for="n2">Nombre estudiante 2 / equipo</label>
+      <input type="text" id="n2" placeholder="Nombre(s) compañero(s)">
+    </div>
+  </div>
+</div>
+
+<!-- ACCIONES -->
+<div class="action-bar">
+  <button class="btn btn-dark" onclick="guardar()">Guardar progreso</button>
+  <button class="btn btn-green" onclick="descargar()">Descargar respuestas (.txt)</button>
+  <button class="btn btn-gray" onclick="reiniciar()">Reiniciar</button>
+  <span class="save-ok" id="saveOk">Guardado ✓</span>
+</div>
+
+<!-- INSTRUCCIONES -->
+<div class="instrucciones">
+  <strong>Instrucciones generales para la tarea</strong>
+  <ul>
+    <li>Lee y resuelve los retos en orden. Cada uno te guía por las partes de la tarea oficial: sección crítica, exclusión mutua, interbloqueo, inanición y propuesta de solución.</li>
+    <li>Escribe tus análisis, tablas de eventos y pseudocódigo directamente en las cajas de texto. El progreso se <strong>guarda automáticamente</strong> en este navegador.</li>
+    <li>Si te quedas bloqueado, explica en qué paso te quedaste y qué duda tienes; eso también evidencia tu razonamiento.</li>
+    <li>Al finalizar, haz clic en <strong>"Descargar respuestas"</strong> y sube el archivo generado a Classroom como insumo para tu informe en PDF.</li>
+  </ul>
+</div>
+
+<!-- PROGRESO -->
+<div class="progress-wrap">
+  <div class="progress-label">Progreso</div>
+  <div class="dots" id="dots"></div>
+</div>
+
+<!-- ═══════════ DESCRIPCIÓN OFICIAL DEL CASO ═══════════ -->
+<div class="caso-oficial">
+  <div class="caso-header">
+    <span class="caso-badge">📋 Descripción oficial</span>
+    <h2>Sistema de facturación — 3 procesos concurrentes, 2 recursos compartidos</h2>
+  </div>
+  <div class="caso-body">
+    <p>Una empresa pequeña tiene un sistema de facturación que ejecuta <strong>tres procesos de forma concurrente</strong>.
+    Todos compiten por dos recursos que solo admiten <strong>uso exclusivo</strong> (un proceso a la vez):</p>
+    <div class="recurso-row">
+      <span class="recurso-pill">R1 — Archivo A (registros.db)</span>
+      <span class="recurso-pill">R2 — Impresora de red</span>
+    </div>
+    <div class="proceso-grid">
+      <div class="proceso-card p1">
+        <h4>P1 — Facturador</h4>
+        <ol>
+          <li>Adquiere el <strong>Archivo A</strong> (lee las ventas del día).</li>
+          <li>Procesa y formatea la factura internamente.</li>
+          <li>Solicita la <strong>Impresora</strong> para imprimir la factura.</li>
+          <li>Imprime y <em>libera la Impresora</em>.</li>
+          <li>Cierra y <em>libera el Archivo A</em>.</li>
+        </ol>
+      </div>
+      <div class="proceso-card p2">
+        <h4>P2 — Auditor</h4>
+        <ol>
+          <li>Adquiere la <strong>Impresora</strong> (imprime la portada del informe).</li>
+          <li>Solicita el <strong>Archivo A</strong> para escribir el registro de auditoría.</li>
+          <li>Lee y escribe los datos de auditoría.</li>
+          <li><em>Libera el Archivo A</em>.</li>
+          <li><em>Libera la Impresora</em>.</li>
+        </ol>
+      </div>
+      <div class="proceso-card p3">
+        <h4>P3 — Respaldo</h4>
+        <ol>
+          <li>Espera hasta que el <strong>Archivo A</strong> quede libre.</li>
+          <li>Lo adquiere y copia los registros a un archivo de respaldo.</li>
+          <li><em>Libera el Archivo A</em>.</li>
+        </ol>
+        <p style="font-size:0.76rem;color:#6b46c1;margin-top:7px;">No usa la Impresora, pero puede sufrir <strong>inanición</strong> si P1 y P2 la monopolizan indefinidamente.</p>
+      </div>
+    </div>
+    <div class="alerta-deadlock">
+      <strong>⚠ Secuencia problemática — posible interbloqueo</strong>
+      El SO intercala los procesos así:<br>
+      1. <em>P1</em> adquiere <strong>Archivo A</strong> → continúa procesando.<br>
+      2. <em>P2</em> adquiere <strong>Impresora</strong> → imprime portada.<br>
+      3. <em>P1</em> solicita la <strong>Impresora</strong> → <strong>bloqueado</strong> (P2 la tiene).<br>
+      4. <em>P2</em> solicita el <strong>Archivo A</strong> → <strong>bloqueado</strong> (P1 lo tiene).<br>
+      En este punto ninguno puede avanzar: hay <strong>espera circular</strong>. Además,
+      P3 nunca obtiene el Archivo A mientras dura el bloqueo → <strong>riesgo de inanición</strong>.
+    </div>
+    <p class="caso-footer">
+      <strong>Trabaja sobre este escenario en todos los retos.</strong>
+      Cada reto te guía para analizarlo (Reto 1), identificar las secciones críticas (Reto 2),
+      construir la traza y detectar el interbloqueo (Reto 3), y proponer una solución
+      con ordenamiento de recursos (Reto 4) y semáforos (Reto 5).
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════ SECCIÓN 1 ═══════════ -->
+<div class="section-title">Sección 1 — Entendiendo el escenario de concurrencia</div>
+
+<details id="d1">
+  <summary>
+    <div class="num n1">1</div>
+    <div class="meta">
+      <h3>Reescribiendo el caso con tus palabras</h3>
+      <div class="tags">
+        <span class="tag t-tema">Concurrencia</span>
+        <span class="tag t-tema">Procesos / Hilos</span>
+        <span class="tag t-time">⏱ 10–15 min</span>
+        <span class="tag t-bas">Base conceptual</span>
+      </div>
+    </div>
+    <span class="chk">✓</span>
+    <span class="arrow">▼</span>
+  </summary>
+  <div class="body">
+    <div class="enunciado">
+      Ya tienes el caso oficial (bloque azul arriba). La primera tarea es que lo <em>interiorices</em>
+      con tus propias palabras: qué hace cada proceso (<strong>P1 Facturador</strong>, <strong>P2 Auditor</strong>,
+      <strong>P3 Respaldo</strong>), en qué orden usan el <strong>Archivo A</strong> y la <strong>Impresora</strong>,
+      y por qué esa combinación puede ser problemática.
+    </div>
+    <div class="cond">
+      <p>Lo que debes hacer</p>
+      <ul>
+        <li>Escribe una versión resumida del caso en máximo 8–10 líneas, usando tus propias palabras.</li>
+        <li>Da nombres útiles a los procesos (por ejemplo, <code>Plectura</code>, <code>Pescritura</code>, <code>Pimpresión</code>).</li>
+        <li>Enumera explícitamente qué recursos comparte cada proceso (p. ej. “P1 usa Archivo A y luego Impresora”).</li>
+      </ul>
+    </div>
+    <span class="resp-label">Tu resumen del escenario de concurrencia</span>
+    <textarea id="r1" placeholder="Describe aquí el caso: qué procesos hay, qué hace cada uno y qué recursos usan..." oninput="ta(1)"></textarea>
+    <div class="ta-footer">
+      <span class="cc" id="cc1">0 caracteres</span>
+      <button class="btn-done" onclick="marcar(1)">Marcar completado</button>
+    </div>
+    <div class="extra">
+      <strong>★ Tip</strong> — Imagina que estás explicándole el caso a alguien que nunca ha visto concurrencia.  
+      Si entiende qué hace cada proceso y qué recursos se comparten, el resumen está bien.
+    </div>
+  </div>
+</details>
+
+<!-- ═══════════ SECCIÓN 2 ═══════════ -->
+<div class="section-title">Sección 2 — Sección crítica y exclusión mutua</div>
+
+<details id="d2">
+  <summary>
+    <div class="num n1">2</div>
+    <div class="meta">
+      <h3>Identificando la sección crítica</h3>
+      <div class="tags">
+        <span class="tag t-tema">Sección crítica</span>
+        <span class="tag t-tema">Exclusión mutua</span>
+        <span class="tag t-time">⏱ 15–20 min</span>
+        <span class="tag t-med">Medio</span>
+      </div>
+    </div>
+    <span class="chk">✓</span>
+    <span class="arrow">▼</span>
+  </summary>
+  <div class="body">
+    <div class="enunciado">
+      La tarea te pide <em>"identificar la sección crítica"</em> y <em>"definir qué significa exclusión mutua en el caso"</em>.
+      Aplícalo al escenario oficial: detecta los fragmentos de los procesos P1, P2 y P3 donde acceden
+      de forma exclusiva al <strong>Archivo A</strong> o a la <strong>Impresora</strong>.
+    </div>
+
+    <div class="cond">
+      <p>Paso 1 — Marca la sección crítica</p>
+      <ul>
+        <li>Escribe un pseudocódigo breve de cada proceso, con énfasis en las partes donde entra a recursos compartidos.</li>
+        <li>Usa comentarios para marcar las posibles secciones críticas (por ejemplo, <code>// INICIO sección crítica</code> ... <code>// FIN sección crítica</code>).</li>
+      </ul>
+    </div>
+
+    <span class="resp-label">Pseudocódigo de procesos con secciones críticas marcadas</span>
+    <textarea id="r2" placeholder="Ejemplo:&#10;Proceso P1:&#10;   // trabajo local&#10;   // INICIO sección crítica (usa Archivo A)&#10;   ...&#10;   // FIN sección crítica&#10;..." oninput="ta(2)"></textarea>
+    <div class="ta-footer">
+      <span class="cc" id="cc2">0 caracteres</span>
+      <button class="btn-done" onclick="marcar(2)">Marcar completado</button>
+    </div>
+
+    <div class="cond">
+      <p>Paso 2 — Define exclusión mutua en tu caso</p>
+      <ul>
+        <li>Explica con tus palabras qué significaría <strong>violación de exclusión mutua</strong> en este escenario.</li>
+        <li>Describe al menos un problema concreto que ocurriría (datos inconsistentes, sobrescrituras, impresión corrupta, etc.).</li>
+      </ul>
+    </div>
+
+    <span class="resp-label">Definición de exclusión mutua en este escenario</span>
+    <textarea id="r2b" placeholder="Aquí explica qué significa exclusión mutua para tus procesos y recursos..." oninput="guardarAuto()"></textarea>
+
+    <div class="extra">
+      <strong>★ Extra</strong> — Intenta diferenciar entre “región crítica por datos” (variables compartidas) y “región crítica por dispositivo”
+      (como la impresora física que sólo puede usar un proceso a la vez).
+    </div>
+  </div>
+</details>
+
+<!-- ═══════════ SECCIÓN 3 ═══════════ -->
+<div class="section-title">Sección 3 — Traza de eventos, interbloqueo e inanición</div>
+
+<details id="d3">
+  <summary>
+    <div class="num n2">3</div>
+    <div class="meta">
+      <h3>Construyendo una traza de pasos y detectando interbloqueo</h3>
+      <div class="tags">
+        <span class="tag t-tema">Interbloqueo</span>
+        <span class="tag t-tema">Inanición</span>
+        <span class="tag t-time">⏱ 25–30 min</span>
+        <span class="tag t-med">Medio</span>
+      </div>
+    </div>
+    <span class="chk">✓</span>
+    <span class="arrow">▼</span>
+  </summary>
+  <div class="body">
+    <div class="enunciado">
+      La tarea te pide <em>"determinar si aparece interbloqueo o riesgo de inanición, y justificar la respuesta
+      usando una traza de pasos"</em>. Usa la secuencia problemática descrita en la descripción oficial
+      (pasos 1–4 del bloque rojo) para completar la tabla: registra cada acción de P1, P2 y P3,
+      qué recursos posee cada uno después de cada paso y en qué estado queda.
+    </div>
+
+    <div class="prueba">
+      <div class="prueba-title">Traza de eventos — completa según tu caso</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Paso</th>
+            <th>Proceso / Hilo</th>
+            <th>Acción sobre recurso</th>
+            <th>Recursos que posee tras la acción</th>
+            <th>Estado del proceso</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><input type="text" id="t1p" placeholder="P1" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t1a" placeholder="Solicita Archivo A" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t1r" placeholder="Archivo A" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t1e" placeholder="Ejecutando" oninput="guardarAuto()"></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><input type="text" id="t2p" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t2a" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t2r" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t2e" oninput="guardarAuto()"></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><input type="text" id="t3p" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t3a" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t3r" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t3e" oninput="guardarAuto()"></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><input type="text" id="t4p" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t4a" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t4r" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t4e" oninput="guardarAuto()"></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><input type="text" id="t5p" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t5a" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t5r" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t5e" oninput="guardarAuto()"></td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td><input type="text" id="t6p" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t6a" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t6r" oninput="guardarAuto()"></td>
+            <td><input type="text" id="t6e" oninput="guardarAuto()"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cond">
+      <p>Paso 1 — Diseña una traza con interbloqueo o riesgo claro</p>
+      <ul>
+        <li>Usa la tabla para describir una posible secuencia de ejecución.</li>
+        <li>Incluye al menos un punto donde un proceso quede esperando por un recurso que otro proceso ya tiene.</li>
+        <li>Procura que quede claro qué recursos posee cada proceso en cada paso.</li>
+      </ul>
+    </div>
+
+    <span class="resp-label">Explica dónde aparece el interbloqueo o la inanición</span>
+    <textarea id="r3" placeholder="Indica en qué paso(s) se produce el interbloqueo o el riesgo de inanición y por qué..." oninput="ta(3)"></textarea>
+    <div class="ta-footer">
+      <span class="cc" id="cc3">0 caracteres</span>
+      <button class="btn-done" onclick="marcar(3)">Marcar completado</button>
+    </div>
+
+    <div class="extra">
+      <strong>★ Extra</strong> — Si conoces el grafo de asignación de recursos, describe verbalmente cómo sería:
+      qué nodos representarían procesos, qué nodos representarían recursos y qué ciclos identificarías.
+    </div>
+  </div>
+</details>
+
+<!-- ═══════════ SECCIÓN 4 ═══════════ -->
+<div class="section-title">Sección 4 — Propuesta de solución: ordenamiento y semáforos</div>
+
+<details id="d4">
+  <summary>
+    <div class="num n3">4</div>
+    <div class="meta">
+      <h3>Reglas de ordenamiento de recursos y buenas prácticas</h3>
+      <div class="tags">
+        <span class="tag t-tema">Prevención de interbloqueo</span>
+        <span class="tag t-time">⏱ 15–20 min</span>
+        <span class="tag t-med">Medio</span>
+      </div>
+    </div>
+    <span class="chk">✓</span>
+    <span class="arrow">▼</span>
+  </summary>
+  <div class="body">
+    <div class="enunciado">
+      En el nivel base de la tarea se espera que propongas una solución en términos de
+      <strong>reglas de ordenamiento de recursos y buenas prácticas</strong>.
+      Para el caso oficial, la pregunta clave es: ¿deberían P1, P2 y P3 pedir siempre primero
+      el <strong>Archivo A</strong> y luego la <strong>Impresora</strong>, o viceversa?
+      Explica por qué ese orden rompe la espera circular que ocurre entre P1 y P2.
+    </div>
+
+    <div class="cond">
+      <p>Reglas de ordenamiento y buenas prácticas</p>
+      <ul>
+        <li>Define un orden global de recursos (ejemplo: <em>Archivo A &lt; Impresora</em>).</li>
+        <li>Explica cómo cada proceso debe seguir ese orden para evitar ciclos de espera circular.</li>
+        <li>Menciona al menos dos buenas prácticas adicionales (tiempos de espera, liberación ordenada, evitar secciones críticas demasiado largas, etc.).</li>
+      </ul>
+    </div>
+
+    <span class="resp-label">Tus reglas de ordenamiento y buenas prácticas</span>
+    <textarea id="r4" placeholder="Escribe aquí el orden global de recursos y las buenas prácticas que propones..." oninput="ta(4)"></textarea>
+    <div class="ta-footer">
+      <span class="cc" id="cc4">0 caracteres</span>
+      <button class="btn-done" onclick="marcar(4)">Marcar completado</button>
+    </div>
+
+    <div class="extra">
+      <strong>★ Extra</strong> — Indica a qué condiciones clásicas de interbloqueo (mutua exclusión, retención y espera,
+      no expropiación, espera circular) afecta tu propuesta.
+    </div>
+  </div>
+</details>
+
+<details id="d5">
+  <summary>
+    <div class="num n4">5</div>
+    <div class="meta">
+      <h3>Pseudocódigo con semáforos o monitores (nivel extendido)</h3>
+      <div class="tags">
+        <span class="tag t-tema">Semáforos / Monitores</span>
+        <span class="tag t-time">⏱ 30–35 min</span>
+        <span class="tag t-adv">Avanzado</span>
+      </div>
+    </div>
+    <span class="chk">✓</span>
+    <span class="arrow">▼</span>
+  </summary>
+  <div class="body">
+    <div class="enunciado">
+      El nivel extendido de la tarea solicita que propongas una solución en pseudocódigo usando
+      <strong>semáforos o monitores</strong> para garantizar exclusión mutua y eliminar el interbloqueo.
+      Adapta el esqueleto de abajo al caso oficial: declara semáforos para el
+      <strong>Archivo A</strong> y la <strong>Impresora</strong>, y escribe el código de P1, P2 y P3
+      respetando el orden global que definiste en el Reto 4.
+    </div>
+
+    <div class="code-block"><span class="cm">// Ejemplo de estructura con semáforos (adáptalo a tu caso)</span>
+semaforo mutexArchivoA = 1
+semaforo mutexImpresora = 1
+
+Proceso P1() {
+    while (true) {
+        // trabajo no crítico
+        ...
+
+        // Orden propuesto: primero Archivo A, luego Impresora
+        wait(mutexArchivoA)
+        // sección crítica sobre Archivo A
+        ...
+        wait(mutexImpresora)
+        // sección crítica que usa Archivo A + Impresora
+        ...
+        signal(mutexImpresora)
+        signal(mutexArchivoA)
+    }
+}
+
+Proceso P2() {
+    while (true) {
+        // trabajo no crítico
+        ...
+
+        // Sigues el mismo orden global de recursos
+        wait(mutexArchivoA)
+        ...
+        wait(mutexImpresora)
+        ...
+        signal(mutexImpresora)
+        signal(mutexArchivoA)
+    }
+}</div>
+
+    <div class="cond">
+      <p>Qué se espera en tu pseudocódigo</p>
+      <ul>
+        <li>Declara claramente los semáforos o primitivas de sincronización que vas a usar.</li>
+        <li>Muestra en qué punto del pseudocódigo se entra a la sección crítica y dónde se sale.</li>
+        <li>Respeta el ordenamiento global de recursos que definiste en el reto anterior.</li>
+        <li>Agrega comentarios breves justificando por qué tu diseño evita (o reduce significativamente) la posibilidad de interbloqueo.</li>
+      </ul>
+    </div>
+
+    <span class="resp-label">Tu pseudocódigo con semáforos / monitores</span>
+    <textarea id="r5" placeholder="Escribe aquí tu pseudocódigo adaptado a tu caso concreto..." oninput="ta(5)"></textarea>
+    <div class="ta-footer">
+      <span class="cc" id="cc5">0 caracteres</span>
+      <button class="btn-done" onclick="marcar(5)">Marcar completado</button>
+    </div>
+
+    <div class="extra">
+      <strong>★ Extra</strong> — Si quieres ir más allá, intenta modelar la sección crítica con un monitor con condición de espera para la Impresora,
+      o añade un contador de intentos para detectar inanición potencial.
+    </div>
+  </div>
+</details>
+
+<!-- ═══════════ REFLEXIÓN ═══════════ -->
+<div class="section-title">Reflexión final · 10 minutos</div>
+
+<div class="reflexion">
+  <h3>Conecta la tarea con sistemas reales</h3>
+  <div class="ref-item">
+    <p>1. Describe un ejemplo de la vida real (fuera del aula) donde dos o más “procesos” compitan por recursos limitados y pueda ocurrir interbloqueo.</p>
+    <textarea id="rf1" placeholder="Ejemplo: transacciones en base de datos, impresoras compartidas, cajeros automáticos, etc." oninput="guardarAuto()"></textarea>
+  </div>
+  <div class="ref-item">
+    <p>2. ¿En qué parte concreta de tu diseño (reglas o semáforos) consideras que se reduce más el riesgo de interbloqueo? Justifica.</p>
+    <textarea id="rf2" placeholder="Explica qué elemento de tu solución es clave para romper la espera circular o la inanición..." oninput="guardarAuto()"></textarea>
+  </div>
+  <div class="ref-item">
+    <p>3. ¿Qué concepto sientes que aún no dominas bien: exclusión mutua, interbloqueo, inanición o semáforos? ¿Qué pregunta puntual harías en clase?</p>
+    <textarea id="rf3" placeholder="Tu respuesta..." oninput="guardarAuto()"></textarea>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="btn btn-dark" onclick="guardar()">Guardar progreso</button>
+  <button class="btn btn-green" onclick="descargar()">Descargar respuestas (.txt)</button>
+</div>
+
+<div class="footer">
+  Sistemas Operativos · Unidad 2 · Actividad 2 — Analizando sincronización e interbloqueo &nbsp;|&nbsp;
+  Descarga tu archivo y súbelo a Classroom junto con el informe en PDF de tu equipo.
+</div>
+
+<script>
+const SK = 'so_u2_sync_interbloqueo';
+const N = 5;
+
+const TITULOS = [
+  '',
+  'Reescribiendo el caso de concurrencia',
+  'Identificando la sección crítica',
+  'Traza de eventos e (posible) interbloqueo',
+  'Reglas de ordenamiento y buenas prácticas',
+  'Pseudocódigo con semáforos / monitores'
+];
+
+// Progreso
+function renderDots() {
+  const c = document.getElementById('dots');
+  c.innerHTML = '';
+  for (let i = 1; i <= N; i++) {
+    const d = document.getElementById('d' + i);
+    const done = d && d.classList.contains('done');
+    const el = document.createElement('a');
+    el.className = 'dot' + (done ? ' done' : '');
+    el.textContent = i;
+    el.href = '#d' + i;
+    c.appendChild(el);
+  }
+}
+
+// Actualizar contador de textarea
+function ta(n) {
+  const el = document.getElementById('r' + n);
+  const cc = document.getElementById('cc' + n);
+  if (el && cc) cc.textContent = el.value.length + ' caracteres';
+  guardarAuto();
+}
+
+// Marcar reto completo
+function marcar(n) {
+  const d = document.getElementById('d' + n);
+  d.classList.toggle('done');
+  guardar();
+  renderDots();
+}
+
+// Auto-guardar con debounce
+let _t;
+function guardarAuto() {
+  clearTimeout(_t);
+  _t = setTimeout(guardar, 1500);
+}
+
+function guardar() {
+  const data = {
+    n1: val('n1'),
+    n2: val('n2'),
+    r: {},
+    rf: {},
+    trace: {},
+    done: [],
+    open: []
+  };
+  for (let i = 1; i <= N; i++) {
+    data.r['r'+i] = val('r'+i);
+    const d = document.getElementById('d'+i);
+    if (d && d.classList.contains('done')) data.done.push(i);
+    if (d && d.open) data.open.push(i);
+  }
+  // campos adicionales (r2b, reflexión, traza)
+  data.r['r2b'] = val('r2b');
+  for (let i = 1; i <= 3; i++) data.rf['rf'+i] = val('rf'+i);
+  ['t1p','t1a','t1r','t1e','t2p','t2a','t2r','t2e',
+   't3p','t3a','t3r','t3e','t4p','t4a','t4r','t4e',
+   't5p','t5a','t5r','t5e','t6p','t6a','t6r','t6e'
+  ].forEach(id => { data.trace[id] = val(id); });
+
+  localStorage.setItem(SK, JSON.stringify(data));
+  const ok = document.getElementById('saveOk');
+  ok.style.display = 'inline';
+  setTimeout(() => ok.style.display = 'none', 2000);
+}
+
+function cargar() {
+  const raw = localStorage.getItem(SK);
+  if (!raw) return;
+  try {
+    const d = JSON.parse(raw);
+    set('n1', d.n1);
+    set('n2', d.n2);
+    for (let i = 1; i <= N; i++) {
+      set('r'+i, d.r && d.r['r'+i]);
+      const cc = document.getElementById('cc'+i);
+      const ta = document.getElementById('r'+i);
+      if (cc && ta) cc.textContent = ta.value.length + ' caracteres';
+    }
+    set('r2b', d.r && d.r['r2b']);
+    if (d.rf) {
+      for (let i = 1; i <= 3; i++) set('rf'+i, d.rf['rf'+i]);
+    }
+    if (d.trace) {
+      Object.keys(d.trace).forEach(id => set(id, d.trace[id]));
+    }
+    if (d.done) d.done.forEach(n => {
+      const el = document.getElementById('d'+n);
+      if (el) el.classList.add('done');
+    });
+    if (d.open) d.open.forEach(n => {
+      const el = document.getElementById('d'+n);
+      if (el) el.open = true;
+    });
+  } catch(e) {}
+}
+
+function val(id) { const e = document.getElementById(id); return e ? e.value : ''; }
+function set(id, v) { const e = document.getElementById(id); if (e && typeof v === 'string') e.value = v; }
+
+function descargar() {
+  guardar();
+  const nom = val('n1') || '(sin nombre)';
+  const nom2 = val('n2');
+  const fecha = new Date().toLocaleString('es-CO');
+  let txt = '';
+  txt += '==========================================' + '\n';
+  txt += '  TAREA - SISTEMAS OPERATIVOS   Unidad 2 - Actividad 2' + '\n';
+  txt += '  Analizando sincronizacion e interbloqueo en un escenario de concurrencia' + '\n';
+  txt += '==========================================' + '\n';
+  txt += 'Estudiante 1: ' + nom + '\n';
+  if (nom2) txt += 'Estudiante 2 / equipo: ' + nom2 + '\n';
+  txt += 'Fecha: ' + fecha + '\n\n';
+
+  for (let i = 1; i <= N; i++) {
+    const d = document.getElementById('d'+i);
+    const estado = d && d.classList.contains('done') ? '[COMPLETADO]' : '[en progreso]';
+    txt += '------------------------------------------' + '\n';
+    txt += 'RETO ' + i + ': ' + TITULOS[i] + ' ' + estado + '\n';
+    txt += '------------------------------------------' + '\n';
+    if (i === 2) {
+      txt += 'Definicion de exclusion mutua en el caso:' + '\n';
+      txt += (val('r2b') || '(sin respuesta)') + '\n\n';
+    }
+    txt += 'Respuesta principal:' + '\n';
+    txt += (val('r'+i) || '(sin respuesta)') + '\n\n';
+    if (i === 3) {
+      txt += 'Traza de eventos:' + '\n';
+      const pasos = [1,2,3,4,5,6];
+      pasos.forEach(n => {
+        txt += ' Paso ' + n + ': ';
+        txt += 'P=' + (val('t'+n+'p')||'-') + ', ';
+        txt += 'Accion=' + (val('t'+n+'a')||'-') + ', ';
+        txt += 'Posee=' + (val('t'+n+'r')||'-') + ', ';
+        txt += 'Estado=' + (val('t'+n+'e')||'-') + '\n';
+      });
+      txt += '\n';
+    }
+  }
+
+  txt += '==========================================' + '\n';
+  txt += 'REFLEXION' + '\n';
+  txt += '==========================================' + '\n';
+  const pregs = [
+    '1. Ejemplo real de interbloqueo: ',
+    '2. Parte de tu diseno que mas reduce el riesgo de interbloqueo: ',
+    '3. Concepto que aun no dominas bien y pregunta para clase: '
+  ];
+  for (let i = 1; i <= 3; i++) {
+    txt += pregs[i-1] + (val('rf'+i) || '(sin respuesta)') + '\n\n';
+  }
+
+  const blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tarea_concurrencia_' + nom.replace(/\s+/g,'_') + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function reiniciar() {
+  if (!confirm('¿Borrar todo el progreso guardado?')) return;
+  localStorage.removeItem(SK);
+  location.reload();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  cargar();
+  renderDots();
+  const d1 = document.getElementById('d1');
+  if (d1) d1.open = true;
+});
+</script>
+</body>
+</html>
