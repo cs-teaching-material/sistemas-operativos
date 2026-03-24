@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 13: Estrategias de Asignación de Espacio y Estructura de Directorios</title>
+
+  <style>
+    :root{
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:#ffffff;
+    }
+
+    .deck{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(10px, 2vw, 22px);
+      box-sizing:border-box;
+      background:#ffffff;
+    }
+
+    .stage{
+      width:min(96vw, calc(92vh * (16/9)));
+      aspect-ratio:16/9;
+      position:relative;
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:none;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .slide.active{ display:block; }
+
+    .slide.cover{
+      background:url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+    .slide.content-slide{
+      background:
+        url("./Contenido.png") top left/contain no-repeat,
+        #ffffff;
+      color:var(--texto);
+    }
+
+    .inner{
+      height:100%;
+      box-sizing:border-box;
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 18px);
+    }
+    .cover .inner{
+      padding:
+        var(--safe-top-cover)
+        var(--safe-right-cover)
+        var(--safe-bottom-cover)
+        var(--safe-left-cover);
+    }
+
+    .content{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 16px);
+      min-height:0;
+    }
+
+    .header{
+      color:var(--azul-medio);
+      font-size:clamp(18px, 1.6vw, 22px);
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    h1{
+      margin:0;
+      font-size:var(--h1);
+      line-height:1.08;
+      color:var(--texto);
+    }
+    h2{
+      margin:0;
+      font-size:var(--h2);
+      line-height:1.15;
+      color:var(--azul-medio);
+    }
+
+    p{
+      margin:0;
+      font-size:var(--p);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    li{
+      font-size:var(--li);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    ul,ol{ margin:0; padding-left:1.2em; }
+
+    .subtitle{
+      color:var(--turquesa);
+      font-weight:800;
+      font-size:clamp(18px, 1.8vw, 24px);
+      margin-top:clamp(6px, 1vw, 10px);
+    }
+
+    .cover h1{ color:#ffffff; }
+    .cover p{ color:#e5edf8; }
+    .cover .subtitle{ color:#f7df00; }
+
+    .note{
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+    }
+
+    .callout{
+      background:rgba(255,255,255,0.94);
+      border-left:6px solid var(--turquesa);
+      padding:clamp(10px, 1.1vw, 14px);
+      border-radius:6px;
+    }
+
+    .two-col{
+      display:grid;
+      grid-template-columns:1.15fr 0.9fr;
+      gap:clamp(12px, 1.6vw, 22px);
+      align-items:flex-start;
+      min-height:0;
+    }
+    @media(max-width:980px){
+      .two-col{ grid-template-columns:1fr; }
+    }
+
+    .card{
+      background:rgba(255,255,255,0.96);
+      border:1px solid #dde2f1;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+    }
+
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+      background:#0b1020;
+      color:#e5e7eb;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+      overflow:auto;
+      max-height:44vh;
+      border:1px solid rgba(17,24,39,.25);
+      white-space:pre-wrap;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:rgba(255,255,255,0.96);
+    }
+    th,td{
+      border:1px solid #dde2f1;
+      padding:clamp(8px, 1vw, 12px);
+      font-size:clamp(14px, 1.2vw, 18px);
+      color:var(--texto);
+      vertical-align:top;
+    }
+    th{
+      background:#f3f6fb;
+      text-transform:uppercase;
+      font-size:clamp(12px, 1.1vw, 14px);
+      letter-spacing:.06em;
+      color:var(--azul-medio);
+    }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      gap:14px;
+    }
+
+    .counter{
+      font-weight:800;
+      color:var(--azul-medio);
+    }
+    .cover .counter{ color:#e5edf8; }
+
+    .touch-nav{
+      position:absolute;
+      top:50%;
+      left:0;
+      right:0;
+      transform:translateY(-50%);
+      display:flex;
+      justify-content:space-between;
+      padding:0 12px;
+      pointer-events:none;
+      z-index:10;
+    }
+    .touch-nav button{
+      pointer-events:auto;
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      padding:0;
+      border:1px solid rgba(221,226,241,0.95);
+      background:rgba(255,255,255,0.92);
+      color:var(--texto);
+      font-weight:900;
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <!-- SLIDE 1: PORTADA -->
+    <section class="slide cover active" data-title="Portada">
+      <div class="inner">
+        <div class="content">
+          <span class="header">Sistemas Operativos</span>
+          <h1>Sesión 13 · Estrategias de Asignación de Espacio y Estructura de Directorios</h1>
+          <div class="subtitle">
+            De la “carpeta llena” a entender cómo el SO reparte el disco.
+          </div>
+          <div class="callout" style="max-width: 72%; margin-top:clamp(14px,1.8vw,22px);">
+            <p>
+              Hoy estudiamos cómo el sistema operativo asigna bloques de disco a los archivos:
+              asignación contigua, enlazada e indexada, y qué efectos tienen en el tiempo de búsqueda,
+              la fragmentación y la eficiencia general de E/S.
+            </p>
+          </div>
+          <p class="note" style="margin-top:auto;">
+            Navegación:
+            <span class="kbd">←</span> <span class="kbd">→</span> para cambiar de diapositiva,
+            <span class="kbd">Home</span> / <span class="kbd">End</span> para ir al inicio/fin,
+            <span class="kbd">F</span> pantalla completa.
+          </p>
+        </div>
+        <div class="footer">
+          <span style="color:#e5edf8;">I.U. Pascual Bravo · Sistemas Operativos</span>
+          <span class="counter" style="color:#e5edf8;">1 / 8</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Marco conceptual -->
+    <section class="slide content-slide" data-title="MarcoConceptual">
+      <div class="inner">
+        <div class="header">Marco conceptual y lenguaje común</div>
+        <div class="content">
+          <h2>Términos mínimos para analizar asignación de espacio</h2>
+          <ul>
+            <li><strong>Bloque (o cluster):</strong> unidad mínima de asignación en disco. Si el bloque es de 4 KB, un archivo de 1 KB igual ocupa 1 bloque completo.</li>
+            <li><strong>Fragmentación interna:</strong> espacio desperdiciado dentro del último bloque asignado a un archivo.</li>
+            <li><strong>Fragmentación externa:</strong> espacio libre total suficiente, pero dividido en huecos pequeños no contiguos.</li>
+            <li><strong>Acceso secuencial:</strong> lectura de bloques en orden; clave en archivos de video, logs y copias de respaldo.</li>
+            <li><strong>Acceso aleatorio:</strong> lectura de posiciones salteadas; clave en bases de datos e índices.</li>
+            <li><strong>Tiempo de acceso a disco (modelo simplificado):</strong> suma de posicionamiento del cabezal, espera de giro y transferencia de datos.</li>
+          </ul>
+          <pre class="code">T_acceso ≈ T_busqueda + T_latencia + T_transferencia
+
+Interpretación didáctica:
+- T_busqueda (seek): mover cabezal a la pista correcta.
+- T_latencia: esperar a que el sector deseado pase bajo el cabezal.
+- T_transferencia: tiempo efectivo de lectura/escritura de bytes.</pre>
+          <div class="callout">
+            <p>
+              Resultado esperado: al finalizar, podrás justificar con criterio técnico y con cálculos básicos
+              por qué una estrategia de asignación mejora o degrada el rendimiento según el patrón de acceso,
+              el crecimiento del archivo y la ocupación del disco.
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Sesión 13 · Base conceptual para el análisis</span>
+          <span class="counter">2 / 8</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: Puente con Sesión 12 -->
+    <section class="slide content-slide" data-title="Puente">
+      <div class="inner">
+        <div class="header">Puente desde conceptos de archivos</div>
+        <div class="content two-col">
+          <div>
+            <h2>De “qué es un archivo” a “dónde vive en el disco”</h2>
+            <ul>
+              <li>En la Sesión 12 definimos archivo, atributos, tipos y directorios.</li>
+              <li>Sabemos que los datos se guardan en bloques o clusters de un dispositivo físico.</li>
+              <li>Falta responder: ¿cómo decide el SO qué bloques usar y en qué orden?</li>
+              <li>También falta responder: ¿cómo influye la estructura de directorios en la localización y administración de esos archivos?</li>
+            </ul>
+            <div class="callout">
+              <p>
+                Idea clave: diferentes estrategias de asignación producen patrones distintos de acceso
+                al disco, lo que cambia el tiempo de búsqueda (seek time) y el rendimiento de E/S.
+              </p>
+            </div>
+          </div>
+          <div class="card">
+            <p><strong>Estructura de directorios: por qué importa aquí</strong></p>
+            <ul>
+              <li>Un directorio no es una carpeta "mágica": es una estructura de datos que mapea nombre de archivo a metadatos.</li>
+              <li>Si la búsqueda en directorios es costosa, el sistema tarda más en llegar al primer bloque del archivo.</li>
+              <li>Una jerarquía profunda sin buena indexación aumenta accesos de metadatos antes de la lectura real de datos.</li>
+              <li>Conclusión: rendimiento final = costo de navegar directorios + costo de ubicar y leer bloques.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Puente conceptual · De lógica a física</span>
+          <span class="counter">3 / 8</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Asignación contigua -->
+    <section class="slide content-slide" data-title="Contigua">
+      <div class="inner">
+        <div class="header">Método 1 · Asignación contigua</div>
+        <div class="content two-col">
+          <div>
+            <h2>Definición e idea básica</h2>
+            <ul>
+              <li>El archivo se almacena en bloques consecutivos del disco.</li>
+              <li>La tabla de archivos guarda posición inicial y longitud (número de bloques).</li>
+              <li>Muy eficiente para lecturas secuenciales: una sola búsqueda inicial y luego lectura continua.</li>
+            </ul>
+            <div class="callout">
+              <p>
+                Ventaja fuerte: acceso aleatorio sencillo, porque el bloque <em>i</em> se calcula como
+                <code>direccion = inicio + i</code> en términos de bloques lógicos.
+              </p>
+            </div>
+            <pre class="code">Ejemplo rápido (bloques de 4 KB):
+Archivo A = 40 KB → 10 bloques.
+Si inicio = bloque 120, entonces A[0] está en 120 y A[9] en 129.
+
+Acceso al bloque i:
+direccion(i) = 120 + i</pre>
+          </div>
+          <div class="card">
+            <p><strong>Problemas típicos</strong></p>
+            <ul>
+              <li>Fragmentación externa: difícil encontrar huecos grandes contiguos para archivos que crecen.</li>
+              <li>Requiere conocer o estimar el tamaño máximo del archivo al crearlo.</li>
+              <li>Costoso mover archivos grandes solo para “compactar” el disco.</li>
+            </ul>
+            <p class="note" style="margin-top:8px;">
+              Si hay huecos libres de 6, 8 y 12 bloques, un archivo nuevo de 20 bloques no cabe en forma contigua,
+              aunque el espacio libre total sea 26 bloques. Este es el efecto clásico de fragmentación externa.
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Asignación contigua · Eficiencia vs fragmentación</span>
+          <span class="counter">4 / 8</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: Asignación enlazada -->
+    <section class="slide content-slide" data-title="Enlazada">
+      <div class="inner">
+        <div class="header">Método 2 · Asignación enlazada</div>
+        <div class="content two-col">
+          <div>
+            <h2>Definición e idea básica</h2>
+            <ul>
+              <li>Cada archivo es una lista enlazada de bloques dispersos en el disco.</li>
+              <li>Cada bloque contiene un puntero al siguiente bloque del archivo.</li>
+              <li>No requiere bloques contiguos, reduce la fragmentación externa.</li>
+            </ul>
+            <pre class="code">Si queremos leer el bloque lógico i de un archivo enlazado:
+1) Se lee el primer bloque.
+2) Se sigue su puntero al segundo.
+3) Se repite hasta llegar a i.
+
+Costo aproximado de acceso aleatorio:
+O(i) en número de saltos de puntero.</pre>
+          </div>
+          <div class="card">
+            <p><strong>Ventajas y desventajas</strong></p>
+            <ul>
+              <li>Ventaja: fácil crecer archivos; basta con encontrar cualquier bloque libre y enlazarlo.</li>
+              <li>Desventaja: acceso aleatorio costoso; para llegar al bloque <em>i</em> hay que recorrer los anteriores.</li>
+              <li>Desventaja técnica: si se daña un puntero, se pierde el resto de la cadena.</li>
+            </ul>
+            <p class="note" style="margin-top:6px;">
+              Sistemas tipo FAT mejoran esto separando punteros en una tabla global,
+              pero mantienen la idea de asignación enlazada.
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Asignación enlazada · Flexibilidad vs acceso aleatorio</span>
+          <span class="counter">5 / 8</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: Asignación indexada -->
+    <section class="slide content-slide" data-title="Indexada">
+      <div class="inner">
+        <div class="header">Método 3 · Asignación indexada</div>
+        <div class="content two-col">
+          <div>
+            <h2>Definición e idea básica</h2>
+            <ul>
+              <li>Cada archivo tiene un bloque índice que contiene una tabla con las direcciones de todos sus bloques.</li>
+              <li>Los bloques de datos pueden estar dispersos; el índice los referencia.</li>
+              <li>Permite acceso directo a cualquier bloque usando el índice.</li>
+            </ul>
+            <pre class="code">Acceso al bloque lógico i en esquema indexado:
+1) Leer bloque índice del archivo.
+2) Obtener direccion_fisica = indice[i].
+3) Leer bloque de datos en direccion_fisica.
+
+Costo típico: 2 accesos (sin caché) o 1 acceso (si índice está en memoria).</pre>
+          </div>
+          <div class="card">
+            <p><strong>Ventajas y consideraciones</strong></p>
+            <ul>
+              <li>Ventaja: acceso aleatorio eficiente y sin fragmentación externa severa.</li>
+              <li>Costo: se necesita espacio adicional para el bloque(s) índice y más lecturas si éste no está en caché.</li>
+              <li>Los sistemas de archivos modernos combinan índices directos, indirectos y estructuras jerárquicas (ej. i-nodos).</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Asignación indexada · Índices para flexibilidad</span>
+          <span class="counter">6 / 8</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: Tabla comparativa y fragmentación -->
+    <section class="slide content-slide" data-title="Comparación">
+      <div class="inner">
+        <div class="header">Comparación y fragmentación</div>
+        <div class="content">
+          <h2>Resumen de estrategias e impacto en el rendimiento</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Estrategia</th>
+                <th>Ventajas</th>
+                <th>Desventajas</th>
+                <th>Fragmentación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Contigua</td>
+                <td>
+                  Muy rápida para lectura secuencial.<br/>
+                  Cálculo simple de direcciones de bloque.
+                </td>
+                <td>
+                  Dificultad para crecer archivos.<br/>
+                  Requiere huecos grandes contiguos.
+                </td>
+                <td>
+                  Fuerte fragmentación externa; requiere compactación periódica.
+                </td>
+              </tr>
+              <tr>
+                <td>Enlazada</td>
+                <td>
+                  Fácil crecimiento de archivos.<br/>
+                  Aprovecha huecos pequeños dispersos.
+                </td>
+                <td>
+                  Acceso aleatorio lento.<br/>
+                  Riesgo si se corrompen punteros.
+                </td>
+                <td>
+                  Minimiza fragmentación externa, pero puede aumentar tiempo de búsqueda por saltos.
+                </td>
+              </tr>
+              <tr>
+                <td>Indexada</td>
+                <td>
+                  Acceso aleatorio eficiente.<br/>
+                  Gestión flexible de bloques dispersos.
+                </td>
+                <td>
+                  Costo extra de bloques índice.<br/>
+                  Diseño más complejo.
+                </td>
+                <td>
+                  Fragmentación manejable por el índice; buena base para sistemas modernos.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note" style="margin-top:8px;">
+            La elección de estrategia influye en el seek time promedio y en cuánta “basura” de fragmentación
+            acepta el sistema antes de degradar el rendimiento percibido.
+          </p>
+          <pre class="code">Modelo comparativo simplificado para leer N bloques:
+Contigua: T ≈ 1*(T_busqueda + T_latencia) + N*T_transferencia
+Enlazada: T ≈ N*(T_busqueda + T_latencia + T_transferencia)
+Indexada: T ≈ (1 acceso índice) + N*(costo de datos)
+
+Lectura didáctica:
+- Contigua minimiza reposicionamientos.
+- Enlazada incrementa saltos físicos.
+- Indexada balancea flexibilidad y costo de metadatos.</pre>
+        </div>
+        <div class="footer">
+          <span class="note">Tabla comparativa · Eficiencia y fragmentación</span>
+          <span class="counter">7 / 16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Síntesis operativa intermedia -->
+    <section class="slide content-slide" data-title="CierreTecnico">
+      <div class="inner">
+        <div class="header">Síntesis operativa: criterios de decisión en asignación</div>
+        <div class="content two-col">
+          <div>
+            <h2>Guía de decisión ingenieril (sin memorizar, con criterio)</h2>
+            <ul>
+              <li>Si el patrón dominante es secuencial y el tamaño del archivo es estable, contigua suele ofrecer mejor rendimiento bruto.</li>
+              <li>Si el archivo crece de forma impredecible, enlazada evita fallos de asignación por continuidad, a costa de acceso aleatorio más lento.</li>
+              <li>Si se requiere acceso aleatorio frecuente y buen equilibrio global, indexada es normalmente la opción más robusta.</li>
+              <li>La estructura de directorios debe evaluarse junto con la asignación: una mala organización de metadatos puede ocultar ventajas del método de bloques.</li>
+              <li>No existe método universalmente mejor: la decisión depende de carga de trabajo, tamaño medio de archivos y presión de espacio libre.</li>
+            </ul>
+            <pre class="code">Checklist de análisis para un caso real:
+1) ¿Predomina lectura secuencial o aleatoria?
+2) ¿Los archivos crecen mucho después de creados?
+3) ¿Cuál es el tamaño típico de archivo?
+4) ¿Qué porcentaje del disco está ocupado?
+5) ¿Se prioriza rendimiento o simplicidad de implementación?</pre>
+          </div>
+          <div class="card">
+            <h2>Profundización inmediata</h2>
+            <ul>
+              <li>A continuación profundizaremos el análisis cuantitativo de fragmentación interna y del impacto del tamaño de bloque.</li>
+              <li>También compararemos el mismo caso de archivo bajo estrategias contigua, enlazada e indexada para medir costo de acceso.</li>
+              <li>Luego integraremos algoritmos de selección de huecos y estructura de directorios para completar la visión de rendimiento extremo a extremo.</li>
+              <li>Objetivo inmediato: pasar de definiciones a criterios de decisión reproducibles con cálculos simples.</li>
+            </ul>
+            <p class="note" style="margin-top:8px;">
+              Esta síntesis marca un punto de control conceptual antes de continuar con los bloques de profundización de la sesión.
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Síntesis intermedia · Criterios antes de profundización</span>
+          <span class="counter">8 / 16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: Tamaño de bloque y fragmentación interna -->
+    <section class="slide content-slide" data-title="TamanoBloque">
+      <div class="inner">
+        <div class="header">Profundización · Tamaño de bloque y desperdicio real</div>
+        <div class="content two-col">
+          <div>
+            <h2>Cómo medir fragmentación interna</h2>
+            <ul>
+              <li>Si el tamaño de bloque es <strong>B</strong> y el tamaño del archivo es <strong>S</strong>, bloques requeridos = <strong>ceil(S/B)</strong>.</li>
+              <li>Espacio asignado = <strong>ceil(S/B) x B</strong>.</li>
+              <li>Fragmentación interna = <strong>ceil(S/B) x B - S</strong>.</li>
+              <li>Este desperdicio aparece incluso con asignación perfecta, porque el último bloque rara vez se llena al 100%.</li>
+            </ul>
+            <pre class="code">Ejemplo:
+B = 4096 bytes, S = 10 000 bytes
+Bloques = ceil(10000/4096) = 3
+Asignado = 3 x 4096 = 12 288 bytes
+Desperdicio interno = 12 288 - 10 000 = 2 288 bytes</pre>
+          </div>
+          <div class="card">
+            <p><strong>Implicación de ingeniería</strong></p>
+            <ul>
+              <li>Bloques grandes: menos metadatos y mejor transferencia secuencial, pero mayor desperdicio interno para archivos pequeños.</li>
+              <li>Bloques pequeños: menor desperdicio interno, pero más punteros, más entradas de metadatos y potencialmente más operaciones de E/S.</li>
+              <li>No existe tamaño de bloque perfecto para todos los escenarios; depende del perfil de carga del sistema.</li>
+            </ul>
+            <p class="note" style="margin-top:8px;">
+              Esta decisión afecta directamente el rendimiento percibido y el aprovechamiento total del almacenamiento.
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Análisis cuantitativo · Fragmentación interna</span>
+          <span class="counter">9 / 16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: Ejemplo comparativo de ubicación -->
+    <section class="slide content-slide" data-title="EjemploUbicacion">
+      <div class="inner">
+        <div class="header">Caso comparativo · Misma carga, tres estrategias</div>
+        <div class="content">
+          <h2>Escenario base para comparar contigua, enlazada e indexada</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Parámetro</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Tamaño de bloque</td>
+                <td>4 KB</td>
+              </tr>
+              <tr>
+                <td>Tamaño del archivo</td>
+                <td>48 KB (12 bloques)</td>
+              </tr>
+              <tr>
+                <td>Operación de interés</td>
+                <td>Leer los bloques lógicos 0, 6 y 11</td>
+              </tr>
+              <tr>
+                <td>Estado del disco</td>
+                <td>70% de ocupación, huecos medianos dispersos</td>
+              </tr>
+            </tbody>
+          </table>
+          <pre class="code">Resumen de costo esperado (sin caché):
+- Contigua: acceso directo por fórmula direccion = inicio + i.
+- Enlazada: para leer bloque 11 hay que seguir cadena desde el inicio.
+- Indexada: leer índice + saltar al bloque físico indicado por indice[i].</pre>
+          <div class="callout">
+            <p>
+              Con una misma carga de trabajo, el costo no lo define solo el tamaño del archivo: lo define la combinación entre estrategia de asignación y patrón de acceso.
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Caso base · Comparación controlada</span>
+          <span class="counter">10 / 16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: Conteo de accesos de E/S -->
+    <section class="slide content-slide" data-title="ConteoIO">
+      <div class="inner">
+        <div class="header">Métrica central · Conteo de accesos de E/S</div>
+        <div class="content two-col">
+          <div>
+            <h2>Estimación simple de costo por lectura</h2>
+            <ul>
+              <li>Contigua: 1 posicionamiento inicial + transferencia continua.</li>
+              <li>Enlazada: potencialmente un salto por cada bloque leído si hay dispersión física.</li>
+              <li>Indexada: costo inicial del índice y luego acceso directo a bloques de datos.</li>
+            </ul>
+            <pre class="code">Si N = 12 bloques y queremos leerlos todos:
+Contigua   -> ~1 búsqueda importante + 12 transferencias
+Enlazada   -> ~12 búsquedas + 12 transferencias (peor caso)
+Indexada   -> 1 lectura de índice + ~12 accesos a datos</pre>
+          </div>
+          <div class="card">
+            <p><strong>Lectura crítica del modelo</strong></p>
+            <ul>
+              <li>El modelo no es exacto al milisegundo, pero permite justificar decisiones de diseño.</li>
+              <li>Para ingeniería de sistemas, esta aproximación es útil para comparar arquitecturas antes de medir en laboratorio.</li>
+              <li>Luego, en sistemas reales, se valida con métricas de throughput, latencia media y percentiles.</li>
+            </ul>
+            <p class="note" style="margin-top:8px;">
+              Un buen análisis combina teoría de costos y observación empírica, no solo intuición.
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Rendimiento · Comparación por número de accesos</span>
+          <span class="counter">11 / 16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12: Algoritmos de ubicación de espacio -->
+    <section class="slide content-slide" data-title="AlgoritmosHuecos">
+      <div class="inner">
+        <div class="header">Algoritmos de asignación de huecos libres</div>
+        <div class="content">
+          <h2>First Fit, Best Fit y Worst Fit (visión operativa)</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Algoritmo</th>
+                <th>Regla de decisión</th>
+                <th>Ventaja</th>
+                <th>Riesgo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>First Fit</td>
+                <td>Toma el primer hueco que alcance.</td>
+                <td>Rápido de ejecutar.</td>
+                <td>Puede dejar fragmentación irregular al inicio del disco.</td>
+              </tr>
+              <tr>
+                <td>Best Fit</td>
+                <td>Toma el hueco más pequeño que sea suficiente.</td>
+                <td>Reduce desperdicio inmediato por asignación.</td>
+                <td>Genera muchos huecos muy pequeños con el tiempo.</td>
+              </tr>
+              <tr>
+                <td>Worst Fit</td>
+                <td>Toma el hueco más grande disponible.</td>
+                <td>Tiende a dejar huecos medianos reutilizables.</td>
+                <td>Puede degradar rápidamente los huecos grandes.</td>
+              </tr>
+            </tbody>
+          </table>
+          <pre class="code">Idea clave:
+Estrategia de bloques + algoritmo de selección de huecos
+= comportamiento final de fragmentación a mediano plazo.</pre>
+        </div>
+        <div class="footer">
+          <span class="note">Políticas de asignación · Efecto acumulado</span>
+          <span class="counter">12 / 16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 13: Estructura de directorios -->
+    <section class="slide content-slide" data-title="ModelosDirectorio">
+      <div class="inner">
+        <div class="header">Estructura de directorios · Modelos clásicos</div>
+        <div class="content two-col">
+          <div>
+            <h2>Formas de organizar nombres y rutas</h2>
+            <ul>
+              <li><strong>Nivel único:</strong> todos los archivos en un mismo espacio de nombres. Simple, pero poco escalable.</li>
+              <li><strong>Dos niveles:</strong> separación básica por usuario; mejora orden, pero limita colaboración cruzada.</li>
+              <li><strong>Árbol jerárquico:</strong> estructura dominante en sistemas modernos por su equilibrio entre claridad y escalabilidad.</li>
+              <li><strong>Grafo acíclico:</strong> permite enlaces compartidos sin duplicar contenido, con mayor complejidad de gestión.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <p><strong>Relación con rendimiento</strong></p>
+            <ul>
+              <li>La operación "abrir archivo" no empieza leyendo datos; empieza resolviendo ruta en directorios.</li>
+              <li>Si la ruta tiene muchos niveles, pueden aumentar accesos a metadatos.</li>
+              <li>Estructuras indexadas de directorio reducen tiempo de búsqueda por nombre.</li>
+              <li>Buen diseño de directorio reduce latencia percibida incluso sin cambiar la estrategia de bloques.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Directorios · Organización lógica con impacto físico</span>
+          <span class="counter">13 / 16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 14: Resolución de rutas -->
+    <section class="slide content-slide" data-title="ResolucionRuta">
+      <div class="inner">
+        <div class="header">Búsqueda en directorios · De la ruta al bloque</div>
+        <div class="content two-col">
+          <div>
+            <h2>Secuencia lógica para resolver una ruta</h2>
+            <pre class="code">Ruta ejemplo: /proyectos/so/unidad2/informe.pdf
+
+1) Leer metadatos del directorio raíz.
+2) Buscar entrada "proyectos".
+3) Cargar metadatos de "proyectos".
+4) Buscar entrada "so".
+5) Repetir hasta "informe.pdf".
+6) Obtener referencia al archivo y su esquema de bloques.</pre>
+            <p class="note">
+              Cada paso puede implicar E/S adicional si la información no está en caché.
+            </p>
+          </div>
+          <div class="card">
+            <h2>Conclusión operativa</h2>
+            <ul>
+              <li>Parte del tiempo de acceso no está en los datos del archivo, sino en encontrarlo.</li>
+              <li>Por eso se estudian juntas la asignación de espacio y la estructura de directorios en esta misma unidad temática.</li>
+              <li>Ambas capas participan en la latencia final de abrir, leer y actualizar archivos.</li>
+              <li>Diseñar bien una sola capa no compensa por completo una mala decisión en la otra.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Ruta lógica -> metadatos -> datos</span>
+          <span class="counter">14 / 16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 15: Matriz de decisión -->
+    <section class="slide content-slide" data-title="MatrizDecision">
+      <div class="inner">
+        <div class="header">Síntesis aplicada · Matriz de decisión técnica</div>
+        <div class="content">
+          <h2>Qué estrategia favorece cada escenario</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Escenario</th>
+                <th>Patrón dominante</th>
+                <th>Estrategia más conveniente</th>
+                <th>Justificación breve</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Video y respaldos masivos</td>
+                <td>Lectura secuencial larga</td>
+                <td>Contigua (si hay espacio suficiente)</td>
+                <td>Minimiza reposicionamientos y favorece throughput.</td>
+              </tr>
+              <tr>
+                <td>Archivos que crecen continuamente</td>
+                <td>Escritura incremental</td>
+                <td>Enlazada o híbrida</td>
+                <td>Evita fallos por falta de continuidad física.</td>
+              </tr>
+              <tr>
+                <td>Consultas con saltos frecuentes</td>
+                <td>Acceso aleatorio</td>
+                <td>Indexada</td>
+                <td>Permite localizar bloques sin recorrer toda la cadena.</td>
+              </tr>
+              <tr>
+                <td>Sistemas de propósito general</td>
+                <td>Mixto y variable</td>
+                <td>Esquemas indexados/híbridos</td>
+                <td>Balancean rendimiento, crecimiento y mantenibilidad.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <p>
+              Criterio universitario esperado: no elegir por memoria mecánica, sino justificar con patrón de acceso, costo de metadatos y comportamiento de fragmentación.
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Matriz de decisión · Aplicación de conceptos</span>
+          <span class="counter">15 / 16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 16: Cierre de cobertura -->
+    <section class="slide content-slide" data-title="CierreCobertura">
+      <div class="inner">
+        <div class="header">Cierre de cobertura de la sesión</div>
+        <div class="content two-col">
+          <div>
+            <h2>Lo que ya queda cubierto con claridad</h2>
+            <ul>
+              <li>Definición y operación de asignación contigua, enlazada e indexada.</li>
+              <li>Diferencia entre fragmentación interna y externa.</li>
+              <li>Modelos matemáticos básicos de costo para comparar rendimiento.</li>
+              <li>Relación entre directorios, metadatos y tiempo total de acceso a archivo.</li>
+              <li>Criterios de decisión según escenarios reales de uso.</li>
+            </ul>
+            <pre class="code">Estructura lógica final de la sesión:
+Fundamentos -> Modelos de asignación -> Costo de E/S
+-> Fragmentación -> Directorios -> Decisión técnica
+-> Puente directo a sistemas reales (Sesión 14)</pre>
+          </div>
+          <div class="card">
+            <h2>Preparación intelectual para la Sesión 14</h2>
+            <ul>
+              <li>Cuando aparezcan FAT, NTFS, Ext y HFS+, ya tendrás criterios para comparar diseño y no solo definiciones.</li>
+              <li>Podrás identificar qué parte del rendimiento depende del manejo de bloques y qué parte depende de metadatos/directorios.</li>
+              <li>También podrás analizar por qué el journaling mejora recuperación sin asumir que mejora todo rendimiento.</li>
+            </ul>
+            <p class="note" style="margin-top:8px;">
+              Con esto, la sesión queda completa, progresiva y alineada con los objetivos académicos de la unidad.
+            </p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Sesión 13 finalizada · Cobertura integral</span>
+          <span class="counter">16 / 16</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="touch-nav">
+      <button id="btnPrev" title="Anterior">‹</button>
+      <button id="btnNext" title="Siguiente">›</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const counters = Array.from(document.querySelectorAll('.counter'));
+  const stage = document.getElementById('stage');
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  let idx = 0;
+
+  function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+  function show(i){
+    idx = clamp(i, 0, slides.length - 1);
+    slides.forEach((s,k) => s.classList.toggle('active', k === idx));
+    const label = (idx+1) + ' / ' + slides.length;
+    counters.forEach(el => el.textContent = label);
+    history.replaceState(null, '', '#' + (idx+1));
+  }
+
+  function next(){ show(idx+1); }
+  function prev(){ show(idx-1); }
+
+  const m = location.hash.match(/#(\d+)/);
+  if(m){
+    const start = parseInt(m[1], 10);
+    if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1);
+  }
+  show(idx);
+
+  if(btnPrev) btnPrev.addEventListener('click', prev);
+  if(btnNext) btnNext.addEventListener('click', next);
+
+  document.addEventListener('keydown', e => {
+    const k = e.key;
+    if(k === 'f' || k === 'F'){
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+      return;
+    }
+    if(k === 'ArrowRight' || k === 'PageDown'){
+      e.preventDefault(); next();
+    }else if(k === 'ArrowLeft' || k === 'PageUp'){
+      e.preventDefault(); prev();
+    }else if(k === 'Home'){
+      e.preventDefault(); show(0);
+    }else if(k === 'End'){
+      e.preventDefault(); show(slides.length-1);
+    }
+  });
+
+  const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if(isTouch){
+    let x0=null,y0=null,t0=0;
+    const SWIPE_MIN_X = 50;
+    const SWIPE_MAX_Y = 80;
+    const SWIPE_MAX_MS = 800;
+
+    stage.addEventListener('touchstart', e => {
+      const t = e.changedTouches[0];
+      x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+    }, {passive:true});
+
+    stage.addEventListener('touchend', e => {
+      if(x0 === null || y0 === null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - x0;
+      const dy = t.clientY - y0;
+      const dt = Date.now() - t0;
+      x0 = y0 = null;
+      if(dt > SWIPE_MAX_MS) return;
+      if(Math.abs(dy) > SWIPE_MAX_Y) return;
+      if(dx <= -SWIPE_MIN_X) next();
+      else if(dx >= SWIPE_MIN_X) prev();
+    }, {passive:true});
+  }
+</script>
+</body>
+</html>
