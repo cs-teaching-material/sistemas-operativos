@@ -1,0 +1,1200 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesión 14: Sistemas de Archivos Modernos y Taller Integrado</title>
+
+  <style>
+    :root{
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:#ffffff;
+    }
+
+    .deck{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:clamp(10px, 2vw, 22px);
+      box-sizing:border-box;
+      background:#ffffff;
+    }
+
+    .stage{
+      width:min(96vw, calc(92vh * (16/9)));
+      aspect-ratio:16/9;
+      position:relative;
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:none;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .slide.active{ display:block; }
+
+    .slide.cover{
+      background:url("./Portada.png") center/cover no-repeat;
+      color:#ffffff;
+    }
+    .slide.content-slide{
+      background:
+        url("./Contenido.png") top left/contain no-repeat,
+        #ffffff;
+      color:var(--texto);
+    }
+
+    .inner{
+      height:100%;
+      box-sizing:border-box;
+      padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 18px);
+    }
+    .cover .inner{
+      padding:
+        var(--safe-top-cover)
+        var(--safe-right-cover)
+        var(--safe-bottom-cover)
+        var(--safe-left-cover);
+    }
+
+    .content{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:clamp(10px, 1.1vw, 16px);
+      min-height:0;
+    }
+
+    .header{
+      color:var(--azul-medio);
+      font-size:clamp(18px, 1.6vw, 22px);
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    h1{
+      margin:0;
+      font-size:var(--h1);
+      line-height:1.08;
+      color:var(--texto);
+    }
+    h2{
+      margin:0;
+      font-size:var(--h2);
+      line-height:1.15;
+      color:var(--azul-medio);
+    }
+
+    p{
+      margin:0;
+      font-size:var(--p);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    li{
+      font-size:var(--li);
+      line-height:1.4;
+      color:var(--texto);
+    }
+    ul,ol{ margin:0; padding-left:1.2em; }
+
+    .subtitle{
+      color:var(--turquesa);
+      font-weight:800;
+      font-size:clamp(18px, 1.8vw, 24px);
+      margin-top:clamp(6px, 1vw, 10px);
+    }
+
+    .cover h1{ color:#ffffff; }
+    .cover p{ color:#e5edf8; }
+    .cover .subtitle{ color:#f7df00; }
+
+    .note{
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+    }
+
+    .callout{
+      background:rgba(255,255,255,0.94);
+      border-left:6px solid var(--turquesa);
+      padding:clamp(10px, 1.1vw, 14px);
+      border-radius:6px;
+    }
+
+    .mini-diagram{
+      background:#f8fbff;
+      border:1px solid #d8e5f6;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+    }
+
+    .flow-row{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:8px;
+      align-items:center;
+    }
+
+    .flow-step{
+      text-align:center;
+      background:#ffffff;
+      border:1px solid #cfe0f4;
+      border-radius:8px;
+      padding:8px;
+      font-size:clamp(12px, 1.05vw, 14px);
+      color:var(--texto);
+      font-weight:700;
+    }
+
+    .arrow{
+      text-align:center;
+      color:var(--azul-medio);
+      font-weight:900;
+      font-size:clamp(15px, 1.2vw, 18px);
+    }
+
+    .gloss{
+      margin-top:10px;
+      background:#eef9ff;
+      border:1px solid #cde7f8;
+      border-radius:8px;
+      padding:8px 10px;
+    }
+
+    .gloss p{
+      font-size:clamp(12px, 1.02vw, 14px);
+      line-height:1.35;
+      color:#163f5e;
+      margin:0;
+    }
+
+    .terms-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .timeline{
+      background:#ffffff;
+      border:1px solid #d9e7f7;
+      border-radius:10px;
+      padding:10px;
+    }
+
+    .timeline li{
+      margin-bottom:6px;
+    }
+
+    .two-col{
+      display:grid;
+      grid-template-columns:1.15fr 0.9fr;
+      gap:clamp(12px, 1.6vw, 22px);
+      align-items:flex-start;
+      min-height:0;
+    }
+    @media(max-width:980px){
+      .two-col{ grid-template-columns:1fr; }
+    }
+
+    .card{
+      background:rgba(255,255,255,0.96);
+      border:1px solid #dde2f1;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+    }
+
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:clamp(12px, 1.05vw, 14px);
+      line-height:1.35;
+      background:#0b1020;
+      color:#e5e7eb;
+      border-radius:10px;
+      padding:clamp(10px, 1.1vw, 14px);
+      overflow:auto;
+      max-height:44vh;
+      border:1px solid rgba(17,24,39,.25);
+      white-space:pre-wrap;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:rgba(255,255,255,0.96);
+    }
+    th,td{
+      border:1px solid #dde2f1;
+      padding:clamp(8px, 1vw, 12px);
+      font-size:clamp(14px, 1.2vw, 18px);
+      color:var(--texto);
+      vertical-align:top;
+    }
+    th{
+      background:#f3f6fb;
+      text-transform:uppercase;
+      font-size:clamp(12px, 1.1vw, 14px);
+      letter-spacing:.06em;
+      color:var(--azul-medio);
+    }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-size:clamp(12px, 1.05vw, 14px);
+      gap:14px;
+    }
+
+    .counter{
+      font-weight:800;
+      color:var(--azul-medio);
+    }
+    .cover .counter{ color:#e5edf8; }
+
+    .touch-nav{
+      position:absolute;
+      top:50%;
+      left:0;
+      right:0;
+      transform:translateY(-50%);
+      display:flex;
+      justify-content:space-between;
+      padding:0 12px;
+      pointer-events:none;
+      z-index:10;
+    }
+    .touch-nav button{
+      pointer-events:auto;
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      padding:0;
+      border:1px solid rgba(221,226,241,0.95);
+      background:rgba(255,255,255,0.92);
+      color:var(--texto);
+      font-weight:900;
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <!-- SLIDE 1: PORTADA -->
+    <section class="slide cover active" data-title="Portada">
+      <div class="inner">
+        <div class="content">
+          <span class="header">Ingeniería de Software · Sistemas Operativos</span>
+          <h1>Sesión 14 · Sistemas de Archivos Modernos y Taller Integrado</h1>
+          <div class="subtitle">
+            Arquitecturas de almacenamiento, Journaling y Memoria Virtual
+          </div>
+          <div class="callout" style="max-width: 74%; margin-top:clamp(14px,1.8vw,22px);">
+            <p>
+              Sesión magistral y práctica de 2 horas enfocada en el análisis profundo de arquitecturas reales de sistemas de archivos (FAT, NTFS, Ext, HFS+) y la resolución matemática de traducciones de direcciones de memoria virtual.
+            </p>
+          </div>
+          <p class="note" style="margin-top:auto;">
+            Navegación:
+            <span class="kbd">←</span> <span class="kbd">→</span> para cambiar de diapositiva,
+            <span class="kbd">Home</span> / <span class="kbd">End</span> para ir al inicio/fin,
+            <span class="kbd">F</span> pantalla completa.
+          </p>
+        </div>
+        <div class="footer">
+          <span style="color:#e5edf8;">I.U. Pascual Bravo · Sistemas Operativos</span>
+          <span class="counter" style="color:#e5edf8;">1 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Objetivos de la Sesión -->
+    <section class="slide content-slide" data-title="Objetivos">
+      <div class="inner">
+        <div class="header">Objetivos de la Sesión</div>
+        <div class="content two-col">
+          <div>
+            <h2>¿Qué lograremos hoy?</h2>
+            <ul>
+              <li>Comparar FAT, NTFS, Ext4 y HFS+/APFS desde estructura interna, política de asignación, recuperación y costo operacional.</li>
+              <li>Explicar Journaling como protocolo de consistencia: intención, confirmación, replay y límites frente a corrupción de datos de usuario.</li>
+              <li>Resolver traducciones de direcciones con método reproducible: descomposición de bits, TLB, tabla de páginas, fallo y reemplazo.</li>
+              <li>Conectar decisiones de sistema de archivos con el comportamiento de Swap, latencia de page fault y rendimiento de aplicaciones.</li>
+            </ul>
+            <div class="gloss">
+              <p><strong>Acrónimos rápidos:</strong> SO = Sistema Operativo, Swap = espacio de disco usado como extensión de RAM, Page fault = fallo al acceder a una página no residente.</p>
+            </div>
+          </div>
+          <div class="card">
+            <p><strong>Contexto de Ingeniería</strong></p>
+            <p>
+              Esta sesión funciona como cierre técnico de Unidad 2: no basta saber definiciones. Se espera justificar decisiones arquitectónicas según carga de trabajo, tolerancia a fallos y evidencia cuantitativa de tiempos de acceso.
+            </p>
+            <p style="margin-top:8px;"><strong>Producto esperado:</strong> resolución completa de casos con trazabilidad de cada paso y argumentos de diseño.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Objetivos de Aprendizaje</span>
+          <span class="counter">2 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: Contextualización -->
+    <section class="slide content-slide" data-title="Contextualizacion">
+      <div class="inner">
+        <div class="header">De la Asignación a la Implementación</div>
+        <div class="content two-col">
+          <div>
+            <h2>El problema del Mundo Real</h2>
+            <p>Los modelos vistos (contigua, enlazada, indexada) son el punto de partida. En producción aparecen restricciones que fuerzan arquitecturas híbridas:</p>
+            <ul>
+              <li>Persistencia con cortes de energía y reinicio no limpio.</li>
+              <li>Concurrencia de metadatos y datos bajo miles de operaciones por segundo.</li>
+              <li>Mezcla de patrones I/O: secuencial, aleatorio, append-only y writes pequeños.</li>
+              <li>Seguridad y auditoría: ACLs, cifrado, cuotas, integridad.</li>
+            </ul>
+            <div class="gloss">
+              <p><strong>Acrónimos rápidos:</strong> ACL = Access Control List: Es un mecanismo de seguridad que define quién puede acceder a un recurso (archivo, red, sistema) y qué operaciones puede realizar sobre él.</p>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Criterios de análisis de hoy</h2>
+            <p>
+              Evaluaremos cada sistema con cinco preguntas: ¿cómo localiza bloques?, ¿cómo protege metadatos?, ¿qué tan costosa es su recuperación?, ¿qué tan portable es?, ¿en qué cargas se degrada?
+            </p>
+            <p style="margin-top:8px;">Con esas respuestas, la selección deja de ser "preferencia" y se vuelve ingeniería justificable.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Contexto: El salto a la realidad comercial</span>
+          <span class="counter">3 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Arquitectura FAT -->
+    <section class="slide content-slide" data-title="FAT Arquitectura">
+      <div class="inner">
+        <div class="header">Arquitectura FAT (File Allocation Table)</div>
+        <div class="content two-col">
+          <div>
+            <h2>Fundamentos de FAT</h2>
+            <ul>
+              <li><strong>Paradigma:</strong> Asignación enlazada centralizada.</li>
+              <li><strong>Estructura central:</strong> Tabla FAT al inicio del volumen (usualmente con copia), directorio y área de datos por clusters.</li>
+              <li><strong>Cadena lógica:</strong> cada entrada apunta al siguiente cluster del archivo (lista enlazada en disco).</li>
+              <li><strong>Directorio:</strong> guarda nombre, atributos, cluster inicial y tamaño; la ruta completa depende del directorio jerárquico.</li>
+            </ul>
+            <div class="gloss">
+              <p><strong>Glosario:</strong> Cluster = unidad de asignación en disco; Volumen = partición formateada; EOF = End Of File (fin de archivo).</p>
+            </div>
+          </div>
+          <div class="card">
+            <p><strong>Implicaciones directas</strong></p>
+            <ul>
+              <li><strong>FAT16:</strong> al crecer disco, crece tamaño de cluster y empeora fragmentación interna.</li>
+              <li><strong>FAT32:</strong> mejora capacidad de volumen, pero conserva límite de archivo de 4 GiB.</li>
+              <li><strong>exFAT:</strong> corrige límites para flash moderno, pero sigue orientado a portabilidad más que a seguridad transaccional.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Sistemas de Archivos: FAT</span>
+          <span class="counter">4 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: FAT Análisis Crítico -->
+    <section class="slide content-slide" data-title="FAT Critico">
+      <div class="inner">
+        <div class="header">Análisis Crítico de FAT</div>
+        <div class="content two-col">
+          <div>
+            <h2>Ventajas en la Ingeniería</h2>
+            <ul>
+              <li><strong>Modelo simple:</strong> implementación corta, bajo costo de RAM y firmware.</li>
+              <li><strong>Portabilidad:</strong> prácticamente todos los SO y dispositivos consumen FAT/exFAT.</li>
+              <li><strong>Caso ideal:</strong> medios removibles, transferencia entre plataformas y uso offline sin ACL compleja.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h2>Vulnerabilidades Estructurales</h2>
+            <ul>
+              <li><strong>Acceso aleatorio costoso:</strong> seguir cadenas largas degrada rendimiento en archivos fragmentados.</li>
+              <li><strong>Punto sensible:</strong> daño de FAT compromete topología global del volumen.</li>
+              <li><strong>Sin journaling robusto:</strong> recuperación ante corte depende de escaneo correctivo.</li>
+              <li><strong>Seguridad limitada:</strong> sin permisos finos ni auditoría nativa comparable con NTFS/Ext4.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Análisis: Cuándo usar FAT</span>
+          <span class="counter">5 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: Arquitectura NTFS -->
+    <section class="slide content-slide" data-title="NTFS Arquitectura">
+      <div class="inner">
+        <div class="header">Arquitectura NTFS (New Technology File System)</div>
+        <div class="content two-col">
+          <div>
+            <h2>El paradigma de la MFT</h2>
+            <ul>
+              <li><strong>Centro neurálgico:</strong> MFT con registros de tamaño fijo para archivos y metadatos del sistema.</li>
+              <li><strong>Todo como objeto NTFS:</strong> directorios, bitmap, journal y atributos siguen el mismo modelo.</li>
+              <li><strong>Archivos residentes:</strong> datos muy pequeños pueden quedar dentro del registro MFT y ahorrar I/O.</li>
+            </ul>
+            <div class="gloss">
+              <p><strong>Glosario:</strong> MFT = Master File Table; I/O = Input/Output (entrada/salida entre CPU, RAM y disco).</p>
+            </div>
+          </div>
+          <div class="card">
+            <p><strong>Estructuras Avanzadas</strong></p>
+            <ul>
+              <li><strong>Indices tipo B-Tree:</strong> directorios grandes con búsqueda logarítmica.</li>
+              <li><strong>Bitmap de clusters:</strong> administración de espacio libre con actualización frecuente de metadatos.</li>
+              <li><strong>ADS:</strong> múltiples flujos por archivo; útil en compatibilidad, sensible en seguridad forense.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Sistemas de Archivos: NTFS</span>
+          <span class="counter">6 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: El concepto de Journaling -->
+    <section class="slide content-slide" data-title="Journaling">
+      <div class="inner">
+        <div class="header">El salto cualitativo: Journaling</div>
+        <div class="content two-col">
+          <div>
+            <h2>Qué garantiza y qué NO garantiza</h2>
+            <p>Journaling protege principalmente la consistencia de metadatos. No implica automáticamente que el contenido del archivo de usuario siempre quede íntegro.</p>
+            <ul>
+              <li><strong>Writeback:</strong> prioriza rendimiento; datos pueden llegar después de metadatos.</li>
+              <li><strong>Ordered:</strong> datos principales se escriben antes de confirmar metadatos.</li>
+              <li><strong>Data journaling:</strong> datos y metadatos pasan por journal; mayor seguridad, mayor costo.</li>
+            </ul>
+            <div class="gloss">
+              <p><strong>Cómo funciona en una frase:</strong> el sistema registra la intención de cambio en un diario secuencial, confirma la transacción y luego aplica/recupera cambios para que el sistema de archivos no quede en estado intermedio.</p>
+            </div>
+            <div class="card" style="margin-top:10px;">
+              <p><strong>Idea clave de ingeniería:</strong> journaling reduce tiempo de recuperación (<em>recovery time</em>) porque evita reconstruir todo el volumen; solo procesa transacciones pendientes del journal.</p>
+            </div>
+          </div>
+          <div class="callout">
+            <p><strong>Secuencia operacional</strong></p>
+            <div class="mini-diagram" style="margin-top:8px;">
+              <div class="flow-row">
+                <div class="flow-step">1. Intento<br>de escritura</div>
+                <div class="arrow">→</div>
+                <div class="flow-step">2. Registro<br>en Journal</div>
+                <div class="arrow">→</div>
+              </div>
+              <div class="flow-row" style="margin-top:8px;">
+                <div class="flow-step">3. Commit<br>de transacción</div>
+                <div class="arrow">→</div>
+                <div class="flow-step">4. Replay o<br>rollback al reiniciar</div>
+                <div class="arrow">→</div>
+              </div>
+            </div>
+            <p style="margin-top:8px;">El resultado es recuperación en segundos/minutos en lugar de escaneos completos de volumen.</p>
+            <div class="timeline" style="margin-top:8px;">
+              <p style="font-weight:700; color:var(--azul-medio);">Detalle interno de una transacción</p>
+              <ol>
+                <li>Se bloquea temporalmente la estructura de metadatos afectada.</li>
+                <li>Se escribe un <strong>descriptor</strong> de cambios en el journal.</li>
+                <li>Se registran los bloques de metadatos involucrados.</li>
+                <li>Se marca <strong>commit</strong> cuando la transacción es válida.</li>
+                <li>Posteriormente se hace <em>checkpoint</em>: los cambios pasan a su ubicación final.</li>
+              </ol>
+            </div>
+            <div class="gloss" style="margin-top:8px;">
+              <p><strong>Glosario:</strong> Commit = confirmación final de la transacción; Rollback = revertir cambios incompletos; Replay = reejecutar operaciones registradas en el journal.</p>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Concepto Clave: Journaling y Confiabilidad</span>
+          <span class="counter">7 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Journaling en profundidad -->
+    <section class="slide content-slide" data-title="Journaling Profundo">
+      <div class="inner">
+        <div class="header">Journaling en Profundidad: Ciclo Completo de Recuperación</div>
+        <div class="content two-col">
+          <div>
+            <h2>¿Qué pasa cuando se corta la energía?</h2>
+            <p>Supón que el SO está creando un archivo y actualiza: directorio, mapa de bloques e i-nodo/MFT. Si el corte ocurre en la mitad, el journal evita que el volumen quede "a medias".</p>
+            <div class="timeline" style="margin-top:10px;">
+              <ol>
+                <li>Al reiniciar, el sistema localiza el journal.</li>
+                <li>Lee transacciones desde el último checkpoint.</li>
+                <li>Si una transacción tiene commit: <strong>replay</strong>.</li>
+                <li>Si no tiene commit: <strong>rollback</strong> (se descarta).</li>
+                <li>Se limpia el journal y se monta el volumen consistente.</li>
+              </ol>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Límites y decisiones de diseño</h2>
+            <ul>
+              <li><strong>No reemplaza backups:</strong> protege consistencia, no borra errores humanos.</li>
+              <li><strong>Más seguridad = más escrituras:</strong> data journaling incrementa I/O.</li>
+              <li><strong>Disco subyacente importa:</strong> SSD/NVMe reducen costo del journal.</li>
+              <li><strong>Parámetros importan:</strong> modo de journaling y frecuencia de commit cambian latencia y riesgo.</li>
+            </ul>
+            <div class="gloss" style="margin-top:8px;">
+              <p><strong>Glosario:</strong> Checkpoint = punto hasta el cual los cambios ya están aplicados en destino final; Montaje = proceso de habilitar el volumen para uso del SO.</p>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Concepto Clave: Journaling y Recuperación</span>
+          <span class="counter">8 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: NTFS Características Empresariales -->
+    <section class="slide content-slide" data-title="NTFS Enterprise">
+      <div class="inner">
+        <div class="header">NTFS: Orientación Empresarial</div>
+        <div class="content two-col">
+          <div>
+            <h2>Funcionalidades para Entornos Corporativos</h2>
+            <ul>
+              <li><strong>ACLs detalladas:</strong> heredables, auditables y con semántica avanzada de permisos.</li>
+              <li><strong>Cuotas y trazabilidad:</strong> control por usuario/grupo para entornos multiusuario.</li>
+              <li><strong>EFS y atributos:</strong> cifrado por archivo y metadatos extensibles.</li>
+              <li><strong>Integración Windows:</strong> pensado para políticas corporativas y Active Directory.</li>
+            </ul>
+            <div class="gloss">
+              <p><strong>Glosario:</strong> ACL = Access Control List (lista de permisos detallada); EFS = Encrypting File System (cifrado por archivo en NTFS).</p>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Compromisos de Rendimiento</h2>
+            <p>Toda esta complejidad exige cachés más grandes de metadatos y operaciones adicionales por escritura.</p>
+            <ul style="margin-top:8px;">
+              <li>En cargas de archivos pequeños, el overhead de metadatos puede dominar el tiempo total.</li>
+              <li>En hardware limitado, exFAT puede ser más conveniente si se prioriza portabilidad y simplicidad.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">NTFS: Seguridad y Escalabilidad</span>
+          <span class="counter">8 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: Arquitectura Ext (Linux) -->
+    <section class="slide content-slide" data-title="Ext Linux">
+      <div class="inner">
+        <div class="header">Familia Ext (Extended File System)</div>
+        <div class="content two-col">
+          <div>
+            <h2>El enfoque UNIX: i-nodos</h2>
+            <ul>
+              <li><strong>Separación nombre/objeto:</strong> directorios enlazan nombre hacia i-nodo.</li>
+              <li><strong>i-nodo:</strong> metadatos, permisos, tiempos y mapa lógico de datos.</li>
+              <li><strong>Asignación por grupos:</strong> block groups mejoran localidad de datos y metadatos.</li>
+              <li><strong>Punteros jerárquicos:</strong> directos e indirectos, luego optimizados por extents.</li>
+            </ul>
+            <div class="gloss">
+              <p><strong>Glosario:</strong> POSIX = estándar de interfaces y permisos en sistemas tipo Unix; i-nodo = estructura que describe metadatos y ubicación lógica de un archivo.</p>
+            </div>
+          </div>
+          <div class="card">
+            <p><strong>Evolución: Ext2 -> Ext3 -> Ext4</strong></p>
+            <ul>
+              <li><strong>Ext2:</strong> veloz y simple, sin recuperación transaccional.</li>
+              <li><strong>Ext3:</strong> journaling compatible, salto de confiabilidad.</li>
+              <li><strong>Ext4:</strong> extents, delayed allocation y mejor gestión de grandes volúmenes.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Sistemas de Archivos: GNU/Linux Ext</span>
+          <span class="counter">9 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: Extents en Ext4 -->
+    <section class="slide content-slide" data-title="Extents Ext4">
+      <div class="inner">
+        <div class="header">El concepto de Extents (Ext4)</div>
+        <div class="content two-col">
+          <div>
+            <h2>Reemplazando los punteros bloque a bloque</h2>
+            <p>Un extent resume una región contigua: bloque inicial + longitud. Se reducen punteros y operaciones de búsqueda.</p>
+            <ul>
+              <li>Menos metadatos por archivo grande.</li>
+              <li>Mejor lectura secuencial en cargas multimedia y backups.</li>
+              <li>Menor presión sobre caché de metadatos en kernel.</li>
+            </ul>
+          </div>
+          <div class="callout">
+            <p><strong>Impacto en el Desarrollo</strong></p>
+            <p>En un archivo de 1 GiB, pasar de miles de entradas de bloques a pocos extents reduce fragmentación lógica y acelera recorridos de I/O. Esto se traduce en menor latencia de arranque de servicios y menor tiempo de restauración.</p>
+            <div class="mini-diagram" style="margin-top:8px;">
+              <p style="font-weight:700; color:var(--azul-medio);">Bloques sueltos vs Extent</p>
+              <p class="note">Bloques sueltos: 101→230→88→540... (muchas referencias)</p>
+              <p class="note">Extent: [inicio=1200, longitud=256 bloques]</p>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Optimizaciones modernas: Extents</span>
+          <span class="counter">10 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: Apple HFS+ y APFS -->
+    <section class="slide content-slide" data-title="Apple APFS">
+      <div class="inner">
+        <div class="header">El Ecosistema Apple: HFS+ y APFS</div>
+        <div class="content two-col">
+          <div>
+            <h2>HFS+ a APFS: El cambio de paradigma</h2>
+            <ul>
+              <li><strong>HFS+:</strong> diseño robusto para HDD, con limitaciones en cifrado y snapshots modernos.</li>
+              <li><strong>APFS:</strong> arquitectura copy-on-write, optimizada para SSD y operaciones atómicas.</li>
+              <li><strong>Metaobjetivo:</strong> consistencia rápida, clonación y administración eficiente en dispositivos móviles.</li>
+            </ul>
+            <div class="gloss">
+              <p><strong>Glosario:</strong> SSD = Solid State Drive (almacenamiento de estado sólido); HDD = disco mecánico; Copy-on-write = copiar solo cuando se modifica un bloque.</p>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Características de APFS</h2>
+            <ul>
+              <li><strong>Clonación:</strong> copias lógicas instantáneas sin duplicar bloques al inicio.</li>
+              <li><strong>Snapshots:</strong> puntos de recuperación consistentes en segundos.</li>
+              <li><strong>Space sharing:</strong> varios volúmenes comparten pool físico dinámico.</li>
+              <li><strong>Cifrado nativo:</strong> integración profunda en ecosistema Apple.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Sistemas de Archivos: APFS y SSDs</span>
+          <span class="counter">11 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12: Resumen Comparativo -->
+    <section class="slide content-slide" data-title="Resumen Sistemas">
+      <div class="inner">
+        <div class="header">Síntesis Comparativa para Ingeniería</div>
+        <div class="content">
+          <table>
+            <thead>
+              <tr>
+                <th>Característica</th>
+                <th>FAT32 / exFAT</th>
+                <th>NTFS (Windows)</th>
+                <th>Ext4 (Linux)</th>
+                <th>APFS (Apple)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Estructura Base</strong></td>
+                <td>Tabla FAT + clusters</td>
+                <td>MFT + índices tipo B-Tree</td>
+                <td>i-nodos + block groups + extents</td>
+                <td>Copy-on-write + árboles + snapshots</td>
+              </tr>
+              <tr>
+                <td><strong>Journaling</strong></td>
+                <td>No (en FAT/exFAT clásico)</td>
+                <td>Sí (metadatos y recuperación rápida)</td>
+                <td>Sí (modos configurables)</td>
+                <td>Modelo transaccional + snapshots</td>
+              </tr>
+              <tr>
+                <td><strong>Control Acceso</strong></td>
+                <td>Muy básico</td>
+                <td>ACLs granulares y auditoría</td>
+                <td>POSIX + ACL opcional</td>
+                <td>POSIX + cifrado integrado</td>
+              </tr>
+              <tr>
+                <td><strong>Punto fuerte</strong></td>
+                <td>Interoperabilidad y simplicidad</td>
+                <td>Administración corporativa en Windows</td>
+                <td>Servidores y cargas Linux de propósito general</td>
+                <td>Ecosistema Apple con SSD y snapshots</td>
+              </tr>
+              <tr>
+                <td><strong>Riesgo principal</strong></td>
+                <td>Corrupción de tabla y poca seguridad</td>
+                <td>Overhead en hardware limitado</td>
+                <td>Mala sintonía puede afectar latencia</td>
+                <td>Dependencia de plataforma Apple</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note" style="margin-top:8px;">Decisión recomendada: escoger por carga real, no por costumbre de plataforma.</p>
+        </div>
+        <div class="footer">
+          <span class="note">Cuadro Resumen Comparativo</span>
+          <span class="counter">12 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 13: Transición al Taller -->
+    <section class="slide cover" data-title="Pausa Transicion">
+      <div class="inner">
+        <div class="content" style="align-items: center; text-align: center; justify-content: center;">
+          <h1>Transición: Del Disco a la Memoria RAM</h1>
+          <p style="color:#e5edf8; font-size: 1.2rem;">Ahora aplicamos todo a un problema de rendimiento real:<br>traducción de direcciones, TLB y costo de page faults.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 14: Contexto del Taller de Memoria -->
+    <section class="slide content-slide" data-title="Contexto Taller">
+      <div class="inner">
+        <div class="header">Taller de Memoria Virtual: El puente entre CPU y Disco</div>
+        <div class="content two-col">
+          <div>
+            <h2>Recordando el Modelo</h2>
+            <p>La CPU emite direcciones virtuales. La MMU intenta resolverlas primero en TLB; si falla, consulta tabla de páginas y eventualmente genera page fault.</p>
+            <ul>
+              <li><strong>Página:</strong> bloque lógico del proceso.</li>
+              <li><strong>Marco:</strong> bloque físico en RAM del mismo tamaño.</li>
+              <li><strong>TLB:</strong> caché de traducciones recientes para reducir latencia.</li>
+              <li><strong>Tabla de páginas:</strong> fuente de verdad del mapeo virtual-físico.</li>
+            </ul>
+            <div class="gloss">
+              <p><strong>Glosario:</strong> MMU = Memory Management Unit; TLB = Translation Lookaside Buffer (caché de traducciones); Thrashing = exceso de fallos de página que degrada fuertemente el rendimiento.</p>
+            </div>
+          </div>
+          <div class="callout">
+            <p><strong>El Papel del Sistema de Archivos</strong></p>
+            <p>Si no hay marco libre, el SO mueve páginas al área de swap y lee desde almacenamiento secundario. Ahí impactan directamente la latencia del disco, el sistema de archivos y la política de reemplazo.</p>
+            <p style="margin-top:8px;"><strong>Conclusión:</strong> page fault frecuente + E/S lenta = degradación severa (thrashing).</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Taller Integrado: Contextualización</span>
+          <span class="counter">14 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 15: Taller - Estructura Matemática -->
+    <section class="slide content-slide" data-title="Matematica Traduccion">
+      <div class="inner">
+        <div class="header">Fundamentos Matemáticos de la Traducción</div>
+        <div class="content two-col">
+          <div>
+            <h2>Análisis de Bits</h2>
+            <p>Toda dirección lógica se parte en: <strong>número de página (p)</strong> y <strong>desplazamiento (d)</strong>.</p>
+            <ul>
+              <li><strong>d:</strong> si tamaño de página = 4 KiB = 2^12, entonces d usa 12 bits.</li>
+              <li><strong>p:</strong> bits restantes (más significativos) de la dirección virtual.</li>
+              <li><strong>Regla práctica:</strong> p = DL div tam_pagina, d = DL mod tam_pagina.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h2>Algoritmo Operativo (examen/taller)</h2>
+            <div class="code">
+1) Calcular p y d.
+2) Consultar TLB por p.
+3) Si TLB hit: obtener marco f.
+4) Si TLB miss: consultar tabla de páginas.
+5) Si bit de validez = 0: page fault.
+6) Atender fault (reemplazo si aplica) y actualizar TLB.
+7) Dirección física: DF = (f * tam_pagina) + d.
+            </div>
+            <div class="gloss" style="margin-top:8px;">
+              <p><strong>Glosario:</strong> div = división entera (sin decimales); mod = residuo de la división; DF = Dirección Física.</p>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Taller Integrado: Operatoria Matemática</span>
+          <span class="counter">15 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 16: Taller - Ejercicio Guiado 1 -->
+    <section class="slide content-slide" data-title="Ejercicio 1">
+      <div class="inner">
+        <div class="header">Ejercicio Práctico 1: Traducción Directa</div>
+        <div class="content">
+          <h2>Enunciado Claro y Criterio de Entrega</h2>
+          <p><strong>Escenario:</strong> sistema con páginas de <strong>4 KiB (4096 bytes)</strong>. Dirección lógica solicitada: <strong>8250</strong>.</p>
+          <p><strong>Supuesto obligatorio:</strong> TLB inicial vacío. Use la siguiente tabla de páginas del proceso:</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Página (p)</th>
+                <th>Marco Físico (f)</th>
+                <th>Bit Validez (v)</th>
+                <th>Bit Modificado (m)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>0</td><td>5</td><td>1</td><td>0</td></tr>
+              <tr><td>1</td><td>8</td><td>1</td><td>1</td></tr>
+              <tr><td>2</td><td>-</td><td>0</td><td>-</td></tr>
+              <tr><td>3</td><td>2</td><td>1</td><td>0</td></tr>
+            </tbody>
+          </table>
+          <div class="callout" style="margin-top:10px;">
+            <p><strong>Lo que debe entregar (15 min):</strong></p>
+            <ol>
+              <li>Calcule <strong>p</strong> y <strong>d</strong> mostrando la operación div/mod.</li>
+              <li>Indique si hay <strong>hit</strong> o <strong>miss</strong> en TLB y justifique en una frase.</li>
+              <li>Revise la tabla en la fila p calculada e informe <strong>v</strong> y <strong>f</strong> (si existe).</li>
+              <li>Concluya explícitamente: <strong>hay o no page fault</strong>.</li>
+              <li>Si hay page fault, escriba el <strong>orden de atención del SO</strong> (mínimo 5 pasos).</li>
+            </ol>
+          </div>
+          <div class="card" style="margin-top:10px;">
+            <p><strong>Formato sugerido de respuesta:</strong> Datos -> Cálculo p,d -> Estado TLB -> Lectura de tabla -> Decisión final.</p>
+            <p class="note" style="margin-top:6px;">Punto crítico de evaluación: no basta decir "hay fallo"; debe demostrarse con el bit de validez.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Taller Integrado: Desarrollo Práctico</span>
+          <span class="counter">16 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 17: Taller - Solución Ejercicio 1 -->
+    <section class="slide content-slide" data-title="Solucion 1">
+      <div class="inner">
+        <div class="header">Solución Ejercicio 1: Resolución Analítica</div>
+        <div class="content two-col">
+          <div>
+            <h2>Paso a Paso (sin saltos lógicos)</h2>
+            <p><strong>Datos del problema:</strong> tam_pagina = 4096, DL = 8250, TLB inicial vacía.</p>
+            <ol>
+              <li><strong>Separar dirección:</strong> p = 8250 div 4096 = 2, d = 8250 mod 4096 = 58.</li>
+              <li><strong>Consultar TLB:</strong> no hay entrada para p=2, por tanto hay miss TLB.</li>
+              <li><strong>Consultar tabla de páginas:</strong> en p=2 se observa v=0.</li>
+              <li><strong>Decisión:</strong> v=0 implica página no residente, ocurre page fault.</li>
+            </ol>
+            <div class="gloss" style="margin-top:8px;">
+              <p><strong>Verificación rápida:</strong> 2*4096 = 8192 y 8192 + 58 = 8250, la descomposición (p,d) es correcta.</p>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Servicio del Page Fault (orden operativo)</h2>
+            <ol>
+              <li>CPU genera trap y transfiere control al kernel.</li>
+              <li>Kernel valida que la referencia sea legal para el proceso.</li>
+              <li>Busca marco libre; si no existe, selecciona una víctima.</li>
+              <li>Si la víctima tiene m=1, escribe primero a disco (swap o archivo).</li>
+              <li>Carga la página p=2 desde respaldo secundario a RAM.</li>
+              <li>Actualiza PTE (v=1, nuevo marco) y luego TLB.</li>
+              <li>Reintenta la instrucción que falló.</li>
+            </ol>
+            <p class="note" style="margin-top:8px;"><strong>Conclusión del ejercicio:</strong> no se calcula DF en este punto inicial porque la página todavía no estaba en RAM.</p>
+            <div class="gloss" style="margin-top:8px;">
+              <p><strong>Glosario:</strong> Trap = interrupción hacia el kernel; PTE = Page Table Entry (entrada de tabla de páginas); Víctima = página elegida para reemplazo.</p>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Taller Integrado: Resolución Paso a Paso</span>
+          <span class="counter">17 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 18: Taller - Ejercicio Guiado 2 -->
+    <section class="slide content-slide" data-title="Ejercicio 2">
+      <div class="inner">
+        <div class="header">Ejercicio Práctico 2: Cálculo Exitoso</div>
+        <div class="content">
+          <h2>Enunciado Claro y Resultado Esperado</h2>
+          <p><strong>Escenario:</strong> mismo sistema (4 KiB/página). Dirección lógica: <strong>4150</strong>.</p>
+          <p><strong>Supuesto:</strong> use la misma tabla del ejercicio anterior y considere TLB sin entrada previa para la página consultada.</p>
+          <div class="callout" style="margin-top:10px;">
+            <p><strong>Lo que debe entregar (10 min):</strong></p>
+            <ol>
+              <li>Calcule <strong>p</strong> y <strong>d</strong> mostrando cada operación.</li>
+              <li>Decida estado de TLB (<strong>hit/miss</strong>) y luego consulte la tabla.</li>
+              <li>Reporte los valores de <strong>v</strong> y <strong>f</strong> para la página hallada.</li>
+              <li>Si v=1, calcule la <strong>DF</strong> con sustitución numérica completa.</li>
+              <li>Compare costo relativo de: hit TLB, miss TLB sin fault y page fault.</li>
+            </ol>
+          </div>
+          <div class="card" style="margin-top:15px;">
+            <p><strong>Tip de validación:</strong> luego de obtener DF, verifique que $DL = p * tam\_pagina + d$.</p>
+            <p class="note" style="margin-top:6px;">Si no muestra la sustitución de la fórmula, la respuesta se considera incompleta.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Taller Integrado: Desarrollo Práctico</span>
+          <span class="counter">18 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 19: Taller - Solución Ejercicio 2 -->
+    <section class="slide content-slide" data-title="Solucion 2">
+      <div class="inner">
+        <div class="header">Solución Ejercicio 2: Resolución Analítica</div>
+        <div class="content two-col">
+          <div>
+            <h2>Paso a Paso (caso sin fallo de página)</h2>
+            <p><strong>Datos del problema:</strong> tam_pagina = 4096, DL = 4150.</p>
+            <ol>
+              <li><strong>Separar dirección:</strong> p = 4150 div 4096 = 1, d = 4150 mod 4096 = 54.</li>
+              <li><strong>TLB:</strong> asumimos que no existe entrada previa para p=1, entonces miss TLB.</li>
+              <li><strong>Tabla de páginas:</strong> para p=1 se tiene f=8 y v=1.</li>
+              <li><strong>Decisión:</strong> como v=1, la página ya reside en RAM y no hay page fault.</li>
+            </ol>
+            <div class="gloss" style="margin-top:8px;">
+              <p><strong>Verificación rápida:</strong> 1*4096 = 4096 y 4096 + 54 = 4150, la descomposición (p,d) es consistente.</p>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Cálculo Final Físico</h2>
+            <ol>
+              <li>Fórmula: DF = (f * tamaño_página) + d.</li>
+              <li>Sustitución: DF = (8 * 4096) + 54.</li>
+              <li>Producto: 8 * 4096 = 32768.</li>
+              <li>Suma final: DF = 32768 + 54 = <strong>32822</strong>.</li>
+            </ol>
+            <p class="note" style="margin-top:8px;"><strong>Interpretación:</strong> hubo miss TLB, pero sin page fault. El costo es intermedio: más que hit TLB, mucho menor que traer página desde disco.</p>
+            <div class="gloss" style="margin-top:8px;">
+              <p><strong>Plantilla reusable para cualquier ejercicio:</strong> 1) calcular p,d; 2) revisar TLB; 3) revisar v; 4) decidir fault/no fault; 5) si v=1, calcular DF.</p>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Taller Integrado: Resolución Matemática</span>
+          <span class="counter">19 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 20: Cierre de Unidad -->
+    <section class="slide content-slide" data-title="Cierre de Unidad">
+      <div class="inner">
+        <div class="header">Cierre: Integración Conceptual de la Unidad</div>
+        <div class="content two-col">
+          <div>
+            <h2>Conclusiones Arquitectónicas</h2>
+            <ul>
+              <li>La complejidad algorítmica sola no explica rendimiento; la jerarquía memoria-disco puede dominar el tiempo total.</li>
+              <li>La localidad de referencia reduce fallos de página y evita thrashing.</li>
+              <li>El sistema de archivos elegido condiciona recuperación ante fallos y confiabilidad de logs.</li>
+              <li>La calidad del diseño se evidencia en decisiones justificadas con carga y métricas, no en preferencias subjetivas.</li>
+            </ul>
+          </div>
+          <div class="callout">
+            <h2>Lectura transversal de la sesión</h2>
+            <p>
+              La comparativa de sistemas de archivos y el taller de memoria virtual convergen en una idea central: cada decisión de estructura y política tiene impacto cuantificable en confiabilidad y tiempo de respuesta.
+            </p>
+            <p style="margin-top:10px;"><strong>Checklist de comprensión:</strong> identificar estructura de cada FS, explicar journaling con tus palabras, resolver traducción con y sin page fault.</p>
+            <p style="margin-top:10px;"><em>Con esto queda cerrada la Unidad 2 en su núcleo técnico.</em></p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Cierre Magistral · Ingeniería de Desarrollo de Software</span>
+          <span class="counter">20 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 21: Glosario 1 -->
+    <section class="slide content-slide" data-title="Glosario A-M">
+      <div class="inner">
+        <div class="header">Glosario de Términos y Acrónimos (A-M)</div>
+        <div class="content terms-grid">
+          <div class="card">
+            <p><strong>ACL</strong>: Access Control List. Lista de permisos granulares por usuario/grupo.</p>
+            <p><strong>ADS</strong>: Alternate Data Streams. Flujos secundarios de datos en NTFS.</p>
+            <p><strong>APFS</strong>: Apple File System con enfoque copy-on-write y snapshots.</p>
+            <p><strong>Cluster</strong>: unidad mínima de asignación de espacio en FAT/exFAT.</p>
+            <p><strong>Commit</strong>: confirmación de una transacción en journal.</p>
+            <p><strong>Copy-on-write</strong>: técnica que retrasa copia física hasta modificación real.</p>
+          </div>
+          <div class="card">
+            <p><strong>EFS</strong>: Encrypting File System, cifrado por archivo en NTFS.</p>
+            <p><strong>Extent</strong>: descriptor de rango contiguo de bloques.</p>
+            <p><strong>FAT</strong>: File Allocation Table, esquema de asignación enlazada por tabla.</p>
+            <p><strong>Frame (Marco)</strong>: bloque físico en RAM donde reside una página.</p>
+            <p><strong>HDD</strong>: Hard Disk Drive mecánico.</p>
+            <p><strong>HFS+</strong>: sistema de archivos histórico de Apple previo a APFS.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Apoyo conceptual</span>
+          <span class="counter">21 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 22: Glosario 2 -->
+    <section class="slide content-slide" data-title="Glosario N-Z">
+      <div class="inner">
+        <div class="header">Glosario de Términos y Acrónimos (N-Z)</div>
+        <div class="content terms-grid">
+          <div class="card">
+            <p><strong>MFT</strong>: Master File Table, estructura central de metadatos en NTFS.</p>
+            <p><strong>MMU</strong>: Memory Management Unit, unidad que traduce direcciones.</p>
+            <p><strong>NTFS</strong>: New Technology File System de Windows.</p>
+            <p><strong>Page fault</strong>: fallo por acceso a página no residente en RAM.</p>
+            <p><strong>PTE</strong>: Page Table Entry, fila/entrada de la tabla de páginas.</p>
+            <p><strong>POSIX</strong>: estándar de interfaces/semántica Unix.</p>
+          </div>
+          <div class="card">
+            <p><strong>Replay</strong>: reejecución de operaciones del journal tras un fallo.</p>
+            <p><strong>Rollback</strong>: reversión de transacciones incompletas.</p>
+            <p><strong>Swap</strong>: espacio en disco usado como extensión de memoria virtual.</p>
+            <p><strong>SSD</strong>: Solid State Drive, almacenamiento de estado sólido.</p>
+            <p><strong>TLB</strong>: Translation Lookaside Buffer, caché de traducciones virtual-físico.</p>
+            <p><strong>Thrashing</strong>: paginación excesiva que bloquea el rendimiento.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Apoyo conceptual</span>
+          <span class="counter">22 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="touch-nav">
+      <button id="btnPrev" title="Anterior">‹</button>
+      <button id="btnNext" title="Siguiente">›</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const counters = Array.from(document.querySelectorAll('.counter'));
+  const stage = document.getElementById('stage');
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  let idx = 0;
+
+  function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+  function show(i){
+    idx = clamp(i, 0, slides.length - 1);
+    slides.forEach((s,k) => s.classList.toggle('active', k === idx));
+    const label = (idx+1) + ' / ' + slides.length;
+    counters.forEach(el => el.textContent = label);
+    history.replaceState(null, '', '#' + (idx+1));
+  }
+
+  function next(){ show(idx+1); }
+  function prev(){ show(idx-1); }
+
+  const m = location.hash.match(/#(\d+)/);
+  if(m){
+    const start = parseInt(m[1], 10);
+    if(!isNaN(start)) idx = clamp(start-1, 0, slides.length-1);
+  }
+  show(idx);
+
+  if(btnPrev) btnPrev.addEventListener('click', prev);
+  if(btnNext) btnNext.addEventListener('click', next);
+
+  document.addEventListener('keydown', e => {
+    const k = e.key;
+    if(k === 'f' || k === 'F'){
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+      return;
+    }
+    if(k === 'ArrowRight' || k === 'PageDown'){
+      e.preventDefault(); next();
+    }else if(k === 'ArrowLeft' || k === 'PageUp'){
+      e.preventDefault(); prev();
+    }else if(k === 'Home'){
+      e.preventDefault(); show(0);
+    }else if(k === 'End'){
+      e.preventDefault(); show(slides.length-1);
+    }
+  });
+
+  const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if(isTouch){
+    let x0=null,y0=null,t0=0;
+    const SWIPE_MIN_X = 50;
+    const SWIPE_MAX_Y = 80;
+    const SWIPE_MAX_MS = 800;
+
+    stage.addEventListener('touchstart', e => {
+      const t = e.changedTouches[0];
+      x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+    }, {passive:true});
+
+    stage.addEventListener('touchend', e => {
+      if(x0 === null || y0 === null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - x0;
+      const dy = t.clientY - y0;
+      const dt = Date.now() - t0;
+      x0 = y0 = null;
+      if(dt > SWIPE_MAX_MS) return;
+      if(Math.abs(dy) > SWIPE_MAX_Y) return;
+      if(dx <= -SWIPE_MIN_X) next();
+      else if(dx >= SWIPE_MIN_X) prev();
+    }, {passive:true});
+  }
+</script>
+</body>
+</html>
