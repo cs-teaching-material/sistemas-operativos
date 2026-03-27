@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unidad 2 - Actividad 3 - Tarea 1</title>
+  <style>
+    :root {
+      --text: #233042;
+      --muted: #5f6f82;
+      --line: #dbe5f0;
+      --primary: #146c9c;
+      --primary-strong: #0d5c85;
+      --accent: #18b8c9;
+      --soft-green: #eef9ef;
+      --soft-green-line: #cfead2;
+      --soft-blue: #f8fbff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #f6f9fc 0%, #edf3f8 100%);
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      padding: 18px 8px;
+    }
+
+    .sheet {
+      width: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #e7eef6;
+      border-radius: 14px;
+      box-shadow: 0 12px 28px rgba(26, 54, 93, 0.08);
+      padding: 20px 18px 28px;
+    }
+
+    .title {
+      margin: 0;
+      color: var(--primary-strong);
+      font-size: 34px;
+      line-height: 1.12;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      margin: 8px 0 12px;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .rule {
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    .box {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft-blue);
+      padding: 14px;
+    }
+
+    .box.green {
+      background: var(--soft-green);
+      border-color: var(--soft-green-line);
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      color: var(--primary-strong);
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      color: #1f2e3f;
+      font-size: 19px;
+      line-height: 1.25;
+    }
+
+    p {
+      margin: 0 0 8px;
+      line-height: 1.5;
+      font-size: 15px;
+    }
+
+    ul, ol {
+      margin: 0;
+      padding-left: 20px;
+      line-height: 1.5;
+      font-size: 15px;
+    }
+
+    li { margin: 4px 0; }
+
+    code {
+      background: #edf4fb;
+      border: 1px solid #d4e4f5;
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.95em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 8px 0 10px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #eef6fb;
+      color: var(--primary-strong);
+      font-weight: 700;
+    }
+
+    .meta-list {
+      columns: 2;
+      column-gap: 24px;
+    }
+
+    @media (max-width: 760px) {
+      .title { font-size: 28px; }
+      .meta-list { columns: 1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <h1 class="title">Unidad 2 - Actividad 3 - Tarea 1</h1>
+    <p class="subtitle">Analizando memoria virtual y tecnicas de administracion de memoria</p>
+    <div class="rule"></div>
+
+    <section class="box green">
+      <h2>Proposito</h2>
+      <p>
+        Aplicar los procedimientos vistos en la Sesion 14 para traducir direcciones logicas,
+        identificar page faults y justificar como cambian los bits de validez (<code>v</code>)
+        y modificacion (<code>m</code>) en una tabla de paginas.
+      </p>
+    </section>
+
+    <section class="box">
+      <h2>Valor y Modalidad</h2>
+      <ul class="meta-list">
+        <li><strong>Valor:</strong> 4.0%</li>
+        <li><strong>Modalidad:</strong> Individual o parejas</li>
+        <li><strong>Entrega:</strong> informe en PDF (maximo 4 paginas sin portada)</li>
+      </ul>
+    </section>
+
+    <section class="box">
+      <h2>Instrucciones Generales</h2>
+      <ol>
+        <li>Resuelva cada punto mostrando procedimiento paso a paso.</li>
+        <li>Use notacion clara para <code>p</code>, <code>d</code>, <code>v</code>, <code>m</code>, <code>f</code> y <code>DF</code>.</li>
+        <li>No se califica solo el resultado final: se califica la trazabilidad de decisiones.</li>
+        <li>En los puntos de bits <code>v</code> y <code>m</code>, indique estado inicial y estado final.</li>
+      </ol>
+    </section>
+
+    <section class="box">
+      <h3>Punto 1 - Traduccion de direcciones con TLB y tabla de paginas</h3>
+      <p>Considere tamano de pagina de 4 KiB y la siguiente tabla de paginas inicial:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Pagina (p)</th>
+            <th>Marco (f)</th>
+            <th>v</th>
+            <th>m</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>4</td><td>1</td><td>0</td></tr>
+          <tr><td>1</td><td>11</td><td>1</td><td>0</td></tr>
+          <tr><td>2</td><td>7</td><td>1</td><td>1</td></tr>
+          <tr><td>3</td><td>-</td><td>0</td><td>-</td></tr>
+          <tr><td>4</td><td>2</td><td>1</td><td>0</td></tr>
+        </tbody>
+      </table>
+      <p>Resuelva para las direcciones logicas <code>12320</code> y <code>10400</code>:</p>
+      <ol>
+        <li>Calcule <code>p = DL div 4096</code> y <code>d = DL mod 4096</code>.</li>
+        <li>Indique si hay TLB hit o miss (suponga TLB inicialmente vacio).</li>
+        <li>Consulte la entrada de tabla y determine si hay page fault.</li>
+        <li>Si <code>v=1</code>, calcule <code>DF = (f * 4096) + d</code>.</li>
+      </ol>
+    </section>
+
+    <section class="box">
+      <h3>Punto 2 - Bits v y m durante el servicio de page fault</h3>
+      <p>
+        Partiendo de la misma tabla inicial, suponga que para atender la pagina <code>p=3</code>
+        no hay marcos libres y el SO elige como victima la pagina <code>p=2</code>.
+      </p>
+      <p>Describa el proceso en orden:</p>
+      <ol>
+        <li>Estado inicial de la victima (<code>v</code> y <code>m</code>).</li>
+        <li>Que accion realiza el kernel al ver <code>m=1</code>.</li>
+        <li>Como quedan los bits de la victima tras su expulsion.</li>
+        <li>Como quedan los bits de la pagina cargada (<code>p=3</code>) inmediatamente despues de traerla desde disco.</li>
+        <li>Que cambia en <code>m</code> si luego se ejecuta una escritura sobre <code>p=3</code>.</li>
+      </ol>
+    </section>
+
+    <section class="box">
+      <h3>Punto 3 - Traza corta de referencias y actualizacion de bits</h3>
+      <p>Use la siguiente secuencia de accesos, en este orden:</p>
+      <ol>
+        <li>Acceso 1: lectura de la pagina <code>p=3</code>.</li>
+        <li>Acceso 2: escritura sobre la pagina <code>p=3</code>.</li>
+        <li>Acceso 3: lectura de la pagina <code>p=4</code>.</li>
+        <li>Acceso 4: lectura de la pagina <code>p=2</code>.</li>
+        <li>Acceso 5: lectura de la pagina <code>p=3</code>.</li>
+      </ol>
+      <p>Construya una tabla de 5 filas con columnas:</p>
+      <ul>
+        <li>Referencia</li>
+        <li>Hit/Miss</li>
+        <li>Page fault (Si/No)</li>
+        <li>Entrada afectada</li>
+        <li>Cambio en bits <code>v</code> y <code>m</code></li>
+      </ul>
+      <p><strong>Nota:</strong> En una lectura no se activa <code>m</code>; en una escritura si se activa <code>m</code>.</p>
+      <p><strong>Tip:</strong> Puede usar como encabezado de su tabla: <code>Acceso</code>, <code>Operacion</code>, <code>Pagina</code>, <code>Hit/Miss</code>, <code>Page fault</code>, <code>Cambio en v/m</code>.</p>
+    </section>
+
+    <section class="box">
+      <h3>Punto 4 - Reflexion tecnica (breve)</h3>
+      <p>Responda en maximo 10 lineas:</p>
+      <ol>
+        <li>Por que un page fault con <code>m=1</code> suele costar mas que uno con <code>m=0</code>.</li>
+        <li>Como este costo se conecta con la latencia de disco y el rendimiento percibido por el usuario.</li>
+        <li>Que practica de programacion ayuda a reducir presion de memoria virtual en cargas grandes.</li>
+      </ol>
+    </section>
+
+    <section class="box green">
+      <h2>Entregable Esperado</h2>
+      <ul>
+        <li>Un unico PDF con portada, desarrollo y conclusiones.</li>
+        <li>Incluir al menos una tabla propia de trazabilidad de <code>v</code> y <code>m</code>.</li>
+      </ul>
+    </section>
+
+    <section class="box">
+      <h2>Criterios de Evaluacion (referenciales)</h2>
+      <ul>
+        <li>40% Procedimiento correcto en traducciones y calculo de DF.</li>
+        <li>35% Interpretacion correcta de bits <code>v</code> y <code>m</code> en todo el ciclo (carga, uso, reemplazo).</li>
+        <li>15% Claridad de la traza de referencias.</li>
+        <li>10% Calidad de la reflexion tecnica final.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

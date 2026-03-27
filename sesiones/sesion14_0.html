@@ -1027,6 +1027,84 @@
     </section>
 
     <!-- SLIDE 20: Cierre de Unidad -->
+    <section class="slide content-slide" data-title="Bits v y m">
+      <div class="inner">
+        <div class="header">Aclaracion tecnica clave: bits de validez y modificacion</div>
+        <div class="content two-col">
+          <div>
+            <h2>Como se usan y como cambian v y m</h2>
+            <p>
+              En cada acceso, la MMU y el kernel consultan la entrada de tabla de paginas (PTE).
+              Los bits <strong>v</strong> (validez) y <strong>m</strong> (modificacion) cambian segun el tipo de acceso y el estado de residencia.
+            </p>
+            <table style="margin-top:10px;">
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Bit v</th>
+                  <th>Bit m</th>
+                  <th>Accion del SO/MMU</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>PTE con v=0 y acceso</td>
+                  <td>0</td>
+                  <td>-</td>
+                  <td>Page fault: cargar pagina desde respaldo secundario</td>
+                </tr>
+                <tr>
+                  <td>Pagina cargada (lectura inicial)</td>
+                  <td>1</td>
+                  <td>0</td>
+                  <td>Se actualiza PTE y TLB</td>
+                </tr>
+                <tr>
+                  <td>Escritura sobre pagina residente</td>
+                  <td>1</td>
+                  <td>1</td>
+                  <td>La pagina queda sucia (dirty)</td>
+                </tr>
+                <tr>
+                  <td>Reemplazo de victima con m=0</td>
+                  <td>0 (victima)</td>
+                  <td>0</td>
+                  <td>Se expulsa sin escritura previa a disco</td>
+                </tr>
+                <tr>
+                  <td>Reemplazo de victima con m=1</td>
+                  <td>0 (victima)</td>
+                  <td>1 -&gt; 0</td>
+                  <td>Write-back a disco antes de expulsar</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h2>Traza corta conectada con el Ejercicio 1</h2>
+            <ol>
+              <li>Referencia a DL=8250: p=2, d=58, v=0 -&gt; page fault.</li>
+              <li>Si no hay marco libre, se elige victima. Si victima tiene m=1, primero se escribe a disco.</li>
+              <li>Tras cargar p=2: v pasa a 1 y m inicia en 0 (si fue solo lectura).</li>
+              <li>Si luego el proceso escribe en p=2, m cambia de 0 a 1.</li>
+              <li>En una futura expulsión de p=2, m define si hay write-back obligatorio.</li>
+            </ol>
+            <div class="gloss" style="margin-top:10px;">
+              <p><strong>Regla operativa:</strong> <strong>v</strong> responde "esta o no esta en RAM". <strong>m</strong> responde "se modifico en RAM desde la carga".</p>
+            </div>
+            <div class="callout" style="margin-top:10px;">
+              <p><strong>Impacto en rendimiento:</strong> los reemplazos con <strong>m=1</strong> suelen ser mas costosos porque agregan escritura a disco ademas de la lectura de la nueva pagina.</p>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <span class="note">Aclaracion adicional del taller: ciclo completo de bits v/m</span>
+          <span class="counter">20 / 20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 20: Cierre de Unidad -->
     <section class="slide content-slide" data-title="Cierre de Unidad">
       <div class="inner">
         <div class="header">Cierre: Integración Conceptual de la Unidad</div>
