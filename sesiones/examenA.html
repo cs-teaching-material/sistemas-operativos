@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Examen Unidad 1 - Grupo A</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #dcdcdc;
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+#loginModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  font-family: Arial, sans-serif;
+}
+
+.loginBox {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+
+.loginBox h1 {
+  color: #015583;
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.loginBox p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.tiempoInfo {
+  background: #f0f0f0;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #333;
+}
+
+.tiempoInfo strong {
+  color: #15a;
+  font-size: 16px;
+}
+
+.inputGroup {
+  margin-bottom: 20px;
+}
+
+.inputGroup label {
+  display: block;
+  text-align: left;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.inputGroup input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: monospace;
+  text-transform: uppercase;
+  transition: border-color 0.3s;
+}
+
+.inputGroup input:focus {
+  outline: none;
+  border-color: #15a;
+  box-shadow: 0 0 8px rgba(17, 170, 204, 0.3);
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #015583 0%, #0d5c85 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(1, 85, 131, 0.3);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.errorMsg {
+  color: #d32f2f;
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+}
+
+.errorMsg.show {
+  display: block;
+}
+
+.ayuda {
+  font-size: 12px;
+  color: #999;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.contenedor {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  justify-content: center;
+}
+
+img {
+  width: 100%;
+  height: auto;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  background: white;
+}
+
+#examenContent {
+  width: 100%;
+  padding: 40px 0;
+}
+
+#examenContent.oculto {
+  display: none;
+}
+
+.blocker {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+</style>
+</head>
+
+<body>
+
+<div id="loginModal">
+  <div class="loginBox blocker">
+    <h1>🔐 Acceso a Examen</h1>
+    <p>Ingresa la clave que el profesor proporcionó en el aula</p>
+    
+    <div class="tiempoInfo">          
+    </div>
+
+    <div class="inputGroup">
+      <label for="claveInput">Clave de Acceso:</label>
+      <input 
+        type="password" 
+        id="claveInput" 
+        placeholder="Ej: CLAVE-ACTUAL"
+        autocomplete="off"
+      >
+    </div>
+
+    <button id="btnAcceder" onclick="validarClave()">Acceder</button>
+
+    <div id="errorMsg" class="errorMsg">
+      ⚠️ Clave incorrecta. Intenta de nuevo.
+    </div>
+
+    <div class="ayuda">
+      <strong>Grupo A</strong> - Escribe la clave sin espacios
+    </div>
+  </div>
+</div>
+
+<div id="examenContent" class="oculto">
+  <div class="contenedor">
+    <img src="examen_A.png" alt="Examen Unidad 1 - Grupo A">
+  </div>
+</div>
+
+<script>
+const _z = (arr, k) => arr.map(v => String.fromCharCode(v ^ k)).join("");
+const _p = _z([11, 22, 15, 3], 78);
+const _d = _z([24, 28, 26, 30], 42);
+const _g = _z([69], 4);
+const _rx = new RegExp(["^", "([A-Z]{4})", "-", "(\\d{4})", "-", "(\\d{2})", "([A-Z])", "$"].join(""));
+
+function _slot() {
+  const m = new Date().getMinutes();
+  const n = (Math.floor(m / 10) + 1) * 10;
+  return (n > 60 ? 60 : n).toString().padStart(2, "0");
+}
+
+function _valid(v) {
+  const q = (v || "").toUpperCase().trim().match(_rx);
+  if (!q) return false;
+  return q[1] === _p && q[2] === _d && q[3] === _slot() && q[4] === _g;
+}
+
+function actualizarMinuto() {
+  document.getElementById("minutoActual").textContent = new Date().getMinutes();
+}
+
+function validarClave() {
+  const i = document.getElementById("claveInput");
+  const e = document.getElementById("errorMsg");
+  if (_valid(i.value)) {
+    document.getElementById("loginModal").style.display = "none";
+    document.getElementById("examenContent").classList.remove("oculto");
+    return;
+  }
+  e.classList.add("show");
+  i.value = "";
+  i.focus();
+  setTimeout(() => e.classList.remove("show"), 3000);
+}
+
+document.getElementById("claveInput").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") validarClave();
+});
+
+window.addEventListener("load", function() {
+  actualizarMinuto();
+  const i = document.getElementById("claveInput");
+  i.value = "";
+  i.focus();
+  setInterval(actualizarMinuto, 1000);
+});
+
+document.addEventListener("contextmenu", e => e.preventDefault());
+document.addEventListener("keydown", function(e) {
+  if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key === "I") || (e.ctrlKey && e.key === "u")) e.preventDefault();
+});
+</script>
+
+</body>
+</html>
