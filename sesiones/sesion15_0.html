@@ -1,0 +1,685 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos - Sesion 15: Entorno Shell, CLI vs GUI y Diagnostico Inicial</title>
+  <style>
+    :root{
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+      --h1: clamp(30px, 3.4vw, 48px);
+      --h2: clamp(22px, 2.3vw, 34px);
+      --p:  clamp(15px, 1.3vw, 19px);
+      --li: clamp(15px, 1.3vw, 19px);
+      --safe-top-cover: clamp(208px, 9vh, 128px);
+      --safe-left-cover: clamp(585px, 5.5vw, 110px);
+      --safe-right-cover: clamp(28px, 3vw, 72px);
+      --safe-bottom-cover: clamp(54px, 6vh, 92px);
+      --safe-top: clamp(100px, 9vh, 132px);
+      --safe-side: clamp(66px, 5.5vw, 108px);
+      --safe-bottom: clamp(52px, 6vh, 90px);
+    }
+    body{ margin:0; font-family:Arial, Helvetica, sans-serif; background:#fff; }
+    .deck{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:clamp(10px,2vw,22px); box-sizing:border-box; }
+    .stage{ width:min(96vw, calc(92vh * (16/9))); aspect-ratio:16/9; position:relative; }
+    .slide{ position:absolute; inset:0; display:none; box-shadow:0 14px 40px rgba(0,0,0,.35); overflow:hidden; }
+    .slide.active{ display:block; }
+    .slide.cover{ background:url("./Portada.png") center/cover no-repeat; color:#fff; }
+    .slide.content-slide{ background:url("./Contenido.png") top left/contain no-repeat, #fff; color:var(--texto); }
+    .inner{ height:100%; box-sizing:border-box; padding: var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side); display:flex; flex-direction:column; gap:clamp(10px,1.1vw,18px); }
+    .cover .inner{ padding: var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover); }
+    .content{ flex:1; display:flex; flex-direction:column; gap:clamp(10px,1.1vw,16px); min-height:0; }
+    .header{ color:var(--azul-medio); font-size:clamp(18px,1.6vw,22px); font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    h1{ margin:0; font-size:var(--h1); line-height:1.08; color:var(--texto); }
+    h2{ margin:0; font-size:var(--h2); line-height:1.15; color:var(--azul-medio); }
+    p{ margin:0; font-size:var(--p); line-height:1.4; color:var(--texto); }
+    li{ font-size:var(--li); line-height:1.4; color:var(--texto); }
+    ul,ol{ margin:0; padding-left:1.2em; }
+    .subtitle{ color:var(--turquesa); font-weight:800; font-size:clamp(18px,1.8vw,24px); margin-top:clamp(6px,1vw,10px); }
+    .cover h1{ color:#12d5e6; text-shadow:0 2px 10px rgba(0,0,0,.35); }
+    .cover p{ color:#e5edf8; }
+    .cover .subtitle{ color:#ffe300; }
+    .note{ color:var(--muted); font-size:clamp(12px,1.05vw,14px); line-height:1.35; }
+    .callout{ background:rgba(255,255,255,0.96); border-left:6px solid #12d5e6; padding:clamp(10px,1.1vw,14px); border-radius:6px; }
+    .cover .callout p{ color:#1e2a49; font-weight:600; }
+    .gloss{ background:#eef9ff; border:1px solid #cde7f8; border-radius:8px; padding:8px 10px; }
+    .gloss p{ font-size:clamp(12px,1.02vw,14px); line-height:1.35; color:#163f5e; }
+    .mini-diagram{ background:#f8fbff; border:1px solid #d8e5f6; border-radius:10px; padding:10px; }
+    .two-col{ display:grid; grid-template-columns:1.15fr .9fr; gap:clamp(12px,1.6vw,22px); align-items:flex-start; min-height:0; }
+    .equal-col{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(12px,1.6vw,22px); align-items:flex-start; min-height:0; }
+    @media(max-width:980px){ .two-col,.equal-col{ grid-template-columns:1fr; } }
+    .card{ background:rgba(255,255,255,.96); border:1px solid #dde2f1; border-radius:10px; padding:clamp(10px,1.1vw,14px); }
+    .kbd{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace; background:#111827; color:#e5e7eb; padding:2px 8px; border-radius:7px; font-size:clamp(11px,1vw,13px); border:1px solid rgba(255,255,255,.08); }
+    .code{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace; font-size:clamp(12px,1.05vw,14px); line-height:1.35; background:#0b1020; color:#e5e7eb; border-radius:10px; padding:clamp(10px,1.1vw,14px); overflow:auto; max-height:40vh; border:1px solid rgba(17,24,39,.25); white-space:pre-wrap; }
+    table{ width:100%; border-collapse:collapse; background:rgba(255,255,255,.96); }
+    th,td{ border:1px solid #dde2f1; padding:clamp(8px,1vw,12px); font-size:clamp(14px,1.2vw,18px); color:var(--texto); vertical-align:top; }
+    th{ background:#f3f6fb; text-transform:uppercase; font-size:clamp(12px,1.1vw,14px); letter-spacing:.06em; color:var(--azul-medio); }
+    .step{ opacity:0; background:#f7fbff; border:1px solid #d6e6f8; border-radius:8px; padding:10px; font-size:clamp(13px,1.05vw,15px); animation:fadeInStep .35s ease forwards; }
+    .step:nth-child(1){ animation-delay:.2s; }
+    .step:nth-child(2){ animation-delay:.6s; }
+    .step:nth-child(3){ animation-delay:1s; }
+    .step:nth-child(4){ animation-delay:1.4s; }
+    @keyframes fadeInStep { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
+    .footer{ display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:clamp(12px,1.05vw,14px); gap:14px; }
+    .counter{ font-weight:800; color:var(--azul-medio); }
+    .cover .counter{ color:#e5edf8; }
+    .touch-nav{ position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); display:flex; justify-content:space-between; padding:0 12px; pointer-events:none; z-index:10; }
+    .touch-nav button{ pointer-events:auto; width:44px; height:44px; border-radius:999px; padding:0; border:1px solid rgba(221,226,241,.95); background:rgba(255,255,255,.92); color:var(--texto); font-weight:900; box-shadow:0 10px 22px rgba(0,0,0,.12); cursor:pointer; }
+    #touchNav{ opacity:0; transform:translateY(-50%) translateY(6px); transition:.15s ease; }
+    .stage:hover #touchNav{ opacity:1; transform:translateY(-50%) translateY(0); }
+    @media(hover:none){ #touchNav{ opacity:1; transform:translateY(-50%); } }
+  </style>
+</head>
+<body>
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <section class="slide cover active" data-title="Portada">
+      <div class="inner">
+        <div class="content" style="justify-content:center;">
+          <span class="header">Ingenieria de Sistemas · Sistemas Operativos</span>
+          <h1>Sesion 15 · Entorno Shell, CLI vs GUI y Diagnostico Inicial</h1>
+          <div class="subtitle">Apertura de Unidad 3: Seguridad, Virtualizacion y Shell</div>
+          <div class="callout" style="max-width:75%; margin-top:16px;">
+            <p>Primera sesion de Unidad 3 con enfoque operativo: establecer lenguaje tecnico comun, definir ruta de entorno y producir evidencia replicable para todo el semestre.</p>
+          </div>
+          <p class="note" style="margin-top:auto;">Navegacion: <span class="kbd">&larr;</span> <span class="kbd">&rarr;</span>, <span class="kbd">Home</span>/<span class="kbd">End</span>, <span class="kbd">F</span> pantalla completa.</p>
+        </div>
+        <div class="footer"><span style="color:#e5edf8;">I.U. Pascual Bravo · Sistemas Operativos</span><span class="counter">1 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Proposito">
+      <div class="inner">
+        <div class="header">Proposito de la Sesion</div>
+        <div class="content two-col">
+          <div>
+            <h2>Resultados concretos esperados</h2>
+            <ul>
+              <li>Diferenciar Shell, Terminal, CLI y GUI sin ambiguedad conceptual.</li>
+              <li>Explicar el flujo tecnico de ejecucion de un comando.</li>
+              <li>Diagnosticar estado base de entorno en Windows y Linux.</li>
+              <li>Definir una ruta de trabajo viable cuando WSL no este disponible.</li>
+              <li>Dejar evidencia reutilizable para sesiones 16 a 24.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <p><strong>Clave didactica de apertura:</strong> no memorizar comandos aislados; construir criterio operativo para tomar decisiones tecnicas en laboratorio real.</p>
+          </div>
+        </div>
+        <div class="footer"><span>Unidad 3 · Inicio</span><span class="counter">2 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Puente U2-U3">
+      <div class="inner">
+        <div class="header">Puente Entre Unidad 2 y Unidad 3</div>
+        <div class="content two-col">
+          <div>
+            <h2>Transicion conceptual</h2>
+            <ul>
+              <li>En Unidad 2 vimos como se organiza y persiste la informacion.</li>
+              <li>En Unidad 3 operamos el sistema de forma controlada desde shell.</li>
+              <li>El objetivo es pasar de teoria de estructuras a administracion practica.</li>
+            </ul>
+            <div class="callout"><p><strong>Regla:</strong> antes de ejecutar tareas, primero leer estado del entorno: identidad, ruta, permisos y shell activa.</p></div>
+          </div>
+          <div class="card">
+            <h2>Preguntas de control inicial</h2>
+            <ul>
+              <li>Que shell estoy ejecutando.</li>
+              <li>Con que usuario y en que ruta trabajo.</li>
+              <li>Si el entorno soporta la practica planificada.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer"><span>Continuidad curricular</span><span class="counter">3 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Terminos base">
+      <div class="inner">
+        <div class="header">Terminos de Primera Aparicion</div>
+        <div class="content equal-col">
+          <div class="card">
+            <h2>Shell, CLI y GUI</h2>
+            <ul>
+              <li><strong>Shell:</strong> interprete que traduce comandos en acciones ejecutables.</li>
+              <li><strong>CLI:</strong> interfaz textual de operacion.</li>
+              <li><strong>GUI:</strong> interfaz grafica de operacion.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h2>Terminal, Prompt, Kernel, Syscall</h2>
+            <ul>
+              <li><strong>Terminal:</strong> aplicacion que hospeda una shell.</li>
+              <li><strong>Prompt:</strong> estado de espera listo para comando.</li>
+              <li><strong>Kernel:</strong> nucleo de control de recursos.</li>
+              <li><strong>Syscall:</strong> solicitud formal de servicio al kernel.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="gloss"><p>Error comun: confundir terminal con shell. La terminal es el contenedor visual; la shell es quien interpreta.</p></div>
+        <div class="footer"><span>Glosario inicial</span><span class="counter">4 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Arquitectura comando">
+      <div class="inner">
+        <div class="header">Flujo de una Orden: Del Teclado al Kernel</div>
+        <div class="content two-col">
+          <div class="mini-diagram">
+            <svg viewBox="0 0 620 230" style="width:100%;height:auto;" aria-label="flujo de comando">
+              <rect x="20" y="90" width="110" height="50" rx="10" fill="#015583"></rect>
+              <text x="75" y="121" text-anchor="middle" fill="#fff" font-size="14" font-family="Arial">Usuario</text>
+              <rect x="160" y="90" width="130" height="50" rx="10" fill="#05ADBC"></rect>
+              <text x="225" y="121" text-anchor="middle" fill="#fff" font-size="14" font-family="Arial">Terminal</text>
+              <rect x="320" y="90" width="120" height="50" rx="10" fill="#1f7aa8"></rect>
+              <text x="380" y="121" text-anchor="middle" fill="#fff" font-size="14" font-family="Arial">Shell</text>
+              <rect x="470" y="90" width="130" height="50" rx="10" fill="#163f5e"></rect>
+              <text x="535" y="121" text-anchor="middle" fill="#fff" font-size="14" font-family="Arial">Kernel</text>
+              <line x1="130" y1="115" x2="160" y2="115" stroke="#015583" stroke-width="3"></line>
+              <line x1="290" y1="115" x2="320" y2="115" stroke="#015583" stroke-width="3"></line>
+              <line x1="440" y1="115" x2="470" y2="115" stroke="#015583" stroke-width="3"></line>
+              <line x1="535" y1="150" x2="75" y2="190" stroke="#6b7280" stroke-width="2" stroke-dasharray="6,4"></line>
+              <text x="325" y="182" text-anchor="middle" fill="#6b7280" font-size="13" font-family="Arial">Salida (stdout/stderr) vuelve al usuario</text>
+            </svg>
+          </div>
+          <div class="card">
+            <h2>Lectura tecnica</h2>
+            <ol>
+              <li>El usuario emite orden.</li>
+              <li>La shell parsea sintaxis y argumentos.</li>
+              <li>Invoca syscall al kernel si necesita recursos.</li>
+              <li>Kernel responde con datos o error.</li>
+              <li>La shell renderiza salida.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="footer"><span>Visual 1 · Flujo de ejecucion</span><span class="counter">5 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Prompt y contexto">
+      <div class="inner">
+        <div class="header">Prompt y Lectura de Contexto</div>
+        <div class="content two-col">
+          <div>
+            <h2>Datos minimos que siempre debes leer</h2>
+            <ul>
+              <li>Usuario activo.</li>
+              <li>Ruta actual (CWD).</li>
+              <li>Tipo de shell.</li>
+              <li>Nivel de privilegio.</li>
+            </ul>
+            <div class="code">usuario@equipo:~$ whoami
+usuario
+usuario@equipo:~$ pwd
+/home/usuario</div>
+          </div>
+          <div class="card">
+            <h2>Glosario tecnico</h2>
+            <ul>
+              <li><strong>CWD:</strong> carpeta donde corren los comandos.</li>
+              <li><strong>HOME:</strong> ruta base del usuario.</li>
+              <li><strong>PATH:</strong> rutas de busqueda de ejecutables.</li>
+              <li><strong>ROOT:</strong> cuenta de maximo privilegio.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer"><span>Estado minimo del entorno</span><span class="counter">6 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Comparativa shells">
+      <div class="inner">
+        <div class="header">Comparativa de Entornos</div>
+        <div class="content">
+          <h2>Que shell usar en esta unidad</h2>
+          <table>
+            <thead><tr><th>Shell</th><th>Sistema</th><th>Fortaleza</th><th>Uso en curso</th></tr></thead>
+            <tbody>
+              <tr><td>Bash</td><td>Linux/WSL</td><td>Administracion y automatizacion clasica</td><td>Ruta principal</td></tr>
+              <tr><td>PowerShell</td><td>Windows</td><td>Automatizacion orientada a objetos</td><td>Comparativa y contingencia</td></tr>
+              <tr><td>Zsh</td><td>Linux/macOS</td><td>Productividad interactiva</td><td>Opcional</td></tr>
+              <tr><td>CMD</td><td>Windows</td><td>Compatibilidad heredada</td><td>Solo referencia</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer"><span>Visual 2 · Comparativa shell</span><span class="counter">7 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Diagnostico base">
+      <div class="inner">
+        <div class="header">Diagnostico Inicial Base</div>
+        <div class="content two-col">
+          <div>
+            <h2>Secuencia Linux/WSL</h2>
+            <div class="code">whoami
+pwd
+echo $SHELL
+uname -a
+ls -la</div>
+          </div>
+          <div class="card">
+            <h2>Secuencia PowerShell</h2>
+            <div class="code">whoami
+Get-Location
+$PSVersionTable.PSVersion
+systeminfo | findstr /B /C:"OS Name" /C:"OS Version"
+Get-ChildItem</div>
+          </div>
+        </div>
+        <div class="footer"><span>Practica base de diagnostico</span><span class="counter">8 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Ciclo de ejecucion">
+      <div class="inner">
+        <div class="header">Ciclo de Ejecucion Paso a Paso</div>
+        <div class="content two-col">
+          <div>
+            <h2>Secuencia operacional</h2>
+            <div class="step"><strong>Paso 1:</strong> Entrada de comando en CLI.</div>
+            <div class="step"><strong>Paso 2:</strong> Parseo de sintaxis y argumentos.</div>
+            <div class="step"><strong>Paso 3:</strong> Solicitud al kernel via syscall.</div>
+            <div class="step"><strong>Paso 4:</strong> Respuesta y codigo de salida.</div>
+          </div>
+          <div class="card">
+            <h2>Primer uso de terminos</h2>
+            <ul>
+              <li><strong>Parseo:</strong> analisis estructural de comando.</li>
+              <li><strong>Argumento:</strong> dato que modifica comportamiento.</li>
+              <li><strong>stderr:</strong> canal de errores separado.</li>
+              <li><strong>Exit code:</strong> estado final de ejecucion.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer"><span>Visual 3 · Ciclo de ejecucion</span><span class="counter">9 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Practica 1 detallada">
+      <div class="inner">
+        <div class="header">Laboratorio 1 (No Evaluativo)</div>
+        <div class="content">
+          <h2>Radiografia tecnica del entorno</h2>
+          <div class="callout"><p><strong>Objetivo:</strong> producir evidencia verificable de identidad, shell, ruta y version de sistema, con interpretacion tecnica.</p></div>
+          <table>
+            <thead><tr><th>Fase</th><th>Instruccion</th><th>Evidencia esperada</th></tr></thead>
+            <tbody>
+              <tr><td>F1 Identidad</td><td>Ejecutar comando de usuario y shell/version.</td><td>Salida que identifique usuario y shell activa.</td></tr>
+              <tr><td>F2 Contexto</td><td>Registrar CWD y listar contenido de directorio.</td><td>Ruta y listado visible.</td></tr>
+              <tr><td>F3 Sistema</td><td>Consultar version del SO/kernel.</td><td>Linea valida de version.</td></tr>
+              <tr><td>F4 Interpretacion</td><td>Explicar diferencia terminal vs shell con su evidencia.</td><td>Mini analisis de 3-4 lineas.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer"><span>Laboratorio 1 · Enunciado</span><span class="counter">10 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Practica 1 solucion">
+      <div class="inner">
+        <div class="header">Laboratorio 1: Solucion Guiada</div>
+        <div class="content two-col">
+          <div>
+            <h2>Referencia Linux/WSL</h2>
+            <div class="code">echo "[F1]"
+whoami
+echo $SHELL
+
+echo "[F2]"
+pwd
+ls -la
+
+echo "[F3]"
+uname -a</div>
+          </div>
+          <div class="card">
+            <h2>Referencia PowerShell</h2>
+            <div class="code">Write-Output "[F1]"
+whoami
+$PSVersionTable.PSVersion
+
+Write-Output "[F2]"
+Get-Location
+Get-ChildItem
+
+Write-Output "[F3]"
+systeminfo | findstr /B /C:"OS Name" /C:"OS Version"</div>
+            <p class="note">Criterio de validacion: comando + salida + interpretacion deben estar alineados.</p>
+          </div>
+        </div>
+        <div class="footer"><span>Laboratorio 1 · Solucion</span><span class="counter">11 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Opciones online">
+      <div class="inner">
+        <div class="header">Terminal Linux en el Navegador</div>
+        <div class="content">
+          <h2>Dos opciones segun el momento del semestre</h2>
+          <table>
+            <thead><tr><th>Opcion</th><th>Cuenta requerida</th><th>Persistencia</th><th>Cuando usar</th></tr></thead>
+            <tbody>
+              <tr><td><strong>JSLinux</strong> · bellard.org/jslinux</td><td>No</td><td>No · los datos se pierden al cerrar la pestana</td><td>Esta sesion · acceso inmediato</td></tr>
+              <tr><td><strong>GitHub Codespaces</strong> · github.com/codespaces</td><td>Si · cuenta GitHub gratuita</td><td>Alta · archivos persisten entre sesiones</td><td>Desde sesion 16 · uso semestral</td></tr>
+            </tbody>
+          </table>
+          <div class="callout"><p><strong>Regla de la unidad:</strong> si aun no tienes cuenta, usa JSLinux hoy. Crea tu cuenta GitHub para la proxima sesion y trabaja desde Codespaces el resto del semestre sin depender del equipo del aula.</p></div>
+        </div>
+        <div class="footer"><span>Visual 4 · Herramientas online</span><span class="counter">12 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="JSLinux">
+      <div class="inner">
+        <div class="header">Opcion Inmediata: JSLinux Sin Cuenta</div>
+        <div class="content two-col">
+          <div>
+            <h2>Paso a paso (menos de 30 segundos)</h2>
+            <ol>
+              <li>Abrir <strong>bellard.org/jslinux</strong> en el navegador.</li>
+              <li>Click en <strong>Alpine Linux stable (ttyS0)</strong>.</li>
+              <li>Esperar ~5 segundos a que cargue el sistema.</li>
+              <li>La terminal aparece lista sin instalar nada.</li>
+              <li>Ejecutar los comandos del laboratorio.</li>
+            </ol>
+            <div class="code">whoami
+pwd
+uname -a
+echo $SHELL</div>
+          </div>
+          <div class="card">
+            <h2>Que tener en cuenta</h2>
+            <ul>
+              <li>Funciona desde cualquier equipo con navegador.</li>
+              <li>Sin instalacion ni permisos especiales en el equipo.</li>
+              <li><strong>Limitacion:</strong> el entorno se reinicia al cerrar la pestana.</li>
+              <li>Evidencia: copiar texto de la terminal antes de cerrar, o captura de pantalla.</li>
+            </ul>
+            <p class="note">JSLinux emula Alpine Linux. Los comandos base de bash funcionan igual que en Ubuntu.</p>
+          </div>
+        </div>
+        <div class="footer"><span>Ruta inmediata · sin cuenta</span><span class="counter">13 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Codespaces setup">
+      <div class="inner">
+        <div class="header">Opcion Persistente: GitHub Codespaces</div>
+        <div class="content two-col">
+          <div>
+            <h2>Configuracion inicial (una sola vez)</h2>
+            <ol>
+              <li>Crear cuenta gratuita en <strong>github.com</strong>.</li>
+              <li>Ir a <strong>github.com/codespaces</strong>.</li>
+              <li>Click <em>New codespace</em> y elegir plantilla <em>Blank</em>.</li>
+              <li>Esperar ~30 segundos mientras inicia Ubuntu.</li>
+              <li>Terminal bash disponible inmediatamente.</li>
+            </ol>
+            <p class="note">Plan gratuito: 60 horas al mes y 15 GB de almacenamiento. Suficiente para toda la unidad.</p>
+          </div>
+          <div class="card">
+            <h2>Por que Codespaces para el semestre</h2>
+            <ul>
+              <li>Ubuntu 22.04 completo con bash.</li>
+              <li>Archivos y carpetas persisten entre sesiones.</li>
+              <li>Accesible desde cualquier equipo o red.</li>
+              <li>No depende del equipo del aula ni de permisos de instalacion.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer"><span>Ruta persistente · semestre completo</span><span class="counter">14 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Codespaces flujo">
+      <div class="inner">
+        <div class="header">Flujo de Trabajo por Sesion en Codespaces</div>
+        <div class="content two-col">
+          <div>
+            <h2>Estructura recomendada por sesion</h2>
+            <div class="code">mkdir -p ~/so_u3/sesion15/comandos ~/so_u3/sesion15/evidencias
+cd ~/so_u3/sesion15
+# guardar diagnostico
+whoami > evidencias/evidencia_s15.txt
+uname -a >> evidencias/evidencia_s15.txt
+echo $SHELL >> evidencias/evidencia_s15.txt
+ls -R ~/so_u3</div>
+          </div>
+          <div class="card">
+            <h2>Regla de persistencia</h2>
+            <ul>
+              <li>Los archivos quedan guardados automaticamente en el codespace.</li>
+              <li>Al abrir Codespaces la proxima sesion, todo sigue donde lo dejaste.</li>
+              <li>Si el codespace expira (30 dias sin uso), GitHub avisa por correo.</li>
+            </ul>
+            <p>Para redundancia extra: copiar archivos a un repositorio Git al final de cada sesion.</p>
+          </div>
+        </div>
+        <div class="footer"><span>Codespaces · flujo semestral</span><span class="counter">15 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Decision online">
+      <div class="inner">
+        <div class="header">Criterio de Decision en Clase</div>
+        <div class="content two-col">
+          <div class="mini-diagram">
+            <svg viewBox="0 0 620 280" style="width:100%;height:auto;" aria-label="flujo decision herramienta">
+              <rect x="225" y="10" width="170" height="40" rx="8" fill="#015583"></rect>
+              <text x="310" y="35" text-anchor="middle" fill="#fff" font-size="13" font-family="Arial">Inicio de sesion</text>
+              <rect x="195" y="75" width="230" height="44" rx="8" fill="#05ADBC"></rect>
+              <text x="310" y="98" text-anchor="middle" fill="#fff" font-size="13" font-family="Arial">Tienes cuenta GitHub?</text>
+              <line x1="310" y1="50" x2="310" y2="75" stroke="#1f7aa8" stroke-width="2"></line>
+              <line x1="195" y1="119" x2="90" y2="190" stroke="#1f7aa8" stroke-width="2"></line>
+              <line x1="425" y1="119" x2="530" y2="190" stroke="#1f7aa8" stroke-width="2"></line>
+              <rect x="15" y="190" width="150" height="44" rx="8" fill="#1f7aa8"></rect>
+              <text x="90" y="208" text-anchor="middle" fill="#fff" font-size="12" font-family="Arial">No → JSLinux</text>
+              <text x="90" y="224" text-anchor="middle" fill="#fff" font-size="11" font-family="Arial">(hoy)</text>
+              <rect x="455" y="190" width="150" height="44" rx="8" fill="#015583"></rect>
+              <text x="530" y="208" text-anchor="middle" fill="#fff" font-size="12" font-family="Arial">Si → Codespaces</text>
+              <text x="530" y="224" text-anchor="middle" fill="#fff" font-size="11" font-family="Arial">(siempre)</text>
+              <rect x="195" y="252" width="230" height="26" rx="6" fill="#f3f6fb" stroke="#cfe0f4"></rect>
+              <text x="310" y="269" text-anchor="middle" fill="#201F4B" font-size="12" font-family="Arial">Crear cuenta GitHub para la proxima sesion</text>
+            </svg>
+          </div>
+          <div class="card">
+            <h2>Notas operativas</h2>
+            <ul>
+              <li>JSLinux no requiere permisos de instalacion.</li>
+              <li>Codespaces no depende del equipo del aula.</li>
+              <li>Ninguna de las dos requiere instalar nada en Windows.</li>
+              <li>Evidencia en JSLinux: copiar salida antes de cerrar la pestana.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer"><span>Visual 5 · Criterio de decision</span><span class="counter">16 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Practica 2 detallada">
+      <div class="inner">
+        <div class="header">Laboratorio 2 (No Evaluativo)</div>
+        <div class="content">
+          <h2>Entorno operativo activo desde el navegador</h2>
+          <div class="callout"><p><strong>Objetivo:</strong> dejar evidencia del entorno funcional en la herramienta elegida. JSLinux para hoy, Codespaces como base del resto del semestre.</p></div>
+          <table>
+            <thead><tr><th>Paso</th><th>Instruccion</th><th>Verificacion</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Abrir la herramienta elegida (JSLinux o Codespaces) y confirmar que la terminal responde.</td><td>Prompt activo visible.</td></tr>
+              <tr><td>2</td><td>Ejecutar secuencia de diagnostico: whoami, pwd, uname -a, echo $SHELL.</td><td>Cuatro salidas visibles y coherentes.</td></tr>
+              <tr><td>3</td><td>Crear carpeta so_u3/sesion15 con subcarpetas comandos y evidencias.</td><td>Estructura confirmada con ls -R.</td></tr>
+              <tr><td>4</td><td>Redirigir salida de diagnostico a evidencias/evidencia_s15.txt.</td><td>Archivo creado con contenido legible.</td></tr>
+              <tr><td>5</td><td>Justificar en una linea por que la herramienta elegida es viable para el semestre.</td><td>Argumento tecnico escrito.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer"><span>Laboratorio 2 · Enunciado</span><span class="counter">17 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Practica 2 solucion">
+      <div class="inner">
+        <div class="header">Laboratorio 2: Solucion de Referencia</div>
+        <div class="content two-col">
+          <div>
+            <h2>Bash · valido en JSLinux y en Codespaces</h2>
+            <div class="code">mkdir -p ~/so_u3/sesion15/comandos ~/so_u3/sesion15/evidencias
+cd ~/so_u3/sesion15
+{
+  echo "--- identidad ---"
+  whoami
+  echo $SHELL
+  echo "--- contexto ---"
+  pwd
+  echo "--- sistema ---"
+  uname -a
+} > evidencias/evidencia_s15.txt
+printf "whoami\necho \$SHELL\npwd\nuname -a\n" > comandos/comandos_s15.txt
+ls -R ~/so_u3</div>
+          </div>
+          <div class="card">
+            <h2>Diferencia entre herramientas</h2>
+            <ul>
+              <li><strong>JSLinux:</strong> copiar la salida antes de cerrar la pestana; no persiste.</li>
+              <li><strong>Codespaces:</strong> el archivo queda guardado automaticamente; no hace falta copiar.</li>
+            </ul>
+            <div class="code">cat evidencias/evidencia_s15.txt</div>
+            <p class="note">Criterio: el archivo debe contener usuario, shell activa, ruta y version de kernel.</p>
+          </div>
+        </div>
+        <div class="footer"><span>Laboratorio 2 · Solucion</span><span class="counter">18 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Errores comunes">
+      <div class="inner">
+        <div class="header">Errores Comunes y Correccion</div>
+        <div class="content">
+          <table>
+            <thead><tr><th>Error</th><th>Causa</th><th>Correccion</th></tr></thead>
+            <tbody>
+              <tr><td>JSLinux no carga o va muy lento</td><td>Red institucional o equipo con recursos limitados</td><td>Usar datos moviles, o cambiar a Codespaces si ya tienen cuenta.</td></tr>
+              <tr><td>Codespaces dice que el codespace expiro</td><td>Mas de 30 dias sin usar</td><td>Crear uno nuevo; si trabajaron con git, los archivos no se pierden.</td></tr>
+              <tr><td>Comando no reconocido en la terminal</td><td>Shell activa o sintaxis incorrecta</td><td>Verificar con echo $SHELL que esten en bash antes de continuar.</td></tr>
+              <tr><td>Evidencia incompleta</td><td>Solo registran comandos sin salida</td><td>Exigir comando + salida + interpretacion tecnica en el archivo.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer"><span>Prevencion de bloqueos</span><span class="counter">19 / 20</span></div>
+      </div>
+    </section>
+
+    <section class="slide content-slide" data-title="Cierre">
+      <div class="inner">
+        <div class="header">Cierre Tecnico de Sesion 15</div>
+        <div class="content equal-col">
+          <div class="card">
+            <h2>Consolidado de hoy</h2>
+            <ul>
+              <li>Vocabulario tecnico base de Unidad 3.</li>
+              <li>Flujo de ejecucion de comandos comprendido.</li>
+              <li>Ruta de entorno definida aun con contingencias.</li>
+              <li>Evidencia replicable lista para continuidad.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h2>Puente a sesion 16</h2>
+            <ul>
+              <li>Rutas absolutas y relativas en profundidad.</li>
+              <li>Comandos esenciales Windows vs Linux.</li>
+              <li>Buenas practicas de ayuda integrada.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="note">Recursos visuales usados: SVG y CSS propios. No se usaron imagenes externas.</p>
+        <div class="footer"><span>Sesion 15 · Apertura Unidad 3</span><span class="counter">20 / 20</span></div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="touch-nav" id="touchNav">
+    <button id="btnPrev" aria-label="Anterior">&#9664;</button>
+    <button id="btnNext" aria-label="Siguiente">&#9654;</button>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counters = Array.from(document.querySelectorAll('.counter'));
+    const stage = document.getElementById('stage');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    let idx = 0;
+
+    function clamp(n,min,max){ return Math.max(min,Math.min(max,n)); }
+    function show(i){
+      idx = clamp(i,0,slides.length-1);
+      slides.forEach((s,k) => s.classList.toggle('active', k === idx));
+      const label = (idx + 1) + ' / ' + slides.length;
+      counters.forEach(el => el.textContent = label);
+      history.replaceState(null,'','#' + (idx + 1));
+    }
+    function next(){ show(idx + 1); }
+    function prev(){ show(idx - 1); }
+
+    const m = (location.hash || '').match(/^#(\d+)$/);
+    if(m){
+      const s = parseInt(m[1],10);
+      if(!isNaN(s)) idx = clamp(s - 1, 0, slides.length - 1);
+    }
+    show(idx);
+
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+
+    document.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if(k === 'f' || k === 'F'){
+        if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+        return;
+      }
+      if(k === 'ArrowRight' || k === 'PageDown' || k === ' '){ e.preventDefault(); next(); }
+      else if(k === 'ArrowLeft' || k === 'PageUp'){ e.preventDefault(); prev(); }
+      else if(k === 'Home'){ e.preventDefault(); show(0); }
+      else if(k === 'End'){ e.preventDefault(); show(slides.length - 1); }
+    });
+
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if(isTouch){
+      let x0 = null, y0 = null, t0 = 0;
+      const SWIPE_MIN_X = 50, SWIPE_MAX_Y = 80, SWIPE_MAX_MS = 800;
+      stage.addEventListener('touchstart', (e) => {
+        const t = e.changedTouches[0];
+        x0 = t.clientX;
+        y0 = t.clientY;
+        t0 = Date.now();
+      }, {passive:true});
+      stage.addEventListener('touchend', (e) => {
+        if(x0 === null || y0 === null) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - x0;
+        const dy = t.clientY - y0;
+        const dt = Date.now() - t0;
+        x0 = null;
+        y0 = null;
+        if(dt > SWIPE_MAX_MS || Math.abs(dy) > SWIPE_MAX_Y) return;
+        if(dx <= -SWIPE_MIN_X) next();
+        else if(dx >= SWIPE_MIN_X) prev();
+      }, {passive:true});
+    }
+  })();
+</script>
+</body>
+</html>
