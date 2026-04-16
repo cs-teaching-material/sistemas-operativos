@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos · Sesión 16 · Navegación Dinámica y Comandos Esenciales en Linux y Windows</title>
+  <style>
+    :root{
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+      --h1:clamp(30px,3.4vw,48px);
+      --h2:clamp(22px,2.3vw,34px);
+      --p:clamp(15px,1.3vw,19px);
+      --li:clamp(15px,1.3vw,19px);
+      --safe-top-cover:clamp(208px,9vh,128px);
+      --safe-left-cover:clamp(585px,5.5vw,110px);
+      --safe-right-cover:clamp(28px,3vw,72px);
+      --safe-bottom-cover:clamp(54px,6vh,92px);
+      --safe-top:clamp(100px,9vh,132px);
+      --safe-side:clamp(66px,5.5vw,108px);
+      --safe-bottom:clamp(52px,6vh,90px);
+    }
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+    .deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(10px,2vw,22px);box-sizing:border-box;background:#fff;}
+    .stage{width:min(96vw,calc(92vh*(16/9)));aspect-ratio:16/9;position:relative;}
+    .slide{position:absolute;inset:0;display:none;box-shadow:0 14px 40px rgba(0,0,0,.35);overflow:hidden;}
+    .slide.active{display:block;}
+    .slide.cover{background:url("./Portada.png") center/cover no-repeat;color:#fff;}
+    .slide.content-slide{background:url("./Contenido.png") top left/contain no-repeat,#fff;color:var(--texto);}
+    .inner{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);display:flex;flex-direction:column;gap:clamp(10px,1.1vw,18px);}
+    .cover .inner{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);}
+    .content{flex:1;display:flex;flex-direction:column;gap:clamp(10px,1.1vw,16px);min-height:0;}
+    .header{color:var(--azul-medio);font-size:clamp(18px,1.6vw,22px);font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+    h1{margin:0;font-size:var(--h1);line-height:1.08;color:var(--texto);}
+    h2{margin:0;font-size:var(--h2);line-height:1.15;color:var(--azul-medio);}
+    p{margin:0;font-size:var(--p);line-height:1.4;color:var(--texto);}
+    li{font-size:var(--li);line-height:1.4;color:var(--texto);}
+    ul,ol{margin:0;padding-left:1.2em;}
+    .subtitle{color:var(--turquesa);font-weight:800;font-size:clamp(18px,1.8vw,24px);margin-top:clamp(6px,1vw,10px);}
+    .cover h1{color:#fff;}
+    .cover p{color:#e5edf8;}
+    .cover .subtitle{color:#f7df00;}
+    .note{color:var(--muted);font-size:clamp(12px,1.05vw,14px);line-height:1.35;}
+    .callout{background:rgba(255,255,255,0.94);border-left:6px solid var(--turquesa);padding:clamp(10px,1.1vw,14px);border-radius:6px;}
+    .two-col{display:grid;grid-template-columns:1.15fr 0.9fr;gap:clamp(12px,1.6vw,22px);align-items:flex-start;min-height:0;}
+    @media(max-width:980px){.two-col{grid-template-columns:1fr;}}
+    .card{background:rgba(255,255,255,.96);border:1px solid #dde2f1;border-radius:10px;padding:clamp(10px,1.1vw,14px);}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace;background:#111827;color:#e5e7eb;padding:2px 8px;border-radius:7px;font-size:clamp(11px,1vw,13px);border:1px solid rgba(255,255,255,.08);}
+    .code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace;font-size:clamp(12px,1.05vw,14px);line-height:1.35;background:#0b1020;color:#e5e7eb;border-radius:10px;padding:clamp(10px,1.1vw,14px);overflow:auto;max-height:44vh;border:1px solid rgba(17,24,39,.25);white-space:pre-wrap;}
+    .imgwrap{width:100%;height:min(36vh,290px);border-radius:10px;border:1px solid #dde2f1;background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:8px;box-sizing:border-box;}
+    .imgwrap svg{width:100%;height:100%;}
+    table{width:100%;border-collapse:collapse;background:rgba(255,255,255,.96);}
+    th,td{border:1px solid #dde2f1;padding:clamp(8px,1vw,12px);font-size:clamp(13px,1.15vw,17px);color:var(--texto);vertical-align:top;}
+    th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(11px,1.05vw,13px);letter-spacing:.06em;color:var(--azul-medio);}
+    .footer{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:clamp(12px,1.05vw,14px);gap:14px;}
+    .counter{font-weight:800;color:var(--azul-medio);}
+    .cover .counter{color:#e5edf8;}
+    .touch-nav{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 12px;pointer-events:none;z-index:10;}
+    .touch-nav button{pointer-events:auto;width:44px;height:44px;border-radius:999px;padding:0;border:1px solid rgba(221,226,241,.95);background:rgba(255,255,255,.92);color:var(--texto);font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.12);cursor:pointer;}
+    #touchNav{opacity:0;transform:translateY(-50%) translateY(6px);transition:.15s ease;}
+    .stage:hover #touchNav{opacity:1;transform:translateY(-50%) translateY(0);}
+    @media(hover:none){#touchNav{opacity:1;transform:translateY(-50%);}}
+  </style>
+</head>
+<body>
+<div class="deck">
+ <div class="stage" id="stage">
+
+  <!-- ── 1 PORTADA ──────────────────────────────────────── -->
+  <section class="slide cover active" data-title="Portada">
+   <div class="inner">
+    <div class="content">
+     <span class="header">Sistemas Operativos · Unidad 3</span>
+    <h1>Sesión 16 · Navegación Dinámica y Comandos Esenciales</h1>
+    <div class="subtitle">pwd · ls · cd · cat · dir · type · man · Get-Help · rutas absolutas y relativas</div>
+     <div class="callout" style="max-width:72%;margin-top:clamp(14px,1.8vw,22px);">
+      <p>Dominar la jerarquía del sistema de archivos en la terminal es la base de toda administración de servidores, automatización de pipelines y diagnóstico de entornos de producción.</p>
+     </div>
+     <p class="note" style="margin-top:auto;">Navegación: <span class="kbd">←</span> <span class="kbd">→</span> · <span class="kbd">Home</span> / <span class="kbd">End</span> · <span class="kbd">F</span> pantalla completa.</p>
+    </div>
+    <div class="footer">
+     <span style="color:#e5edf8;">I.U. Pascual Bravo · Ingeniería de Sistemas</span>
+     <span class="counter">1 / 20</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 2 PROPÓSITO TÉCNICO ────────────────────────────── -->
+  <section class="slide content-slide" data-title="Propósito técnico">
+   <div class="inner">
+    <div class="header">Propósito técnico de la sesión</div>
+    <div class="content two-col">
+     <div>
+      <h2>¿Qué dominaremos hoy?</h2>
+      <ul>
+      <li>Navegar el árbol de directorios sin interfaz gráfica usando <code>pwd</code>, <code>cd</code> y <code>ls</code> en Linux, y sus equivalentes en Windows.</li>
+       <li>Distinguir con precisión una <strong>ruta absoluta</strong> de una <strong>ruta relativa</strong> y cuándo usar cada una.</li>
+      <li>Inspeccionar archivos de texto con <code>cat</code>, <code>less</code>, <code>head</code> y <code>tail</code>, comparándolos con <code>type</code> y <code>Get-Content</code>.</li>
+       <li>Interpretar la salida detallada de <code>ls -l</code> campo por campo.</li>
+      <li>Consultar ayuda técnica en terminal usando <code>man</code>, <code>help</code> y <code>Get-Help</code> según la plataforma.</li>
+      <li>Manipular la jerarquía FHS (Filesystem Hierarchy Standard) con confianza y relacionarla con el árbol de directorios en Windows.</li>
+      </ul>
+     </div>
+     <div class="card">
+      <p><strong>Resultado observable</strong></p>
+      <p>Al finalizar, el estudiante puede localizarse, cambiar de directorio y consultar archivos tanto en Linux como en Windows, identificando equivalencias y diferencias estructurales entre comandos, rutas y ayudas disponibles en cada entorno.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Propósito · Sesión 16</span>
+     <span class="counter">2 / 20</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 3 BASE PREVIA ──────────────────────────────────── -->
+  <section class="slide content-slide" data-title="Base previa">
+   <div class="inner">
+    <div class="header">Lo que ya sabemos de la sesión 15</div>
+    <div class="content two-col">
+     <div>
+      <h2>Vocabulario confirmado</h2>
+      <ul>
+       <li>El <strong>Shell</strong> interpreta comandos; el <strong>kernel</strong> los ejecuta sobre el hardware.</li>
+       <li>Un comando sin ruta se busca en los directorios del <strong>PATH</strong>.</li>
+       <li>Los procesos heredan tres flujos: <strong>stdin, stdout, stderr</strong>.</li>
+       <li>La redirección (<code>&gt;</code>, <code>&gt;&gt;</code>, <code>2&gt;</code>) cambia el destino de esos flujos.</li>
+      </ul>
+     </div>
+     <div class="callout">
+      <p><strong>Pregunta de enlace</strong></p>
+      <p>Cuando ejecutas <code>cat /etc/hostname</code>, el Shell localiza el binario <code>cat</code> via PATH, lo ejecuta con <code>fork+exec</code>, y ese proceso hace una syscall para leer <code>/etc/hostname</code> del sistema de archivos. ¿Sabes identificar ya en qué capa opera cada parte? Eso es exactamente lo que reforzaremos hoy.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Continuidad curricular · S15 → S16</span>
+     <span class="counter">3 / 20</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 4 FHS: EL ÁRBOL DE DIRECTORIOS ─────────────────── -->
+  <section class="slide content-slide" data-title="FHS Árbol Linux">
+   <div class="inner">
+    <div class="header">Bloque A · El Filesystem Hierarchy Standard (FHS)</div>
+    <div class="content two-col">
+     <div>
+      <h2>¿Por qué existe un estándar?</h2>
+      <p>El <strong>FHS</strong> (definido por la Linux Foundation) establece <em>dónde debe vivir cada tipo de archivo</em> en un sistema UNIX/Linux. Sin él, cada distribución organizaría el disco de forma diferente y los scripts serían incompatibles.</p>
+      <ul>
+       <li>Permite a los administradores predecir la ubicación de archivos sin documentación.</li>
+       <li>Los instaladores de software saben exactamente dónde colocar binarios, libs y configs.</li>
+       <li>Los scripts de CI/CD y containers (Docker) dependen del FHS para rutas predecibles.</li>
+      </ul>
+     </div>
+     <div class="card">
+      <p><strong>Directorios raíz más importantes</strong></p>
+      <ul>
+       <li><code>/bin</code>, <code>/usr/bin</code>: binarios de usuario.</li>
+       <li><code>/sbin</code>, <code>/usr/sbin</code>: binarios de administración.</li>
+       <li><code>/etc</code>: archivos de configuración del sistema.</li>
+       <li><code>/home</code>: directorios personales de usuarios.</li>
+       <li><code>/var</code>: datos variables (logs, colas, bases de datos).</li>
+       <li><code>/tmp</code>: archivos temporales (se borran al reiniciar).</li>
+       <li><code>/proc</code>: sistema de archivos virtual; expone el estado del kernel en tiempo real.</li>
+      </ul>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Bloque A · FHS y estructura de directorios</span>
+     <span class="counter">4 / 20</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 5 VISUAL A: ÁRBOL FHS SVG ──────────────────────── -->
+  <section class="slide content-slide" data-title="Visual árbol FHS">
+   <div class="inner">
+    <div class="header">Visual A · Árbol simplificado del sistema de archivos Linux</div>
+    <div class="content" style="align-items:center;">
+     <div class="imgwrap" style="height:min(50vh,360px);">
+      <svg viewBox="0 0 780 320" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New',monospace" font-size="12">
+       <!-- raíz -->
+       <rect x="340" y="10" width="100" height="30" rx="6" fill="#201F4B"/>
+       <text x="390" y="30" text-anchor="middle" fill="#fff" font-weight="bold">/  (raíz)</text>
+       <!-- líneas verticales desde raíz -->
+       <line x1="390" y1="40" x2="390" y2="60" stroke="#6b7280" stroke-width="1.5"/>
+       <!-- rama horizontal -->
+       <line x1="60" y1="60" x2="720" y2="60" stroke="#6b7280" stroke-width="1.5"/>
+       <!-- nodos hijos - líneas -->
+       <line x1="60"  y1="60" x2="60"  y2="80" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="160" y1="60" x2="160" y2="80" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="260" y1="60" x2="260" y2="80" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="360" y1="60" x2="360" y2="80" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="460" y1="60" x2="460" y2="80" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="560" y1="60" x2="560" y2="80" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="660" y1="60" x2="660" y2="80" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="720" y1="60" x2="720" y2="80" stroke="#6b7280" stroke-width="1.5"/>
+       <!-- nodos hijos -->
+       <rect x="20"  y="80" width="80" height="28" rx="5" fill="#015583"/><text x="60"  y="99" text-anchor="middle" fill="#fff">/bin</text>
+       <rect x="120" y="80" width="80" height="28" rx="5" fill="#015583"/><text x="160" y="99" text-anchor="middle" fill="#fff">/etc</text>
+       <rect x="220" y="80" width="80" height="28" rx="5" fill="#015583"/><text x="260" y="99" text-anchor="middle" fill="#fff">/home</text>
+       <rect x="320" y="80" width="80" height="28" rx="5" fill="#015583"/><text x="360" y="99" text-anchor="middle" fill="#fff">/var</text>
+       <rect x="420" y="80" width="80" height="28" rx="5" fill="#015583"/><text x="460" y="99" text-anchor="middle" fill="#fff">/tmp</text>
+       <rect x="520" y="80" width="80" height="28" rx="5" fill="#015583"/><text x="560" y="99" text-anchor="middle" fill="#fff">/proc</text>
+       <rect x="620" y="80" width="80" height="28" rx="5" fill="#015583"/><text x="660" y="99" text-anchor="middle" fill="#fff">/usr</text>
+       <rect x="680" y="80" width="80" height="28" rx="5" fill="#015583"/><text x="720" y="99" text-anchor="middle" fill="#fff">/sbin</text>
+       <!-- subnodos /etc -->
+       <line x1="160" y1="108" x2="160" y2="128" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="110" y1="128" x2="210" y2="128" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="110" y1="128" x2="110" y2="148" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="210" y1="128" x2="210" y2="148" stroke="#6b7280" stroke-width="1.5"/>
+       <rect x="70"  y="148" width="80" height="26" rx="5" fill="#05ADBC"/><text x="110" y="165" text-anchor="middle" fill="#fff" font-size="11">/etc/hosts</text>
+       <rect x="170" y="148" width="80" height="26" rx="5" fill="#05ADBC"/><text x="210" y="165" text-anchor="middle" fill="#fff" font-size="11">/etc/passwd</text>
+       <!-- subnodos /home -->
+       <line x1="260" y1="108" x2="260" y2="148" stroke="#6b7280" stroke-width="1.5"/>
+       <rect x="220" y="148" width="80" height="26" rx="5" fill="#05ADBC"/><text x="260" y="165" text-anchor="middle" fill="#fff" font-size="11">/home/user1</text>
+       <!-- subnodos /var -->
+       <line x1="360" y1="108" x2="360" y2="148" stroke="#6b7280" stroke-width="1.5"/>
+       <rect x="320" y="148" width="80" height="26" rx="5" fill="#05ADBC"/><text x="360" y="165" text-anchor="middle" fill="#fff" font-size="11">/var/log</text>
+       <!-- subnodos /usr -->
+       <line x1="660" y1="108" x2="660" y2="128" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="620" y1="128" x2="700" y2="128" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="620" y1="128" x2="620" y2="148" stroke="#6b7280" stroke-width="1.5"/>
+       <line x1="700" y1="128" x2="700" y2="148" stroke="#6b7280" stroke-width="1.5"/>
+       <rect x="580" y="148" width="80" height="26" rx="5" fill="#05ADBC"/><text x="620" y="165" text-anchor="middle" fill="#fff" font-size="11">/usr/bin</text>
+       <rect x="660" y="148" width="80" height="26" rx="5" fill="#05ADBC"/><text x="700" y="165" text-anchor="middle" fill="#fff" font-size="11">/usr/lib</text>
+       <!-- leyenda -->
+       <rect x="20" y="210" width="14" height="14" fill="#201F4B" rx="3"/>
+       <text x="40" y="222" fill="#201F4B" font-size="11">Directorio raíz</text>
+       <rect x="140" y="210" width="14" height="14" fill="#015583" rx="3"/>
+       <text x="160" y="222" fill="#015583" font-size="11">Directorio de primer nivel (FHS)</text>
+       <rect x="380" y="210" width="14" height="14" fill="#05ADBC" rx="3"/>
+       <text x="400" y="222" fill="#05ADBC" font-size="11">Subdirectorio / archivo de ejemplo</text>
+      </svg>
+     </div>
+     <p class="note" style="text-align:center;">Recurso propio (SVG). El árbol real tiene decenas de subdirectorios; este diagrama muestra los más relevantes para administración de sistemas.</p>
+    </div>
+    <div class="footer">
+     <span class="note">Visual A · FHS árbol simplificado</span>
+     <span class="counter">5 / 20</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 6 RUTAS ABSOLUTAS VS RELATIVAS ─────────────────── -->
+  <section class="slide content-slide" data-title="Rutas absolutas y relativas">
+   <div class="inner">
+    <div class="header">Bloque B · Rutas absolutas y relativas</div>
+    <div class="content two-col">
+     <div>
+      <h2>Definiciones</h2>
+      <p><strong>Ruta absoluta:</strong> comienza en la raíz del sistema (<code>/</code>). Es invariante: describe la misma ubicación sin importar el directorio de trabajo actual.</p>
+      <div class="code">/etc/nginx/nginx.conf   # siempre este archivo
+/home/juan/documentos</div>
+      <p style="margin-top:clamp(8px,1vw,12px);"><strong>Ruta relativa:</strong> se interpreta desde el <strong>directorio de trabajo actual</strong> (<em>CWD, Current Working Directory</em>). Usa <code>.</code> (directorio actual) y <code>..</code> (directorio padre).</p>
+      <div class="code">documentos/informe.txt  # relativo al CWD
+../config/app.conf      # sube un nivel, luego baja a config/
+./script.sh             # archivo en el directorio actual</div>
+     </div>
+     <div class="callout">
+      <p><strong>Regla práctica</strong></p>
+      <p>En <strong>scripts de producción</strong>, siempre usa rutas absolutas. Evitas que el script falle dependiendo de desde dónde se lanza.</p>
+      <p style="margin-top:8px;">En <strong>trabajo interactivo</strong>, las rutas relativas son más rápidas de escribir.</p>
+      <p style="margin-top:8px;"><code>~</code> es un atajo del Shell que expande al home del usuario actual: <code>/home/juan</code>. No es parte del sistema de archivos; el Shell lo reemplaza antes de pasar la ruta al kernel.</p>
+      <p style="margin-top:8px;"><strong>Comparación con Windows:</strong> en Linux una ruta absoluta arranca en <code>/</code>; en Windows suele iniciar con una unidad como <code>C:\</code>. Linux usa <code>/</code> como separador; Windows usa <code>\</code>, aunque PowerShell suele aceptar ambas formas en muchos comandos.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Bloque B · Rutas absolutas / relativas</span>
+     <span class="counter">6 / 20</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 7 pwd cd ls ─────────────────────────────────────── -->
+  <section class="slide content-slide" data-title="pwd cd ls">
+   <div class="inner">
+    <div class="header">Bloque B · pwd, cd y ls: navegación básica</div>
+    <div class="content two-col">
+     <div>
+      <h2>Los tres comandos de orientación</h2>
+      <div class="code"># pwd: Print Working Directory
+# Muestra la ruta absoluta del CWD
+$ pwd
+/home/estudiante
+
+# cd: Change Directory
+$ cd /etc          # ruta absoluta
+$ cd documentos    # ruta relativa desde CWD
+$ cd ..            # sube un nivel
+$ cd ~             # vuelve al home
+$ cd -             # vuelve al directorio anterior (historial)
+
+# ls: List directory contents
+$ ls               # listado simple
+$ ls -l            # formato largo (detallado)
+$ ls -la           # incluye archivos ocultos (empiezan con .)
+$ ls -lh           # tamaños en formato humano (KB, MB, GB)
+$ ls -lrt          # orden inverso por fecha de modificación</div>
+     </div>
+     <div class="card">
+      <h2>El directorio oculto <code>..</code></h2>
+      <p>Cada directorio siempre tiene dos entradas especiales:</p>
+      <ul>
+       <li><code>.</code> (punto): referencia al directorio actual.</li>
+       <li><code>..</code> (doble punto): referencia al directorio padre.</li>
+      </ul>
+      <p style="margin-top:8px;">Los archivos que comienzan con <code>.</code> (punto) son <strong>ocultos</strong> por convención. El sistema no los lista con <code>ls</code> estándar; se necesita <code>ls -a</code>.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Bloque B · pwd, cd, ls</span>
+     <span class="counter">7 / 20</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 8 EQUIVALENCIAS WINDOWS VS LINUX ─────────────── -->
+  <section class="slide content-slide" data-title="Equivalencias Windows Linux">
+   <div class="inner">
+    <div class="header">Bloque B · Equivalencias operativas entre Linux y Windows</div>
+    <div class="content">
+     <h2>Misma intención, herramientas distintas</h2>
+     <table>
+      <thead>
+       <tr><th>Necesidad</th><th>Linux / Bash</th><th>Windows CMD / PowerShell</th><th>Observación técnica</th></tr>
+      </thead>
+      <tbody>
+       <tr><td><strong>Saber dónde estoy</strong></td><td><code>pwd</code></td><td><code>cd</code> en CMD, <code>Get-Location</code> en PowerShell</td><td>En PowerShell, <code>pwd</code> existe como alias de <code>Get-Location</code>.</td></tr>
+       <tr><td><strong>Listar contenido</strong></td><td><code>ls</code>, <code>ls -l</code></td><td><code>dir</code> en CMD, <code>Get-ChildItem</code> en PowerShell</td><td>En PowerShell, <code>ls</code> y <code>dir</code> son aliases del mismo cmdlet, pero su salida no es idéntica a GNU <code>ls</code>.</td></tr>
+       <tr><td><strong>Cambiar de directorio</strong></td><td><code>cd</code></td><td><code>cd</code> o <code>Set-Location</code></td><td>La idea es igual en ambos sistemas: cambiar el CWD para que las rutas relativas apunten a otro lugar.</td></tr>
+       <tr><td><strong>Ver archivo corto</strong></td><td><code>cat archivo</code></td><td><code>type archivo</code> en CMD, <code>Get-Content archivo</code> en PowerShell</td><td>PowerShell también acepta <code>cat</code> como alias, pero semánticamente llama a <code>Get-Content</code>.</td></tr>
+       <tr><td><strong>Consultar ayuda</strong></td><td><code>man ls</code>, <code>ls --help</code></td><td><code>help dir</code> en CMD, <code>Get-Help Get-ChildItem</code> en PowerShell</td><td>Aprender a pedir ayuda en la terminal evita memorizar comandos de forma ciega.</td></tr>
+      </tbody>
+     </table>
+     <div class="callout">
+      <p><strong>Criterio de traducción</strong></p>
+      <p>No se trata de memorizar una tabla aislada, sino de reconocer la <em>intención operativa</em>: ubicarme, listar, moverme, leer y pedir ayuda. Luego traduzco esa intención al vocabulario de la plataforma activa.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Bloque B · Linux y Windows lado a lado</span>
+     <span class="counter">8 / 21</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 9 INTERPRETANDO ls -l ──────────────────────────── -->
+  <section class="slide content-slide" data-title="Interpretando ls -l">
+   <div class="inner">
+    <div class="header">Bloque B · Anatomía de la salida de ls -l</div>
+    <div class="content">
+     <h2>Cada campo tiene significado preciso</h2>
+     <div class="code" style="margin-bottom:clamp(8px,1vw,12px);">-rw-r--r-- 1 juan  devops  4096 Apr 12 10:35 nginx.conf</div>
+     <table>
+      <thead>
+       <tr><th>Campo</th><th>Valor del ejemplo</th><th>Significado</th></tr>
+      </thead>
+      <tbody>
+       <tr><td><strong>Tipo + permisos</strong></td><td><code>-rw-r--r--</code></td><td>Tipo (<code>-</code>=archivo, <code>d</code>=dir, <code>l</code>=enlace) + permisos para dueño, grupo y otros.</td></tr>
+       <tr><td><strong>Hard links</strong></td><td><code>1</code></td><td>Número de nombres que apuntan al mismo i-nodo.</td></tr>
+       <tr><td><strong>Dueño</strong></td><td><code>juan</code></td><td>Usuario propietario del archivo.</td></tr>
+       <tr><td><strong>Grupo</strong></td><td><code>devops</code></td><td>Grupo propietario (segunda capa de permisos).</td></tr>
+       <tr><td><strong>Tamaño</strong></td><td><code>4096</code></td><td>Bytes. Con <code>-h</code>: muestra KB, MB, GB.</td></tr>
+       <tr><td><strong>Fecha modificación</strong></td><td><code>Apr 12 10:35</code></td><td>Última vez que se modificó el contenido del archivo.</td></tr>
+       <tr><td><strong>Nombre</strong></td><td><code>nginx.conf</code></td><td>Nombre del archivo o directorio.</td></tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="footer">
+     <span class="note">Bloque B · Interpretación de ls -l</span>
+      <span class="counter">9 / 21</span>
+    </div>
+   </div>
+  </section>
+
+    <!-- ── 10 VISUAL B: DIAGRAMA RUTA RELATIVA VS ABSOLUTA ── -->
+  <section class="slide content-slide" data-title="Visual rutas">
+   <div class="inner">
+    <div class="header">Visual B · Navegación con rutas absolutas y relativas</div>
+    <div class="content" style="align-items:center;">
+     <div class="imgwrap" style="height:min(46vh,330px);">
+      <svg viewBox="0 0 780 290" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New',monospace" font-size="12">
+       <!-- árbol compacto -->
+       <rect x="340" y="10" width="100" height="28" rx="5" fill="#201F4B"/>
+       <text x="390" y="29" text-anchor="middle" fill="#fff" font-weight="bold">/</text>
+       <line x1="390" y1="38" x2="390" y2="55" stroke="#6b7280"/>
+       <line x1="200" y1="55" x2="580" y2="55" stroke="#6b7280"/>
+       <!-- /home -->
+       <line x1="280" y1="55" x2="280" y2="72" stroke="#6b7280"/>
+       <rect x="240" y="72" width="80" height="26" rx="5" fill="#015583"/>
+       <text x="280" y="89" text-anchor="middle" fill="#fff">/home</text>
+       <!-- /etc -->
+       <line x1="500" y1="55" x2="500" y2="72" stroke="#6b7280"/>
+       <rect x="460" y="72" width="80" height="26" rx="5" fill="#015583"/>
+       <text x="500" y="89" text-anchor="middle" fill="#fff">/etc</text>
+       <!-- /home/juan -->
+       <line x1="280" y1="98" x2="280" y2="118" stroke="#6b7280"/>
+       <rect x="240" y="118" width="80" height="26" rx="5" fill="#05ADBC"/>
+       <text x="280" y="135" text-anchor="middle" fill="#fff">/home/juan</text>
+       <!-- /home/juan/docs -->
+       <line x1="280" y1="144" x2="280" y2="164" stroke="#6b7280"/>
+       <rect x="235" y="164" width="90" height="26" rx="5" fill="#e8f4fb" stroke="#05ADBC"/>
+       <text x="280" y="181" text-anchor="middle" fill="#015583">docs/</text>
+       <!-- /etc/nginx -->
+       <line x1="500" y1="98" x2="500" y2="118" stroke="#6b7280"/>
+       <rect x="460" y="118" width="80" height="26" rx="5" fill="#05ADBC"/>
+       <text x="500" y="135" text-anchor="middle" fill="#fff">/etc/nginx</text>
+       <!-- /etc/nginx/nginx.conf -->
+       <line x1="500" y1="144" x2="500" y2="164" stroke="#6b7280"/>
+       <rect x="445" y="164" width="110" height="26" rx="5" fill="#fef2f2" stroke="#dc2626"/>
+       <text x="500" y="181" text-anchor="middle" fill="#dc2626">nginx.conf</text>
+       <!-- CWD indicator -->
+       <rect x="185" y="115" width="50" height="18" rx="4" fill="#f7df00"/>
+       <text x="210" y="128" text-anchor="middle" fill="#201F4B" font-size="10" font-weight="bold">CWD aquí</text>
+       <line x1="235" y1="124" x2="242" y2="130" stroke="#201F4B" stroke-width="1.5"/>
+       <!-- ruta absoluta arrow -->
+       <path d="M 390,29 Q 520,29 500,118" stroke="#dc2626" stroke-width="2" fill="none" stroke-dasharray="5,3" marker-end="url(#ra)"/>
+       <text x="480" y="65" fill="#dc2626" font-size="11" font-weight="bold">/etc/nginx/nginx.conf</text>
+       <text x="480" y="78" fill="#dc2626" font-size="10">(absoluta: desde /)</text>
+       <!-- ruta relativa arrow -->
+       <path d="M 280,190 Q 280,240 390,240 Q 440,240 490,190" stroke="#15803d" stroke-width="2" fill="none" stroke-dasharray="5,3" marker-end="url(#rr)"/>
+       <text x="340" y="255" text-anchor="middle" fill="#15803d" font-size="11" font-weight="bold">../../etc/nginx/nginx.conf</text>
+       <text x="340" y="268" text-anchor="middle" fill="#15803d" font-size="10">(relativa: desde /home/juan/docs)</text>
+       <defs>
+        <marker id="ra" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#dc2626"/></marker>
+        <marker id="rr" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#15803d"/></marker>
+       </defs>
+      </svg>
+     </div>
+     <p class="note" style="text-align:center;">Ambas rutas apuntan al mismo archivo. La ruta relativa depende del CWD; la absoluta no depende de dónde estés parado.</p>
+    </div>
+    <div class="footer">
+     <span class="note">Visual B · Recurso propio (SVG)</span>
+      <span class="counter">10 / 21</span>
+    </div>
+   </div>
+  </section>
+
+    <!-- ── 11 PRÁCTICA GUIADA 1 ────────────────────────────── -->
+  <section class="slide content-slide" data-title="Práctica 1">
+   <div class="inner">
+    <div class="header">Práctica guiada 1 · Orientación en el árbol</div>
+    <div class="content two-col">
+     <div>
+      <h2>Navegar sin perder el norte</h2>
+      <div class="code"># Linux / Bash
+    # Paso 1: confirmar tu posición
+    pwd
+
+    # Paso 2: ir a /etc y listar
+    cd /etc
+    ls -lh | head -15
+
+    # Paso 3: volver al home en un solo comando
+    cd ~
+    pwd    # confirmar que estás en /home/tuusuario
+
+    # Paso 4: entrar a un directorio que no existe
+    cd /carpeta_inventada   # observar el error
+
+    # Paso 5: usar ruta relativa desde home
+    cd ..
+    pwd    # ¿dónde estás ahora?
+
+    # Windows / PowerShell
+    Get-Location
+    Set-Location C:\Windows
+    Get-ChildItem | Select-Object -First 15
+    Set-Location $HOME
+    Get-Location</div>
+     </div>
+     <div class="card">
+      <p><strong>Preguntas de análisis</strong></p>
+      <ol>
+       <li>¿Cuál es la diferencia entre <code>cd /etc</code> y <code>cd etc</code>?</li>
+       <li>¿Qué muestra <code>ls -lh | head -15</code> que <code>ls</code> solo no muestra?</li>
+       <li>En el paso 5, ¿cuál es la ruta del directorio donde llegaste? ¿Por qué?</li>
+       <li>¿Qué cambia y qué no cambia entre <code>pwd</code> y <code>Get-Location</code>?</li>
+      </ol>
+      <p class="note" style="margin-top:8px;">Socializar la diferencia entre comando equivalente y comando idéntico: la intención es la misma, pero la salida y opciones pueden variar por plataforma.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Práctica 1 · Navegación FHS</span>
+         <span class="counter">11 / 21</span>
+    </div>
+   </div>
+  </section>
+
+      <!-- ── 12 SOLUCIÓN PRÁCTICA 1 ─────────────────────────── -->
+  <section class="slide content-slide" data-title="Solución práctica 1">
+   <div class="inner">
+    <div class="header">Solución guiada 1</div>
+    <div class="content two-col">
+     <div>
+      <h2>Salida esperada</h2>
+      <div class="code">$ pwd
+/home/estudiante
+
+$ cd /etc && ls -lh | head -5
+total 1.2M
+drwxr-xr-x  3 root root 4.0K Apr 10 09:00 acpi
+-rw-r--r--  1 root root 3.0K Jan  6 2020 adduser.conf
+drwxr-xr-x  7 root root 4.0K Apr 10 09:00 alternatives
+-rw-r--r--  1 root root  401 Apr 10 09:00 anacrontab
+
+$ cd ~
+$ pwd
+/home/estudiante
+
+$ cd /carpeta_inventada
+bash: cd: /carpeta_inventada: No such file or directory
+
+$ cd ..
+$ pwd
+/home
+
+PS> Get-Location
+
+Path
+----
+C:\Users\Estudiante
+
+PS> Set-Location C:\Windows
+PS> Get-ChildItem | Select-Object -First 3
+
+    Directory: C:\Windows
+
+Mode   LastWriteTime       Length Name
+----   -------------       ------ ----
+d----  15/04/2026 08:00           addins
+d----  15/04/2026 08:00           appcompat
+d----  15/04/2026 08:00           Boot</div>
+     </div>
+     <div class="card">
+      <p><strong>Respuestas</strong></p>
+      <ol>
+       <li><code>cd /etc</code> usa ruta absoluta (funciona desde cualquier lugar). <code>cd etc</code> usa ruta relativa: busca <code>etc</code> dentro del CWD y falla si no existe ahí.</li>
+       <li><code>ls -lh</code> muestra permisos, dueño, tamaño legible, fecha y nombre. <code>ls</code> solo muestra nombres.</li>
+       <li>Llegaste a <code>/home</code>: el padre de <code>/home/estudiante</code> es <code>/home</code>.</li>
+       <li><code>pwd</code> y <code>Get-Location</code> responden la misma pregunta: cuál es el CWD. La diferencia está en el ecosistema y el formato de salida: Bash devuelve texto plano; PowerShell devuelve un objeto con propiedades.</li>
+      </ol>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Solución 1 · Socialización en plenaria</span>
+     <span class="counter">12 / 21</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 13 cat less head tail ──────────────────────────── -->
+  <section class="slide content-slide" data-title="cat less head tail">
+   <div class="inner">
+    <div class="header">Bloque C · Inspección de archivos de texto</div>
+    <div class="content two-col">
+     <div>
+      <h2>Cuatro formas de leer un archivo</h2>
+      <div class="code"># cat: vuelca el archivo completo en stdout
+cat /etc/hostname
+cat /etc/os-release
+
+# less: lector paginado interactivo
+# q=salir, /texto=buscar, G=final, g=inicio
+less /var/log/syslog
+
+# head: primeras N líneas (default 10)
+head -5 /etc/passwd
+head -20 /var/log/auth.log
+
+# tail: últimas N líneas
+tail -10 /var/log/syslog
+# -f: modo "follow" - muestra líneas en tiempo real
+tail -f /var/log/syslog
+
+# Equivalentes en Windows
+type C:\Windows\System32\drivers\etc\hosts
+Get-Content $env:WINDIR\System32\drivers\etc\hosts
+Get-Content .\app.log -Tail 10</div>
+     </div>
+     <div class="card">
+      <h2>¿Cuándo usar cada uno?</h2>
+      <ul>
+       <li><strong>cat:</strong> archivos cortos (configs, scripts pequeños). Evitar con logs grandes.</li>
+       <li><strong>less:</strong> archivos grandes. Permite navegar sin cargar todo en memoria.</li>
+       <li><strong>head:</strong> revisar el encabezado de un CSV, ver las primeras entradas de un log.</li>
+       <li><strong>tail -f:</strong> monitorear logs en producción en tiempo real.</li>
+       <li><strong>type / Get-Content:</strong> en Windows cumplen la misma intención de inspección, aunque PowerShell opera sobre objetos y texto canalizado.</li>
+      </ul>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Bloque C · cat, less, head, tail</span>
+     <span class="counter">13 / 21</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 14 /proc: el sistema de archivos virtual ───────── -->
+  <section class="slide content-slide" data-title="/proc sistema virtual">
+   <div class="inner">
+    <div class="header">Bloque C · /proc: el kernel hablando a través de archivos</div>
+    <div class="content two-col">
+     <div>
+      <h2>¿Qué es /proc?</h2>
+      <p><code>/proc</code> es un <strong>sistema de archivos virtual</strong>: sus "archivos" no existen en disco. El kernel los genera dinámicamente en memoria RAM cada vez que los lees. Es la forma en que Linux expone su estado interno como texto plano.</p>
+      <div class="code"># Versión exacta del kernel en ejecución
+cat /proc/version
+
+# Información de la CPU
+cat /proc/cpuinfo | head -20
+
+# Memoria disponible en tiempo real
+cat /proc/meminfo | grep -E "MemTotal|MemFree|MemAvailable"
+
+# Tiempo de actividad del sistema (uptime en segundos)
+cat /proc/uptime</div>
+     </div>
+     <div class="callout">
+      <p><strong>Conexión con la Unidad 2</strong></p>
+      <p>Cuando lees <code>/proc/meminfo</code>, el kernel VFS intercepta la llamada y devuelve los datos del subsistema de gestión de memoria que estudiamos (paginación, swap). No hay ningún archivo real en disco: es un "espejo" del estado del kernel.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Bloque C · /proc y VFS</span>
+      <span class="counter">14 / 21</span>
+    </div>
+   </div>
+  </section>
+
+    <!-- ── 15 VISUAL C: DIAGRAMA /proc VFS ────────────────── -->
+  <section class="slide content-slide" data-title="Visual /proc VFS">
+   <div class="inner">
+    <div class="header">Visual C · Cómo /proc conecta la CLI con el kernel</div>
+    <div class="content" style="align-items:center;">
+     <div class="imgwrap" style="height:min(46vh,330px);">
+      <svg viewBox="0 0 780 280" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="13">
+       <!-- usuario -->
+       <rect x="20" y="110" width="130" height="50" rx="8" fill="#e8f4fb" stroke="#05ADBC" stroke-width="2"/>
+       <text x="85" y="138" text-anchor="middle" font-weight="bold" fill="#015583">Usuario</text>
+       <text x="85" y="153" text-anchor="middle" fill="#6b7280" font-size="11">cat /proc/meminfo</text>
+       <!-- flecha 1 -->
+       <line x1="150" y1="135" x2="210" y2="135" stroke="#6b7280" stroke-width="2" marker-end="url(#pv1)"/>
+       <!-- Shell -->
+       <rect x="210" y="110" width="130" height="50" rx="8" fill="#fffbe6" stroke="#e6a817" stroke-width="2"/>
+       <text x="275" y="138" text-anchor="middle" font-weight="bold" fill="#b45309">Shell (bash)</text>
+       <text x="275" y="153" text-anchor="middle" fill="#6b7280" font-size="11">fork + exec cat</text>
+       <!-- flecha 2 -->
+       <line x1="340" y1="135" x2="400" y2="135" stroke="#6b7280" stroke-width="2" marker-end="url(#pv1)"/>
+       <!-- VFS -->
+       <rect x="400" y="95" width="150" height="80" rx="8" fill="#f0fdf4" stroke="#15803d" stroke-width="2"/>
+       <text x="475" y="130" text-anchor="middle" font-weight="bold" fill="#15803d">VFS</text>
+       <text x="475" y="148" text-anchor="middle" fill="#15803d" font-size="11">Virtual File System</text>
+       <text x="475" y="163" text-anchor="middle" fill="#6b7280" font-size="10">syscall: read()</text>
+       <!-- flecha 3 -->
+       <line x1="550" y1="135" x2="610" y2="135" stroke="#6b7280" stroke-width="2" marker-end="url(#pv1)"/>
+       <!-- Kernel proc subsystem -->
+       <rect x="610" y="80" width="150" height="110" rx="8" fill="#201F4B" stroke="#201F4B"/>
+       <text x="685" y="120" text-anchor="middle" fill="#fff" font-weight="bold">Kernel</text>
+       <text x="685" y="138" text-anchor="middle" fill="#e5edf8" font-size="11">Subsistema /proc</text>
+       <text x="685" y="153" text-anchor="middle" fill="#e5edf8" font-size="10">genera datos en</text>
+       <text x="685" y="167" text-anchor="middle" fill="#e5edf8" font-size="10">RAM al vuelo</text>
+       <!-- flecha respuesta vuelta -->
+       <path d="M 610,160 Q 450,220 275,180" stroke="#05ADBC" stroke-width="2" fill="none" stroke-dasharray="5,3" marker-end="url(#pv2)"/>
+       <text x="450" y="218" text-anchor="middle" fill="#05ADBC" font-size="11">datos en stdout → pantalla</text>
+       <!-- nota disco -->
+       <rect x="20" y="220" width="200" height="36" rx="6" fill="#fef2f2" stroke="#dc2626"/>
+       <text x="120" y="240" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="bold">NO hay lectura de disco</text>
+       <text x="120" y="252" text-anchor="middle" fill="#dc2626" font-size="10">todo viene de la RAM del kernel</text>
+       <defs>
+        <marker id="pv1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#6b7280"/></marker>
+        <marker id="pv2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#05ADBC"/></marker>
+       </defs>
+      </svg>
+     </div>
+     <p class="note" style="text-align:center;">El VFS abstrae el tipo de sistema de archivos real. Para el proceso <code>cat</code>, leer <code>/proc/meminfo</code> es indistinguible de leer un archivo en Ext4.</p>
+    </div>
+    <div class="footer">
+     <span class="note">Visual C · Recurso propio (SVG) · /proc y VFS</span>
+      <span class="counter">15 / 21</span>
+    </div>
+   </div>
+  </section>
+
+    <!-- ── 16 PRÁCTICA GUIADA 2 ────────────────────────────── -->
+  <section class="slide content-slide" data-title="Práctica 2">
+   <div class="inner">
+    <div class="header">Práctica guiada 2 · Inspección de configuración y logs</div>
+    <div class="content two-col">
+     <div>
+      <h2>Escenario: diagnóstico de un servidor</h2>
+      <p>Simula ser administrador que debe verificar el estado de un servidor recién encendido. Ejecuta los siguientes comandos y registra la información relevante; si trabajas en Windows, traduce primero la intención operativa al comando equivalente.</p>
+      <div class="code"># 1. ¿Qué SO y versión corre el servidor?
+cat /etc/os-release | head -5
+
+# 2. ¿Cuánta RAM tiene y cuánta está libre?
+cat /proc/meminfo | grep -E "MemTotal|MemAvailable"
+
+# 3. ¿Cuántos núcleos de CPU tiene?
+grep -c "^processor" /proc/cpuinfo
+
+# 4. ¿Cuándo fue el último login registrado?
+tail -5 /var/log/auth.log 2>/dev/null || \
+  tail -5 /var/log/secure 2>/dev/null
+
+# 5. Guarda el resumen en ~/informe_servidor.txt
+{
+  cat /etc/os-release | head -3
+  echo "---"
+  cat /proc/meminfo | grep MemTotal
+} > ~/informe_servidor.txt
+cat ~/informe_servidor.txt</div>
+     </div>
+     <div class="card">
+      <p><strong>Preguntas de análisis</strong></p>
+      <ol>
+       <li>¿De dónde viene la información que muestra <code>/proc/meminfo</code>? ¿Del disco?</li>
+       <li>¿Por qué el comando 4 usa <code>2&gt;/dev/null || ...</code>?</li>
+       <li>¿Qué hace el bloque <code>{ ... } &gt; archivo</code> en el paso 5?</li>
+       <li>Si estuvieras en PowerShell, ¿qué comando usarías para leer un archivo y cuál para pedir ayuda de ese comando?</li>
+      </ol>
+      <p class="note" style="margin-top:8px;">Como cierre formativo, comparar qué pasos dependen de Linux y cuáles representan una necesidad operativa común a cualquier sistema.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Práctica 2 · Diagnóstico de servidor</span>
+      <span class="counter">16 / 21</span>
+    </div>
+   </div>
+  </section>
+
+    <!-- ── 17 SOLUCIÓN PRÁCTICA 2 ─────────────────────────── -->
+  <section class="slide content-slide" data-title="Solución práctica 2">
+   <div class="inner">
+    <div class="header">Solución guiada 2</div>
+    <div class="content two-col">
+     <div>
+      <h2>Salida esperada de informe_servidor.txt</h2>
+      <div class="code">NAME="Ubuntu"
+VERSION="22.04.3 LTS (Jammy Jellyfish)"
+ID=ubuntu
+---
+MemTotal:       16241504 kB</div>
+      <p style="margin-top:clamp(8px,1vw,12px);">La salida exacta varía por sistema, pero la estructura es siempre la misma.</p>
+     </div>
+     <div class="card">
+      <p><strong>Respuestas</strong></p>
+      <ol>
+       <li><code>/proc/meminfo</code> viene directamente de la RAM del kernel, generado al vuelo. No hay lectura de disco. El kernel proyecta su estado interno como archivos de texto mediante el VFS.</li>
+       <li><code>2&gt;/dev/null</code> silencia el error si el archivo no existe en esa ruta. <code>||</code> ejecuta el segundo comando solo si el primero falló, intentando la ruta alternativa según la distribución.</li>
+       <li>El bloque <code>{ cmd1; cmd2; }</code> agrupa varios comandos y redirige la salida de todos ellos al mismo archivo con un único <code>&gt;</code>.</li>
+       <li>En PowerShell se usaría <code>Get-Content</code> para leer el archivo y <code>Get-Help Get-Content</code> para consultar ayuda. La intención es la misma que con <code>cat</code> y <code>man</code> en Linux.</li>
+      </ol>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Solución 2 · Diagnóstico de servidor</span>
+     <span class="counter">17 / 21</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 18 ERRORES COMUNES ──────────────────────────────── -->
+  <section class="slide content-slide" data-title="Errores comunes">
+   <div class="inner">
+    <div class="header">Errores frecuentes y cómo corregirlos</div>
+    <div class="content">
+     <table>
+      <thead>
+       <tr><th>Error</th><th>Causa</th><th>Corrección</th></tr>
+      </thead>
+      <tbody>
+       <tr>
+        <td><code>No such file or directory</code> con <code>cd etc</code></td>
+        <td>El estudiante usa ruta relativa creyendo que es absoluta. Solo funciona si el CWD es <code>/</code>.</td>
+        <td>Usar siempre <code>cd /etc</code> (ruta absoluta) para llegar a directorios del sistema.</td>
+       </tr>
+        <tr>
+         <td>Asumir que <code>ls</code> en PowerShell es idéntico a GNU <code>ls</code></td>
+         <td>En PowerShell, <code>ls</code> es alias de <code>Get-ChildItem</code>; comparte intención, no implementación ni opciones.</td>
+         <td>Si la plataforma es Windows, verificar el cmdlet real con <code>Get-Help Get-ChildItem</code> y no extrapolar flags de Bash.</td>
+        </tr>
+       <tr>
+        <td><code>cat /var/log/syslog</code> bloquea la terminal</td>
+        <td>El archivo tiene cientos de miles de líneas; cat vuelca todo y el scroll es inmanejable.</td>
+        <td>Usar <code>less /var/log/syslog</code> o <code>tail -100 /var/log/syslog</code>.</td>
+       </tr>
+       <tr>
+        <td><code>ls etc</code> da error pero <code>ls /etc</code> funciona</td>
+        <td>La misma confusión de rutas absolutas vs relativas. <code>ls etc</code> busca <code>etc</code> en el CWD.</td>
+        <td>Siempre pensar: "¿estoy usando ruta absoluta o relativa? ¿Desde dónde se interpreta?"</td>
+       </tr>
+       <tr>
+        <td>Confundir <code>~</code> con <code>/</code></td>
+        <td>El estudiante cree que <code>~</code> es la raíz del sistema.</td>
+        <td><code>~</code> es el home del usuario (<code>/home/juan</code>); <code>/</code> es la raíz del árbol de directorios.</td>
+       </tr>
+       <tr>
+        <td>No entender la columna de permisos en <code>ls -l</code></td>
+        <td>Los 10 caracteres (<code>-rwxr-xr-x</code>) no se interpretan correctamente.</td>
+        <td>Recordar: posición 1 = tipo, posiciones 2-4 = dueño, 5-7 = grupo, 8-10 = otros. Se verá en profundidad en la sesión 18.</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="footer">
+     <span class="note">Errores comunes · Sesión 16</span>
+        <span class="counter">18 / 21</span>
+    </div>
+   </div>
+  </section>
+
+      <!-- ── 19 SÍNTESIS TÉCNICA ────────────────────────────── -->
+  <section class="slide content-slide" data-title="Síntesis técnica">
+   <div class="inner">
+    <div class="header">Síntesis técnica · Lo esencial de hoy</div>
+    <div class="content two-col">
+     <div>
+      <h2>Mapa mental en 5 puntos</h2>
+      <ul>
+       <li><strong>FHS:</strong> la estructura de directorios es un estándar. <code>/etc</code> = configuración, <code>/var</code> = datos variables, <code>/proc</code> = kernel en tiempo real.</li>
+       <li><strong>pwd / cd / ls:</strong> los tres comandos de orientación. <code>ls -l</code> revela permisos, dueño, tamaño y fecha.</li>
+       <li><strong>Ruta absoluta:</strong> comienza en <code>/</code>, siempre predecible. <strong>Ruta relativa:</strong> depende del CWD.</li>
+       <li><strong>cat / less / head / tail:</strong> cada herramienta para un tamaño y propósito diferente. <code>tail -f</code> para monitoreo en vivo.</li>
+       <li><strong>Equivalencias:</strong> <code>dir</code>, <code>type</code>, <code>Get-Location</code> y <code>Get-Help</code> persiguen necesidades equivalentes en Windows, aunque la sintaxis y la salida cambian.</li>
+       <li><strong>/proc:</strong> sistema de archivos virtual. Los "archivos" son el estado del kernel en RAM; no hay disco involucrado.</li>
+      </ul>
+     </div>
+     <div class="callout">
+      <p><strong>Competencia adquirida</strong></p>
+      <p>A partir de hoy puedes entrar a una terminal en Linux o Windows y no operar a ciegas: sabes dónde estás, cómo moverte, cómo leer archivos y cómo pedir ayuda al sistema antes de improvisar comandos.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Síntesis · Sesión 16</span>
+      <span class="counter">19 / 21</span>
+    </div>
+   </div>
+  </section>
+
+    <!-- ── 20 PUENTE A SESIÓN 17 ──────────────────────────── -->
+  <section class="slide content-slide" data-title="Puente sesión 17">
+   <div class="inner">
+    <div class="header">Puente técnico · Sesión 17</div>
+    <div class="content two-col">
+     <div>
+      <h2>Próxima sesión: Gestión de Procesos y Flujos de Información</h2>
+      <p>Ahora que sabemos movernos por el sistema de archivos y leer archivos, en la sesión 17 aprenderemos a observar y controlar lo que está corriendo en memoria:</p>
+      <ul>
+       <li><strong>ps, top, htop:</strong> listar y monitorear procesos activos.</li>
+       <li><strong>kill:</strong> enviar señales a procesos (terminar, pausar, reanudar).</li>
+       <li><strong>Pipes (<code>|</code>):</strong> conectar la salida de un comando con la entrada de otro.</li>
+       <li><strong>grep, sort, wc:</strong> filtrar y contar información del sistema en tiempo real.</li>
+      </ul>
+     </div>
+     <div class="card">
+      <p><strong>Preparación sugerida</strong></p>
+      <p>En tu terminal, ejecuta ahora:</p>
+      <div class="code" style="margin-top:6px;">cat /proc/meminfo | grep -c ""
+# ¿Cuántas líneas tiene /proc/meminfo?
+ps aux | head -10
+# Observa la estructura de la salida</div>
+      <p style="margin-top:8px;" class="note">En la sesión 17 entenderemos exactamente qué significa cada columna de <code>ps aux</code> y cómo filtrarlas con pipes.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span class="note">Puente · Hacia la Sesión 17</span>
+      <span class="counter">20 / 21</span>
+    </div>
+   </div>
+  </section>
+
+    <!-- ── 21 REFERENCIAS ─────────────────────────────────── -->
+  <section class="slide content-slide" data-title="Referencias">
+   <div class="inner">
+    <div class="header">Fuentes y atribuciones</div>
+    <div class="content">
+     <table>
+      <thead>
+       <tr><th>Recurso</th><th>Fuente</th><th>Licencia</th></tr>
+      </thead>
+      <tbody>
+       <tr>
+        <td>Filesystem Hierarchy Standard (FHS) v3.0</td>
+        <td>Linux Foundation, 2015. <a href="https://refspecs.linuxfoundation.org/fhs.shtml" target="_blank">refspecs.linuxfoundation.org</a></td>
+        <td>Open Publication License v1.0</td>
+       </tr>
+       <tr>
+        <td>GNU Coreutils Manual (ls, cat, head, tail)</td>
+        <td>Free Software Foundation. <a href="https://www.gnu.org/software/coreutils/manual/" target="_blank">gnu.org/software/coreutils</a></td>
+        <td>GNU FDL v1.3</td>
+       </tr>
+        <tr>
+         <td>Microsoft Learn - PowerShell Help System</td>
+         <td>Microsoft. <a href="https://learn.microsoft.com/powershell/module/microsoft.powershell.core/get-help" target="_blank">learn.microsoft.com/powershell</a></td>
+         <td>Documentación pública Microsoft Learn</td>
+        </tr>
+       <tr>
+        <td>The Linux Command Line (Shotts, W.)</td>
+        <td>No Starch Press, 2019. Disponible en <a href="https://linuxcommand.org/tlcl.php" target="_blank">linuxcommand.org</a></td>
+        <td>Creative Commons BY-NC-ND 3.0</td>
+       </tr>
+       <tr>
+        <td>Diagramas SVG (Árbol FHS, Rutas, /proc-VFS)</td>
+        <td>Elaboración propia · I.U. Pascual Bravo · 2026</td>
+        <td>Uso exclusivo institucional</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>
+    <div class="footer">
+     <span class="note">Atribuciones · Sesión 16</span>
+      <span class="counter">21 / 21</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- navegación touch/mouse -->
+  <div class="touch-nav" id="touchNav">
+   <button id="btnPrev" aria-label="Anterior">&#8592;</button>
+   <button id="btnNext" aria-label="Siguiente">&#8594;</button>
+  </div>
+ </div>
+</div>
+<script>
+(function(){
+  const slides=Array.from(document.querySelectorAll('.slide'));
+  const counters=Array.from(document.querySelectorAll('.counter'));
+  const stage=document.getElementById('stage');
+  const btnPrev=document.getElementById('btnPrev');
+  const btnNext=document.getElementById('btnNext');
+  let idx=0;
+  function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+  function show(i){
+    idx=clamp(i,0,slides.length-1);
+    slides.forEach((s,k)=>s.classList.toggle('active',k===idx));
+    const label=(idx+1)+" / "+slides.length;
+    counters.forEach(el=>el.textContent=label);
+    history.replaceState(null,"","#"+(idx+1));
+  }
+  function next(){show(idx+1);}
+  function prev(){show(idx-1);}
+  const m=(location.hash||"").match(/^#(\d+)$/);
+  if(m){const s=parseInt(m[1],10);if(!isNaN(s))idx=clamp(s-1,0,slides.length-1);}
+  show(idx);
+  btnPrev.addEventListener('click',prev);
+  btnNext.addEventListener('click',next);
+  document.addEventListener('keydown',(e)=>{
+    const k=e.key;
+    if(k==='f'||k==='F'){
+      if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+      return;
+    }
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){e.preventDefault();show(0);}
+    else if(k==='End'){e.preventDefault();show(slides.length-1);}
+  });
+  const isTouch=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
+  if(isTouch){
+    let x0=null,y0=null,t0=0;
+    stage.addEventListener('touchstart',(e)=>{const t=e.changedTouches[0];x0=t.clientX;y0=t.clientY;t0=Date.now();},{passive:true});
+    stage.addEventListener('touchend',(e)=>{
+      if(x0===null)return;
+      const t=e.changedTouches[0];const dx=t.clientX-x0;const dy=t.clientY-y0;const dt=Date.now()-t0;
+      x0=null;y0=null;
+      if(dt>800||Math.abs(dy)>80)return;
+      if(dx<=-50)next();else if(dx>=50)prev();
+    },{passive:true});
+  }
+})();
+</script>
+</body>
+</html>

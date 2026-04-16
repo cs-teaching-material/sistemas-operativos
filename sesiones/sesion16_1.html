@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistemas Operativos · Sesión 16.1 · Manipulación de Archivos y Wildcards</title>
+  <style>
+    :root{
+      --texto:#201F4B;
+      --azul-medio:#015583;
+      --turquesa:#05ADBC;
+      --muted:#6b7280;
+      --white:#ffffff;
+      --h1:clamp(30px,3.4vw,48px);
+      --h2:clamp(22px,2.3vw,34px);
+      --p:clamp(15px,1.3vw,19px);
+      --li:clamp(15px,1.3vw,19px);
+      --safe-top-cover:clamp(208px,9vh,128px);
+      --safe-left-cover:clamp(585px,5.5vw,110px);
+      --safe-right-cover:clamp(28px,3vw,72px);
+      --safe-bottom-cover:clamp(54px,6vh,92px);
+      --safe-top:clamp(100px,9vh,132px);
+      --safe-side:clamp(66px,5.5vw,108px);
+      --safe-bottom:clamp(52px,6vh,90px);
+    }
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+    .deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(10px,2vw,22px);box-sizing:border-box;background:#fff;}
+    .stage{width:min(96vw,calc(92vh*(16/9)));aspect-ratio:16/9;position:relative;}
+    .slide{position:absolute;inset:0;display:none;box-shadow:0 14px 40px rgba(0,0,0,.35);overflow:hidden;}
+    .slide.active{display:block;}
+    .slide.cover{background:url("./Portada.png") center/cover no-repeat;color:#fff;}
+    .slide.content-slide{background:url("./Contenido.png") top left/contain no-repeat,#fff;color:var(--texto);}
+    .inner{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);display:flex;flex-direction:column;gap:clamp(10px,1.1vw,18px);}
+    .cover .inner{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);}
+    .content{flex:1;display:flex;flex-direction:column;gap:clamp(10px,1.1vw,16px);min-height:0;}
+    .header{color:var(--azul-medio);font-size:clamp(18px,1.6vw,22px);font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+    h1{margin:0;font-size:var(--h1);line-height:1.08;color:var(--texto);}
+    h2{margin:0;font-size:var(--h2);line-height:1.15;color:var(--azul-medio);}
+    p{margin:0;font-size:var(--p);line-height:1.4;color:var(--texto);}
+    li{font-size:var(--li);line-height:1.4;color:var(--texto);}
+    ul,ol{margin:0;padding-left:1.2em;}
+    .subtitle{color:var(--turquesa);font-weight:800;font-size:clamp(18px,1.8vw,24px);margin-top:clamp(6px,1vw,10px);}
+    .cover h1{color:#fff;}
+    .cover p{color:#e5edf8;}
+    .cover .subtitle{color:#f7df00;}
+    .note{color:var(--muted);font-size:clamp(12px,1.05vw,14px);line-height:1.35;}
+    .callout{background:rgba(255,255,255,0.94);border-left:6px solid var(--turquesa);padding:clamp(10px,1.1vw,14px);border-radius:6px;}
+    .two-col{display:grid;grid-template-columns:1.15fr 0.9fr;gap:clamp(12px,1.6vw,22px);align-items:flex-start;min-height:0;}
+    @media(max-width:980px){.two-col{grid-template-columns:1fr;}}
+    .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:clamp(8px,1.2vw,16px);}
+    @media(max-width:980px){.three-col{grid-template-columns:1fr;}}
+    .card{background:rgba(255,255,255,.96);border:1px solid #dde2f1;border-radius:10px;padding:clamp(10px,1.1vw,14px);}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace;background:#111827;color:#e5e7eb;padding:2px 8px;border-radius:7px;font-size:clamp(11px,1vw,13px);border:1px solid rgba(255,255,255,.08);}
+    .code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace;font-size:clamp(12px,1.05vw,14px);line-height:1.35;background:#0b1020;color:#e5e7eb;border-radius:10px;padding:clamp(10px,1.1vw,14px);overflow:auto;max-height:44vh;border:1px solid rgba(17,24,39,.25);white-space:pre-wrap;}
+    .imgwrap{width:100%;height:min(36vh,290px);border-radius:10px;border:1px solid #dde2f1;background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:8px;box-sizing:border-box;}
+    .imgwrap svg{width:100%;height:100%;}
+    table{width:100%;border-collapse:collapse;background:rgba(255,255,255,.96);}
+    th,td{border:1px solid #dde2f1;padding:clamp(8px,1vw,12px);font-size:clamp(13px,1.15vw,17px);color:var(--texto);vertical-align:top;}
+    th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(11px,1.05vw,13px);letter-spacing:.06em;color:var(--azul-medio);}
+    .footer{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:clamp(12px,1.05vw,14px);gap:14px;}
+    .counter{font-weight:800;color:var(--azul-medio);}
+    .cover .counter{color:#e5edf8;}
+    .touch-nav{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 12px;pointer-events:none;z-index:10;}
+    .touch-nav button{pointer-events:auto;width:44px;height:44px;border-radius:999px;padding:0;border:1px solid rgba(221,226,241,.95);background:rgba(255,255,255,.92);color:var(--texto);font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.12);cursor:pointer;}
+    #touchNav{opacity:0;transform:translateY(-50%) translateY(6px);transition:.15s ease;}
+    .stage:hover #touchNav{opacity:1;transform:translateY(-50%) translateY(0);}
+    @media(hover:none){#touchNav{opacity:1;transform:translateY(-50%);}}
+    .warning{background:rgba(239,68,68,.1);border-left:6px solid #ef4444;padding:clamp(10px,1.1vw,14px);border-radius:6px;}
+    .warning strong{color:#dc2626;}
+  </style>
+</head>
+<body>
+<div class="deck">
+ <div class="stage" id="stage">
+
+  <!-- ── 1 PORTADA ──────────────────────────────────────── -->
+  <section class="slide cover active" data-title="Portada">
+   <div class="inner">
+    <div class="content">
+     <span class="header">Sistemas Operativos · Unidad 3</span>
+    <h1>Sesión 16.1 · Manipulación de Archivos y Wildcards</h1>
+    <div class="subtitle">cp · COPY · mv · MOVE · rm · DEL · * · ? · seguridad en la eliminación</div>
+     <div class="callout" style="max-width:72%;margin-top:clamp(14px,1.8vw,22px);">
+      <p>Copiar, mover y eliminar archivos son operaciones fundamentales. La habilidad crítica es hacer esto de forma segura en ambientes producción sin perder datos.</p>
+     </div>
+     <p class="note" style="margin-top:auto;">Navegación: <span class="kbd">←</span> <span class="kbd">→</span> · <span class="kbd">Home</span> / <span class="kbd">End</span> · <span class="kbd">F</span> pantalla completa.</p>
+    </div>
+    <div class="footer">
+     <span style="color:#e5edf8;">I.U. Pascual Bravo · Ingeniería de Sistemas</span>
+     <span class="counter">1 / 8</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 2 PROPÓSITO TÉCNICO ────────────────────────────── -->
+  <section class="slide content-slide" data-title="Propósito técnico">
+   <div class="inner">
+    <div class="header">Propósito técnico de la sesión</div>
+    <div class="content two-col">
+     <div>
+      <h2>¿Qué dominaremos hoy?</h2>
+      <ul>
+      <li>Copiar archivos completos respetando permisos y estructuras con <code>cp</code> (Linux) y <code>COPY</code> (Windows).</li>
+       <li>Mover y renombrar archivos atomicamente usando <code>mv</code> (Linux) y <code>MOVE</code> (Windows), evitando duplicados.</li>
+       <li>Eliminar archivos con seguridad usando banderas interactivas (<code>-i</code>, <code>/Y</code>, <code>/-Y</code>).</li>
+       <li>Usar comodines (<code>*</code>, <code>?</code>) para operar sobre múltiples archivos sin escribir cada nombre.</li>
+      </ul>
+     </div>
+     <div class="card">
+      <p><strong>⚠️ Advertencia técnica:</strong></p>
+      <p style="font-size:clamp(13px,1.1vw,16px);margin:8px 0 0;">En terminal, NO hay papelera de reciclaje. Cuando eliminas, el archivo desaparece. Siempre usa <code>-i</code> (interactive) en operaciones críticas.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span style="color:var(--muted);">Sesión 16.1 — Puente hacia Sesión 17 (pipes, filtrado)</span>
+     <span class="counter">2 / 8</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 3 COPIAR: cp vs COPY ────────────────────────────── -->
+  <section class="slide content-slide" data-title="Copiar archivos">
+   <div class="inner">
+    <div class="header">Bloque C · Manipulación de Archivos</div>
+    <h2>cp (Linux) / COPY (Windows): Duplicar archivos</h2>
+    <div class="content">
+     <table>
+      <tr>
+       <th>Aspecto</th>
+       <th>Linux / Bash</th>
+       <th>Windows CMD / PowerShell</th>
+      </tr>
+      <tr>
+       <td><strong>Sintaxis básica</strong></td>
+       <td><code>cp origen destino</code></td>
+       <td><code>COPY origen destino</code></td>
+      </tr>
+      <tr>
+       <td><strong>Copiar recursivo (directorios)</strong></td>
+       <td><code>cp -r dir1/ dir2/</code></td>
+       <td><code>COPY dir1\* dir2\ /S</code></td>
+      </tr>
+      <tr>
+       <td><strong>Interactivo (preguntar si existe)</strong></td>
+       <td><code>cp -i archivo1 archivo2</code></td>
+       <td><code>COPY /Y archivo (sobrescribe)</code></td>
+      </tr>
+      <tr>
+       <td><strong>Preservar permisos</strong></td>
+       <td><code>cp -p archivo1 archivo2</code></td>
+       <td>Automático en NTFS</td>
+      </tr>
+     </table>
+     <div class="callout" style="margin-top:clamp(12px,1.2vw,16px);">
+      <p><strong>Ejemplo práctico:</strong> Hacer backup de archivo crítico antes de editar:</p>
+      <div class="code">$ cp -i /etc/passwd /etc/passwd.bak
+cp: overwrite '/etc/passwd.bak'? y
+$</div>
+     </div>
+    </div>
+    <div class="footer">
+     <span>La flag <code>-i</code> previene sobrescrituras accidentales</span>
+     <span class="counter">3 / 8</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 4 MOVER Y RENOMBRAR: mv vs MOVE vs RENAME ──────── -->
+  <section class="slide content-slide" data-title="Mover y renombrar">
+   <div class="inner">
+    <div class="header">Bloque C · Manipulación de Archivos</div>
+    <h2>mv (Linux) / MOVE (Windows): Mover y renombrar atómicamente</h2>
+    <div class="content">
+     <table>
+      <tr>
+       <th>Operación</th>
+       <th>Linux</th>
+       <th>Windows</th>
+      </tr>
+      <tr>
+       <td><strong>Renombrar</strong></td>
+       <td><code>mv viejo.txt nuevo.txt</code></td>
+       <td><code>REN viejo.txt nuevo.txt</code></td>
+      </tr>
+      <tr>
+       <td><strong>Mover a directorio</strong></td>
+       <td><code>mv archivo.txt /home/backup/</code></td>
+       <td><code>MOVE archivo.txt C:\backup\</code></td>
+      </tr>
+      <tr>
+       <td><strong>Mover y renombrar</strong></td>
+       <td><code>mv archivo.txt /home/copia/nuevo.txt</code></td>
+       <td><code>MOVE archivo.txt C:\copia\nuevo.txt</code></td>
+      </tr>
+      <tr>
+       <td><strong>Interactivo</strong></td>
+       <td><code>mv -i archivo /destino/</code></td>
+       <td><code>MOVE /-Y archivo destino</code></td>
+      </tr>
+     </table>
+     <div class="callout" style="margin-top:clamp(12px,1.2vw,16px);">
+      <p><strong>Ventaja técnica de mv:</strong> No duplica datos en disco. Con <code>COPY + DEL</code>, temporalmente usas el doble de espacio.</p>
+      <p style="font-size:clamp(13px,1.1vw,16px);margin:8px 0 0;"><strong>Caso real:</strong> En servidores con disco casi lleno, <code>mv</code> es seguro; <code>cp</code> puede fallar.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span><code>mv</code> es más eficiente que <code>cp + rm</code></span>
+     <span class="counter">4 / 8</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 5 ELIMINAR: rm vs DEL ──────────────────────────── -->
+  <section class="slide content-slide" data-title="Eliminar archivos">
+   <div class="inner">
+    <div class="header">Bloque C · Manipulación de Archivos</div>
+    <h2>rm (Linux) / DEL (Windows): Eliminar archivos (con cuidado)</h2>
+    <div class="content">
+     <table>
+      <tr>
+       <th>Operación</th>
+       <th>Linux</th>
+       <th>Windows</th>
+      </tr>
+      <tr>
+       <td><strong>Eliminar un archivo</strong></td>
+       <td><code>rm archivo.txt</code></td>
+       <td><code>DEL archivo.txt</code></td>
+      </tr>
+      <tr>
+       <td><strong>Eliminar con confirmación</strong></td>
+       <td><code>rm -i archivo.txt</code></td>
+       <td><code>DEL /-Y archivo.txt</code></td>
+      </tr>
+      <tr>
+       <td><strong>Forzar (sin preguntar)</strong></td>
+       <td><code>rm -f archivo.txt</code></td>
+       <td><code>DEL /F archivo.txt</code></td>
+      </tr>
+      <tr>
+       <td><strong>Eliminar recursivo (directorio)</strong></td>
+       <td><code>rm -r directorio/</code></td>
+       <td><code>DEL /S C:\directorio\*.*</code></td>
+      </tr>
+     </table>
+     <div class="warning" style="margin-top:clamp(12px,1.2vw,16px);">
+      <strong>⚠️ PELIGRO EXTREMO:</strong> <code>rm -rf /</code> o <code>rm -rf /\*</code> en Linux borra TODO desde raíz. No existe "deshacer".
+      <p style="font-size:clamp(13px,1.1vw,16px);margin:8px 0 0;">Recomendación: Siempre usa <code>rm -i</code> en scripts; prueba primero con <code>ls</code> o <code>find</code> para estar seguro.</p>
+     </div>
+    </div>
+    <div class="footer">
+     <span>En terminal: una eliminación es para siempre</span>
+     <span class="counter">5 / 8</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 6 WILDCARDS: * y ? ────────────────────────────── -->
+  <section class="slide content-slide" data-title="Wildcards">
+   <div class="inner">
+    <div class="header">Bloque D · Patrones y Comodines</div>
+    <h2>Comodines (Wildcards): * y ? para múltiples archivos</h2>
+    <div class="content three-col">
+     <div class="card">
+      <h2 style="font-size:clamp(18px,1.5vw,22px);color:var(--azul-medio);">Asterisco *</h2>
+      <p style="font-size:clamp(13px,1.1vw,16px);"><strong>Representa:</strong> Cero o más caracteres</p>
+      <div class="code" style="font-size:clamp(11px,1vw,13px);">*.txt
+Coincide: archivo.txt
+          nota.txt
+          a.txt
+
+*.log
+Coincide: error.log
+          debug.log
+          app.log</div>
+     </div>
+     <div class="card">
+      <h2 style="font-size:clamp(18px,1.5vw,22px);color:var(--azul-medio);">Signo de interrogación ?</h2>
+      <p style="font-size:clamp(13px,1.1vw,16px);"><strong>Representa:</strong> Exactamente 1 carácter</p>
+      <div class="code" style="font-size:clamp(11px,1vw,13px);">file?.txt
+Coincide: file1.txt
+          file2.txt
+          fileA.txt
+NO: file12.txt
+
+????.doc
+Coincide: nota.doc
+          test.doc
+NO: archivo.doc</div>
+     </div>
+     <div class="card">
+      <h2 style="font-size:clamp(18px,1.5vw,22px);color:var(--azul-medio);">Combinados</h2>
+      <p style="font-size:clamp(13px,1.1vw,16px);"><strong>Poder:</strong> Filtrar exactamente lo que necesitas</p>
+      <div class="code" style="font-size:clamp(11px,1vw,13px);">backup_*.tar.gz
+Coincide: backup_001.tar.gz
+          backup_2024.tar.gz
+
+doc?.txt
+Coincide: doc1.txt
+          docA.txt
+NO: document.txt</div>
+     </div>
+    </div>
+    <div class="footer">
+     <span>Los comodines se expanden antes de ejecutar el comando</span>
+     <span class="counter">6 / 8</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 7 PRÁCTICA GUIADA 3 ────────────────────────────── -->
+  <section class="slide content-slide" data-title="Práctica guiada">
+   <div class="inner">
+    <div class="header">Práctica Guiada 3</div>
+    <h2>Escenario: Reorganizar un directorio de proyectos</h2>
+    <div class="content">
+     <p style="margin-bottom:clamp(8px,1vw,12px);"><strong>Contexto:</strong> Tienes un directorio <code>/home/user/proyectos</code> con archivos desordenados. Necesitas:</p>
+     <ol style="margin:clamp(8px,1vw,12px) 0;">
+      <li>Crear un backup de todos los archivos <code>.py</code> en <code>backup/</code> <strong>sin sobrescribir</strong> si ya existe.</li>
+      <li>Renombrar todos los archivos <code>document_?.txt</code> a <code>doc_?.bak</code> para archivar.</li>
+      <li>Verificar cuántos archivos <code>*.log</code> hay y eliminarlos <strong>con confirmación</strong>.</li>
+     </ol>
+     <div class="callout" style="margin-top:clamp(12px,1.2vw,16px);">
+      <p><strong>Instrucción:</strong> Escribe los comandos exactos en Bash y luego en PowerShell. Piensa en qué flags de seguridad deberías usar.</p>
+     </div>
+     <div class="warning" style="margin-top:clamp(12px,1.2vw,16px);">
+      <strong>Restricción:</strong> No uses <code>rm -f</code> ni <code>DEL /F</code> sin confirmación previa.
+     </div>
+    </div>
+    <div class="footer">
+     <span>Tiempo: 5 minutos · En parejas o individual</span>
+     <span class="counter">7 / 8</span>
+    </div>
+   </div>
+  </section>
+
+  <!-- ── 8 SOLUCIÓN PRÁCTICA 3 ──────────────────────────── -->
+  <section class="slide content-slide" data-title="Solución práctica">
+   <div class="inner">
+    <div class="header">Solución Práctica 3</div>
+    <h2>Reorganización segura del directorio</h2>
+    <div class="content">
+     <div class="code">
+# BASH / LINUX
+# 1. Backup de .py sin sobrescribir
+$ mkdir -p backup
+$ cp -i *.py backup/
+cp: overwrite 'backup/script.py'? n  # rechazamos si existe
+
+# 2. Renombrar document_?.txt → doc_?.bak
+$ for f in document_?.txt; do 
+    mv "$f" "${f//document_/doc_}.bak"
+  done
+# Resultado: document_1.txt → doc_1.bak
+
+# 3. Contar y eliminar *.log con seguridad
+$ ls *.log | wc -l       # Contar
+$ rm -i *.log
+rm: remove 'error.log'? y
+rm: remove 'debug.log'? y
+$</div>
+    </div>
+    <div class="content" style="margin-top:clamp(12px,1.2vw,16px);">
+     <div class="code">
+# POWERSHELL / WINDOWS (alternativa)
+# 1. Backup de .py
+PS> New-Item -ItemType Directory -Path backup -ErrorAction SilentlyContinue
+PS> Copy-Item *.py backup/ -Confirm
+
+# 2. Renombrar
+PS> Get-ChildItem document_?.txt | Rename-Item -NewName {$_.Name -replace 'document_','doc_'} 
+
+# 3. Listar y eliminar con confirmación
+PS> Get-ChildItem *.log | Measure-Object | Select-Object -ExpandProperty Count
+PS> Get-ChildItem *.log | Remove-Item -Confirm</div>
+    </div>
+    <div class="callout" style="margin-top:clamp(12px,1.2vw,16px);">
+      <p><strong>Lecciones clave:</strong></p>
+      <ul style="margin:8px 0 0;">
+        <li>Siempre usa <code>-i</code> (interactive) o <code>-Confirm</code> antes de <code>rm</code> o eliminar.</li>
+        <li>Usa <code>ls</code> o <code>Get-ChildItem</code> <strong>primero</strong> para verificar qué coincide con tu patrón.</li>
+        <li><code>cp -i</code> es tu aliado; <code>rm -f</code> es tu enemigo.</li>
+      </ul>
+    </div>
+    <div class="footer">
+     <span>Próxima sesión: Procesos, pipes y filtrado</span>
+     <span class="counter">8 / 8</span>
+    </div>
+   </div>
+  </section>
+
+ </div>
+</div>
+
+<div class="touch-nav" id="touchNav">
+ <button onclick="prevSlide()">&#8249;</button>
+ <button onclick="nextSlide()">&#8250;</button>
+</div>
+
+<script>
+const stage=document.getElementById('stage'),slides=[...stage.querySelectorAll('.slide')];let current=0;function showSlide(n){slides.forEach(s=>s.classList.remove('active'));current=(n%slides.length+slides.length)%slides.length;slides[current].classList.add('active');document.title=slides[current].dataset.title;}function nextSlide(){showSlide(current+1);}function prevSlide(){showSlide(current-1);}document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='End')nextSlide();else if(e.key==='ArrowLeft'||e.key==='Home')prevSlide();else if(e.key==='f'||e.key==='F')stage.parentElement.requestFullscreen?.().catch(()=>{});});showSlide(0);
+</script>
+</body>
+</html>
