@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SO · S18 · Permisos POSIX</title>
+<style>
+:root{--az:#015583;--tur:#05ADBC;--txt:#201F4B;--mu:#6b7280;}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+.deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,20px);box-sizing:border-box;}
+.stage{width:min(96vw,calc(90vh*(16/9)));aspect-ratio:16/9;position:relative;}
+.slide{position:absolute;inset:0;display:none;box-shadow:0 12px 36px rgba(0,0,0,.3);overflow:hidden;}
+.slide.active{display:block;}
+.cov{background:#201F4B;color:#fff;}
+.cnt{background:#fff;color:var(--txt);}
+.inn{height:100%;box-sizing:border-box;padding:clamp(72px,7.5vh,108px) clamp(56px,5vw,96px) clamp(44px,5.5vh,80px);display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);}
+.cov .inn{padding:clamp(72px,8vh,112px) clamp(56px,5vw,96px) clamp(44px,5.5vh,80px);}
+.ct{flex:1;display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);min-height:0;overflow:hidden;}
+.hd{color:var(--tur);font-size:clamp(12px,1.1vw,15px);font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-bottom:2px solid var(--tur);padding-bottom:3px;}
+h1{margin:0;font-size:clamp(26px,3.2vw,44px);line-height:1.08;color:#fff;}
+h2{margin:0;font-size:clamp(18px,2vw,28px);line-height:1.15;color:var(--az);}
+p{margin:0;font-size:clamp(13px,1.2vw,17px);line-height:1.4;}
+li{font-size:clamp(13px,1.2vw,17px);line-height:1.4;}
+ul,ol{margin:0;padding-left:1.2em;}
+.sub{color:#f7df00;font-weight:800;font-size:clamp(16px,1.7vw,22px);margin-top:8px;}
+.nt{color:var(--mu);font-size:clamp(10px,.95vw,13px);line-height:1.35;}
+.cal{background:#f0f9ff;border-left:5px solid var(--tur);padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.caw{background:#fffbe6;border-left:5px solid #e6a817;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cad{background:#fef2f2;border-left:5px solid #dc2626;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.tc{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(10px,1.4vw,20px);align-items:start;min-height:0;}
+.tce{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.4vw,20px);align-items:start;}
+.crd{background:#f8faff;border:1px solid #dde2f1;border-radius:8px;padding:clamp(8px,.9vw,12px);}
+.cod{font-family:ui-monospace,monospace;font-size:clamp(10px,.9vw,12.5px);line-height:1.55;background:#0b1020;color:#e5e7eb;border-radius:7px;padding:clamp(7px,.9vw,11px);white-space:pre-wrap;border:1px solid #1f2937;}
+.cm{color:#6b7280;}.cc{color:#7dd3fc;font-weight:bold;}.cs{color:#86efac;}
+.cn{color:#fde68a;}.cf{color:#c4b5fd;}
+.pr{color:#f87171;font-weight:bold;font-family:monospace;}
+.pw{color:#fbbf24;font-weight:bold;font-family:monospace;}
+.px{color:#86efac;font-weight:bold;font-family:monospace;}
+.pd{color:#7dd3fc;font-weight:bold;font-family:monospace;}
+.p_{color:#4b5563;font-family:monospace;}
+.pbx{font-family:ui-monospace,monospace;font-size:clamp(18px,2.2vw,32px);letter-spacing:.1em;background:#0b1020;border-radius:8px;padding:clamp(8px,1vw,14px) clamp(12px,1.4vw,18px);display:inline-block;}
+.og{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(4px,.6vw,7px);}
+.oc{background:#f3f6fb;border:1px solid #dde2f1;border-radius:6px;padding:clamp(4px,.6vw,8px);text-align:center;}
+.oc .bg{font-size:clamp(16px,1.8vw,26px);font-weight:900;color:var(--az);}
+.oc .lb{font-size:clamp(9px,.8vw,11px);color:var(--mu);}
+.oc .bt{font-family:ui-monospace,monospace;font-size:clamp(10px,.9vw,13px);}
+.iw{width:100%;border-radius:7px;border:1px solid #dde2f1;background:#fff;display:flex;align-items:center;justify-content:center;}
+table{width:100%;border-collapse:collapse;font-size:clamp(10px,.95vw,13px);}
+th,td{border:1px solid #dde2f1;padding:clamp(4px,.7vw,8px);color:var(--txt);vertical-align:top;}
+th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);letter-spacing:.05em;color:var(--az);}
+.ft{display:flex;justify-content:space-between;align-items:center;padding-top:3px;border-top:1px solid #dde2f1;}
+.cov .ft{border-top:1px solid rgba(255,255,255,.15);}
+.ctr{font-weight:800;color:var(--az);font-size:clamp(11px,.95vw,13px);}
+.cov .ctr{color:#e5edf8;}
+.tnv{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;z-index:10;}
+.tnv button{pointer-events:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(221,226,241,.9);background:rgba(255,255,255,.9);color:var(--txt);font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.1);}
+#tnv{opacity:0;transition:.15s;}
+.stage:hover #tnv{opacity:1;}
+@media(hover:none){#tnv{opacity:1;}}
+.sq{opacity:0;transform:translateY(9px);transition:opacity .32s,transform .32s;}
+.sq.vs{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+<div class="deck"><div class="stage" id="stage">
+<section class="slide cov active">
+<div class="inn"><div class="ct">
+<span class="hd">Sistemas Operativos · Unidad 3</span>
+<h1>Sesión 18</h1>
+<h1>Seguridad de Archivos<br>y Permisos POSIX</h1>
+<div class="sub">chmod · chown · notación octal · Principio de Menor Privilegio</div>
+<div class="cal" style="max-width:75%;margin-top:clamp(10px,1.4vw,18px);">
+<p style="color:var(--txt);">Los diez caracteres de <code>ls -l</code> son el primer muro de seguridad de cualquier sistema Linux. Hoy aprendemos a leerlos, modificarlos y aplicarlos con criterio.</p>
+</div>
+<p class="nt" style="margin-top:auto;color:#9ca3af;">← → navegación · F pantalla completa</p>
+</div>
+<div class="ft"><span class="nt" style="color:#9ca3af;">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">1 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Propósito técnico de la sesión</div>
+<div class="ct tc">
+<div>
+<h2>¿Qué dominaremos hoy?</h2>
+<ul>
+<li>Leer e interpretar los <strong>10 caracteres de permisos</strong> de <code>ls -l</code> campo a campo.</li>
+<li>Traducir entre notación <strong>simbólica</strong> (<code>rwx</code>) y <strong>octal</strong> (<code>755</code>).</li>
+<li>Modificar permisos con <code>chmod</code> y cambiar propietario con <code>chown</code>.</li>
+<li>Comprender y aplicar el <strong>Principio de Menor Privilegio (PoLP)</strong>.</li>
+<li>Entender el bit <strong>SUID</strong> y por qué <code>sudo</code> puede funcionar.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Resultado observable</strong></p>
+<p>Al finalizar, el estudiante lee cualquier cadena de permisos, calcula su octal, decide los permisos para el escenario y los establece con <code>chmod</code>/<code>chown</code> justificando desde el PoLP.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Propósito · Sesión 18</span><span class="ctr">2 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Puente desde la sesión 17</div>
+<div class="ct tc">
+<div>
+<h2>Conexión directa</h2>
+<ul>
+<li>En S17 preparamos: <code>ls -l /etc/passwd /etc/shadow /usr/bin/sudo</code></li>
+<li><code>/etc/shadow</code> no podíamos leerlo aunque supiéramos la ruta exacta.</li>
+<li>Los procesos tienen un usuario propietario: <code>root</code>, <code>www-data</code>, el usuario normal.</li>
+<li>El kernel decide al ejecutar qué archivos puede tocar cada proceso.</li>
+</ul>
+</div>
+<div class="cal">
+<p><strong>Pregunta de enlace</strong></p>
+<p><code>-rwsr-xr-x 1 root root /usr/bin/sudo</code></p>
+<p>La <code>s</code> en lugar de <code>x</code> para el dueño es el bit SUID. Explica por qué un usuario normal puede ejecutar <code>sudo</code> con privilegios de root. Lo veremos en detalle hoy.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Continuidad S17 → S18</span><span class="ctr">3 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque A · Control Discrecional de Acceso (DAC)</div>
+<div class="ct tc">
+<div>
+<h2>Definiciones</h2>
+<ul>
+<li><strong>DAC</strong>: el <em>propietario</em> del recurso decide qué permisos otorga a los demás. Modelo estándar POSIX.</li>
+<li><strong>Dueño</strong>: usuario que creó el archivo. El kernel registra su UID en el i-nodo.</li>
+<li><strong>Grupo</strong>: conjunto de usuarios. Cada archivo pertenece a exactamente un grupo (GID).</li>
+<li><strong>Otros</strong>: cualquier usuario que no es ni el dueño ni miembro del grupo.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>¿Por qué tres niveles?</strong></p>
+<p>Diseño de Bell Labs (1969): tres sujetos para cubrir la mayoría de casos sin complejidad excesiva.</p>
+<ol>
+<li>El creador necesita acceso completo a su propio archivo.</li>
+<li>Un equipo de trabajo comparte ciertos archivos.</li>
+<li>El resto del sistema debe tener acceso mínimo o nulo.</li>
+</ol>
+<p class="nt">Para casos más finos: ACL (Access Control Lists), tema de cursos avanzados.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque A · DAC, dueño, grupo, otros</span><span class="ctr">4 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque A · Anatomía de los 10 caracteres de permisos</div>
+<div class="ct" style="gap:clamp(5px,.7vw,10px);">
+<div style="text-align:center;">
+<div class="pbx"><span class="pd">d</span><span class="pr">r</span><span class="pw">w</span><span class="px">x</span><span class="pr">r</span><span class="p_">-</span><span class="px">x</span><span class="pr">r</span><span class="p_">-</span><span class="p_">-</span></div>
+<p class="nt" style="margin-top:3px;">Salida de <code>ls -l</code> para el directorio <code>/home/juan</code></p>
+</div>
+<table>
+<thead><tr><th>Posición</th><th>Carácter</th><th>Sujeto</th><th>Significado</th></tr></thead>
+<tbody>
+<tr><td><strong>1</strong></td><td><code style="color:#7dd3fc;">d</code></td><td>Tipo</td><td><code>d</code>=directorio · <code>-</code>=archivo regular · <code>l</code>=enlace simbólico · <code>c/b</code>=dispositivo</td></tr>
+<tr><td><strong>2–4</strong></td><td><code style="color:#f87171;">rwx</code></td><td>Dueño</td><td>Lectura, escritura, ejecución para el usuario propietario.</td></tr>
+<tr><td><strong>5–7</strong></td><td><code style="color:#fbbf24;">r-x</code></td><td>Grupo</td><td>Los mismos tres permisos para los miembros del grupo. <code>-</code> indica ausencia.</td></tr>
+<tr><td><strong>8–10</strong></td><td><code style="color:#86efac;">r--</code></td><td>Otros</td><td>Permisos para cualquier otro usuario del sistema.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="ft"><span class="nt">Bloque A · Estructura de permisos</span><span class="ctr">5 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque A · Significado de r, w, x según el tipo de objeto</div>
+<div class="ct" style="gap:clamp(5px,.7vw,10px);">
+<table>
+<thead><tr><th>Permiso</th><th>Sobre un <strong>archivo</strong></th><th>Sobre un <strong>directorio</strong></th></tr></thead>
+<tbody>
+<tr>
+<td><span class="pr">r</span> (read · 4)</td>
+<td>Leer el contenido (<code>cat</code>, <code>less</code>, copiar como origen).</td>
+<td>Listar el contenido con <code>ls</code>. Sin <code>r</code>: "Permission denied".</td>
+</tr>
+<tr>
+<td><span class="pw">w</span> (write · 2)</td>
+<td>Modificar el contenido. <strong>No implica poder borrar el archivo:</strong> eso depende del <code>w</code> del directorio padre.</td>
+<td>Crear, renombrar o borrar archivos <em>dentro</em>. Sin <code>w</code> en el dir, <code>touch</code> y <code>rm</code> fallan.</td>
+</tr>
+<tr>
+<td><span class="px">x</span> (execute · 1)</td>
+<td>Ejecutar el archivo como programa. Sin <code>x</code> el Shell no puede lanzarlo.</td>
+<td>Entrar al directorio con <code>cd</code>. También necesario para acceder a archivos por ruta.</td>
+</tr>
+</tbody>
+</table>
+<div class="caw">
+<p><strong>Distinción crítica:</strong> borrar un archivo no requiere <code>w</code> sobre el archivo sino <code>w</code>+<code>x</code> sobre el directorio que lo contiene. El archivo es solo una entrada en el directorio.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque A · Semántica de r, w, x</span><span class="ctr">6 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual A · Cómo el kernel evalúa un acceso</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="height:min(52vh,360px);padding:8px;">
+<svg viewBox="0 0 760 270" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="12">
+<defs>
+<marker id="ma" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#6b7280"/></marker>
+<marker id="mb" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#05ADBC"/></marker>
+<marker id="mc" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#15803d"/></marker>
+<marker id="md" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#dc2626"/></marker>
+</defs>
+<rect x="16" y="88" width="118" height="68" rx="7" fill="#201F4B"/>
+<text x="75" y="114" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">Proceso</text>
+<text x="75" y="130" text-anchor="middle" fill="#e5edf8" font-size="10">UID=1001 (juan)</text>
+<text x="75" y="145" text-anchor="middle" fill="#e5edf8" font-size="10">GID=1001 (devs)</text>
+<line x1="134" y1="122" x2="192" y2="122" stroke="#6b7280" stroke-width="2" marker-end="url(#ma)"/>
+<text x="163" y="114" text-anchor="middle" fill="#6b7280" font-size="9">syscall open()</text>
+<rect x="192" y="70" width="198" height="112" rx="9" fill="#015583"/>
+<text x="291" y="94" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">Kernel · DAC check</text>
+<text x="291" y="112" text-anchor="middle" fill="#e5edf8" font-size="10">1. UID proc == dueño?</text>
+<text x="291" y="128" text-anchor="middle" fill="#e5edf8" font-size="10">2. GID proc == grupo?</text>
+<text x="291" y="144" text-anchor="middle" fill="#e5edf8" font-size="10">3. no → "otros"</text>
+<text x="291" y="163" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="bold">Evalúa solo el bloque correcto</text>
+<line x1="390" y1="126" x2="468" y2="126" stroke="#05ADBC" stroke-width="2" marker-end="url(#mb)"/>
+<text x="429" y="118" text-anchor="middle" fill="#05ADBC" font-size="9">consulta i-nodo</text>
+<rect x="468" y="58" width="168" height="148" rx="7" fill="#0b1020" stroke="#05ADBC" stroke-width="2"/>
+<text x="552" y="82" text-anchor="middle" fill="#05ADBC" font-size="11" font-weight="bold">datos.csv</text>
+<text x="552" y="100" text-anchor="middle" fill="#7dd3fc" font-size="10">dueño: juan (1001)</text>
+<text x="552" y="116" text-anchor="middle" fill="#7dd3fc" font-size="10">grupo: devs (1001)</text>
+<text x="552" y="135" text-anchor="middle" fill="#f87171" font-size="12" font-family="monospace" letter-spacing="2">rw- r-- ---</text>
+<text x="552" y="151" text-anchor="middle" fill="#6b7280" font-size="9">dueño · grupo · otros</text>
+<text x="552" y="193" text-anchor="middle" fill="#fbbf24" font-size="9" font-style="italic">root (UID 0) omite toda verificación DAC</text>
+<rect x="192" y="210" width="108" height="32" rx="6" fill="#15803d"/>
+<text x="246" y="230" text-anchor="middle" fill="#fff" font-weight="bold" font-size="12">PERMITIDO</text>
+<rect x="340" y="210" width="108" height="32" rx="6" fill="#dc2626"/>
+<text x="394" y="230" text-anchor="middle" fill="#fff" font-weight="bold" font-size="12">DENEGADO</text>
+<line x1="264" y1="182" x2="240" y2="210" stroke="#15803d" stroke-width="1.5" marker-end="url(#mc)"/>
+<line x1="318" y1="182" x2="388" y2="210" stroke="#dc2626" stroke-width="1.5" marker-end="url(#md)"/>
+<text x="216" y="200" fill="#15803d" font-size="9">bloque tiene permiso</text>
+<text x="340" y="200" fill="#dc2626" font-size="9">bloque no lo tiene</text>
+</svg>
+</div>
+<p class="nt" style="text-align:center;">El kernel evalúa los bloques en orden: dueño primero. Si el UID coincide, aplica ese bloque y <strong>no sigue evaluando</strong>.</p>
+</div>
+<div class="ft"><span class="nt">Visual A · Recurso propio SVG</span><span class="ctr">7 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque B · Notación octal: de bits a números</div>
+<div class="ct tc">
+<div>
+<h2>Cada permiso es un bit</h2>
+<p>Cada bloque tiene 3 bits: <span class="pr">r</span>=4, <span class="pw">w</span>=2, <span class="px">x</span>=1. La suma es un dígito octal (0–7).</p>
+<div class="og" style="margin-top:clamp(6px,.8vw,10px);">
+<div class="oc"><div class="bg">7</div><div class="bt">rwx</div><div class="lb">4+2+1</div></div>
+<div class="oc"><div class="bg">6</div><div class="bt">rw-</div><div class="lb">4+2+0</div></div>
+<div class="oc"><div class="bg">5</div><div class="bt">r-x</div><div class="lb">4+0+1</div></div>
+<div class="oc"><div class="bg">4</div><div class="bt">r--</div><div class="lb">4+0+0</div></div>
+<div class="oc"><div class="bg">2</div><div class="bt">-w-</div><div class="lb">0+2+0</div></div>
+<div class="oc"><div class="bg">0</div><div class="bt">---</div><div class="lb">0+0+0</div></div>
+</div>
+</div>
+<div class="crd">
+<table>
+<thead><tr><th>Simbólico</th><th>Octal</th><th>Uso típico</th></tr></thead>
+<tbody>
+<tr><td><code>rwxr-xr-x</code></td><td><strong>755</strong></td><td>Scripts públicos, directorios de app.</td></tr>
+<tr><td><code>rw-r--r--</code></td><td><strong>644</strong></td><td>Config, HTML, archivos de texto.</td></tr>
+<tr><td><code>rw-------</code></td><td><strong>600</strong></td><td>Claves privadas SSH, datos confidenciales.</td></tr>
+<tr><td><code>rwxrwxrwx</code></td><td><strong style="color:#dc2626;">777</strong></td><td><span style="color:#dc2626;font-weight:bold;">Nunca en producción.</span></td></tr>
+<tr><td><code>rwsr-xr-x</code></td><td><strong>4755</strong></td><td>Binarios con SUID (<code>sudo</code>, <code>passwd</code>).</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque B · Notación octal</span><span class="ctr">8 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual B · Descomposición octal de <code>rwxr-x---</code> = 750</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="height:min(53vh,370px);padding:8px;">
+<svg viewBox="0 0 740 268" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif">
+<text x="372" y="32" text-anchor="middle" font-family="monospace" font-size="24" font-weight="bold">
+<tspan fill="#7dd3fc">-</tspan><tspan fill="#f87171">r</tspan><tspan fill="#fbbf24">w</tspan><tspan fill="#86efac">x</tspan><tspan fill="#f87171">r</tspan><tspan fill="#4b5563">-</tspan><tspan fill="#86efac">x</tspan><tspan fill="#4b5563">-</tspan><tspan fill="#4b5563">-</tspan><tspan fill="#4b5563">-</tspan>
+</text>
+<rect class="sq" id="ob1" x="136" y="40" width="102" height="3" rx="1.5" fill="#f87171"/>
+<text class="sq" id="ot1" x="187" y="54" text-anchor="middle" fill="#f87171" font-size="10" font-weight="bold">Dueño</text>
+<g class="sq" id="bb1">
+<rect x="140" y="62" width="26" height="26" rx="4" fill="#f87171" opacity=".15" stroke="#f87171" stroke-width="1.5"/>
+<text x="153" y="79" text-anchor="middle" font-family="monospace" font-size="13" fill="#f87171" font-weight="bold">r</text>
+<text x="153" y="98" text-anchor="middle" font-size="9" fill="#f87171">4</text>
+<rect x="172" y="62" width="26" height="26" rx="4" fill="#fbbf24" opacity=".15" stroke="#fbbf24" stroke-width="1.5"/>
+<text x="185" y="79" text-anchor="middle" font-family="monospace" font-size="13" fill="#fbbf24" font-weight="bold">w</text>
+<text x="185" y="98" text-anchor="middle" font-size="9" fill="#fbbf24">2</text>
+<rect x="204" y="62" width="26" height="26" rx="4" fill="#86efac" opacity=".15" stroke="#86efac" stroke-width="1.5"/>
+<text x="217" y="79" text-anchor="middle" font-family="monospace" font-size="13" fill="#86efac" font-weight="bold">x</text>
+<text x="217" y="98" text-anchor="middle" font-size="9" fill="#86efac">1</text>
+<text x="185" y="120" text-anchor="middle" font-size="20" font-weight="900" fill="#015583">7</text>
+<text x="185" y="133" text-anchor="middle" font-size="9" fill="#6b7280">4+2+1</text>
+</g>
+<rect class="sq" id="ob2" x="246" y="40" width="102" height="3" rx="1.5" fill="#fbbf24"/>
+<text class="sq" id="ot2" x="297" y="54" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="bold">Grupo</text>
+<g class="sq" id="bb2">
+<rect x="250" y="62" width="26" height="26" rx="4" fill="#f87171" opacity=".15" stroke="#f87171" stroke-width="1.5"/>
+<text x="263" y="79" text-anchor="middle" font-family="monospace" font-size="13" fill="#f87171" font-weight="bold">r</text>
+<text x="263" y="98" text-anchor="middle" font-size="9" fill="#f87171">4</text>
+<rect x="282" y="62" width="26" height="26" rx="4" fill="#4b5563" opacity=".12" stroke="#4b5563" stroke-width="1.5"/>
+<text x="295" y="79" text-anchor="middle" font-family="monospace" font-size="13" fill="#4b5563" font-weight="bold">-</text>
+<text x="295" y="98" text-anchor="middle" font-size="9" fill="#4b5563">0</text>
+<rect x="314" y="62" width="26" height="26" rx="4" fill="#86efac" opacity=".15" stroke="#86efac" stroke-width="1.5"/>
+<text x="327" y="79" text-anchor="middle" font-family="monospace" font-size="13" fill="#86efac" font-weight="bold">x</text>
+<text x="327" y="98" text-anchor="middle" font-size="9" fill="#86efac">1</text>
+<text x="295" y="120" text-anchor="middle" font-size="20" font-weight="900" fill="#015583">5</text>
+<text x="295" y="133" text-anchor="middle" font-size="9" fill="#6b7280">4+0+1</text>
+</g>
+<rect class="sq" id="ob3" x="356" y="40" width="102" height="3" rx="1.5" fill="#86efac"/>
+<text class="sq" id="ot3" x="407" y="54" text-anchor="middle" fill="#86efac" font-size="10" font-weight="bold">Otros</text>
+<g class="sq" id="bb3">
+<rect x="360" y="62" width="26" height="26" rx="4" fill="#4b5563" opacity=".12" stroke="#4b5563" stroke-width="1.5"/>
+<text x="373" y="79" text-anchor="middle" font-family="monospace" font-size="13" fill="#4b5563" font-weight="bold">-</text>
+<text x="373" y="98" text-anchor="middle" font-size="9" fill="#4b5563">0</text>
+<rect x="392" y="62" width="26" height="26" rx="4" fill="#4b5563" opacity=".12" stroke="#4b5563" stroke-width="1.5"/>
+<text x="405" y="79" text-anchor="middle" font-family="monospace" font-size="13" fill="#4b5563" font-weight="bold">-</text>
+<text x="405" y="98" text-anchor="middle" font-size="9" fill="#4b5563">0</text>
+<rect x="424" y="62" width="26" height="26" rx="4" fill="#4b5563" opacity=".12" stroke="#4b5563" stroke-width="1.5"/>
+<text x="437" y="79" text-anchor="middle" font-family="monospace" font-size="13" fill="#4b5563" font-weight="bold">-</text>
+<text x="437" y="98" text-anchor="middle" font-size="9" fill="#4b5563">0</text>
+<text x="405" y="120" text-anchor="middle" font-size="20" font-weight="900" fill="#015583">0</text>
+<text x="405" y="133" text-anchor="middle" font-size="9" fill="#6b7280">0+0+0</text>
+</g>
+<g class="sq" id="bres">
+<rect x="512" y="55" width="180" height="90" rx="9" fill="#201F4B" stroke="#05ADBC" stroke-width="2"/>
+<text x="602" y="82" text-anchor="middle" fill="#05ADBC" font-size="11" font-weight="bold">Resultado octal</text>
+<text x="602" y="114" text-anchor="middle" font-family="monospace" font-size="36" font-weight="900" fill="#f7df00">750</text>
+<text x="602" y="134" text-anchor="middle" fill="#e5edf8" font-size="9">dueño=7 · grupo=5 · otros=0</text>
+</g>
+<g class="sq" id="bint">
+<rect x="90" y="158" width="556" height="68" rx="7" fill="#f3f6fb" stroke="#dde2f1"/>
+<text x="368" y="179" text-anchor="middle" fill="#015583" font-size="11" font-weight="bold">¿Qué puede hacer cada uno?</text>
+<text x="368" y="197" text-anchor="middle" fill="#201F4B" font-size="10">Dueño: leer + escribir + ejecutar  |  Grupo: leer + ejecutar  |  Otros: nada</text>
+<text x="368" y="213" text-anchor="middle" fill="#6b7280" font-size="9">Script interno compartido con el equipo, no ejecutable por terceros</text>
+</g>
+</svg>
+</div>
+</div>
+<div class="ft"><span class="nt">Visual B · Recurso propio SVG</span><span class="ctr">9 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque B · chmod: modificar permisos</div>
+<div class="ct tc">
+<div>
+<h2>Dos formas de usar chmod</h2>
+<div class="cod"><span class="cm"># Notación octal (estado final exacto)</span>
+<span class="cc">chmod</span> <span class="cn">755</span> script.sh       <span class="cm"># rwxr-xr-x</span>
+<span class="cc">chmod</span> <span class="cn">644</span> config.conf     <span class="cm"># rw-r--r--</span>
+<span class="cc">chmod</span> <span class="cn">600</span> id_rsa          <span class="cm"># rw-------</span>
+<span class="cc">chmod</span> <span class="cf">-R</span> <span class="cn">755</span> /var/www/html
+
+<span class="cm"># Notación simbólica (modificar un bit)</span>
+<span class="cm"># u=dueño g=grupo o=otros a=todos</span>
+<span class="cm"># +=añadir  -=quitar  ==exacto</span>
+<span class="cc">chmod</span> <span class="cs">u+x</span> script.sh
+<span class="cc">chmod</span> <span class="cs">g-w</span> archivo.txt
+<span class="cc">chmod</span> <span class="cs">o=r</span> reporte.pdf
+<span class="cc">chmod</span> <span class="cs">ug=rw,o=r</span> notas.md</div>
+</div>
+<div class="caw">
+<p><strong>¿Octal o simbólico?</strong></p>
+<ul>
+<li><strong>Octal:</strong> establecer el estado final exacto. Más rápido en scripts.</li>
+<li><strong>Simbólico:</strong> modificar solo un bit sin afectar los demás. Más legible interactivamente.</li>
+</ul>
+<p class="nt" style="margin-top:6px;">Solo el dueño (o root) puede cambiar los permisos de un archivo.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque B · chmod</span><span class="ctr">10 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque B · chown y chgrp: cambiar propietario</div>
+<div class="ct tc">
+<div>
+<h2>chown — Change Owner</h2>
+<div class="cod"><span class="cm"># Solo el dueño</span>
+<span class="cc">chown</span> <span class="cs">maria</span> reporte.txt
+<span class="cm"># Dueño y grupo simultáneamente</span>
+<span class="cc">chown</span> <span class="cs">maria:devs</span> reporte.txt
+<span class="cm"># Recursivo (servidor web)</span>
+<span class="cc">chown</span> <span class="cf">-R</span> <span class="cs">www-data:www-data</span> /var/www/html
+<span class="cm"># Verificar</span>
+<span class="cc">ls</span> <span class="cf">-l</span> reporte.txt</div>
+</div>
+<div class="crd">
+<h2>chgrp — Change Group</h2>
+<div class="cod"><span class="cm"># Cambiar solo el grupo</span>
+<span class="cc">chgrp</span> <span class="cs">devs</span> reporte.txt
+<span class="cm"># Equivalente con chown</span>
+<span class="cc">chown</span> <span class="cs">:devs</span> reporte.txt</div>
+<p style="margin-top:8px;"><strong>Restricción clave:</strong> solo <code>root</code> puede cambiar el dueño a otro usuario. Un usuario puede cambiar el grupo a uno del que sea miembro.</p>
+<p class="nt" style="margin-top:5px;">Ver grupos propios: <code>id</code> o <code>groups</code></p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque B · chown y chgrp</span><span class="ctr">11 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica guiada 1 · Leer, calcular y modificar permisos</div>
+<div class="ct tc">
+<div>
+<h2>Tres archivos, tres escenarios</h2>
+<div class="cod"><span class="cm"># 1. Crear archivos de prueba</span>
+<span class="cc">mkdir</span> <span class="cf">-p</span> ~/practica_permisos
+<span class="cc">cd</span> ~/practica_permisos
+<span class="cc">touch</span> script.sh config.conf secreto.key
+
+<span class="cm"># 2. Ver permisos por defecto (umask 022)</span>
+<span class="cc">ls</span> <span class="cf">-l</span>
+
+<span class="cm"># 3. Aplicar permisos del escenario</span>
+<span class="cc">chmod</span> <span class="cn">755</span> script.sh
+<span class="cc">chmod</span> <span class="cn">644</span> config.conf
+<span class="cc">chmod</span> <span class="cn">600</span> secreto.key
+
+<span class="cm"># 4. Verificar</span>
+<span class="cc">ls</span> <span class="cf">-l</span></div>
+</div>
+<div class="crd">
+<p><strong>Tabla a completar en clase</strong></p>
+<table>
+<thead><tr><th>Archivo</th><th>Octal</th><th>Simbólico</th><th>¿Otros leen?</th></tr></thead>
+<tbody>
+<tr><td>script.sh</td><td>755</td><td>?</td><td>?</td></tr>
+<tr><td>config.conf</td><td>644</td><td>?</td><td>?</td></tr>
+<tr><td>secreto.key</td><td>600</td><td>?</td><td>?</td></tr>
+</tbody>
+</table>
+<p class="nt" style="margin-top:6px;">Completar en plenaria con la clase.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Práctica 1 · chmod básico</span><span class="ctr">12 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Solución guiada 1</div>
+<div class="ct tc">
+<div>
+<h2>Salida esperada de <code>ls -l</code></h2>
+<div class="cod">-rwxr-xr-x 1 est est 0 Apr 15 script.sh
+-rw-r--r-- 1 est est 0 Apr 15 config.conf
+-rw------- 1 est est 0 Apr 15 secreto.key</div>
+<div class="caw" style="margin-top:8px;">
+<p><strong>¿Por qué 755 para un script vacío?</strong> El permiso <code>x</code> es intencional. El kernel no verifica el contenido, solo el bit. OpenSSH rechaza claves con permisos &gt; 600: <em>"Permissions 0644 for id_rsa are too open"</em>.</p>
+<p class="nt" style="margin-top:5px;">Verificar: <code>stat -c %a archivo</code></p>
+</div>
+</div>
+<div class="crd">
+<p><strong>Tabla completada</strong></p>
+<table>
+<thead><tr><th>Archivo</th><th>Octal</th><th>Simbólico</th><th>¿Otros leen?</th></tr></thead>
+<tbody>
+<tr><td>script.sh</td><td>755</td><td>rwxr-xr-x</td><td>Sí (r--)</td></tr>
+<tr><td>config.conf</td><td>644</td><td>rw-r--r--</td><td>Sí (r--)</td></tr>
+<tr><td>secreto.key</td><td>600</td><td>rw-------</td><td>No (---)</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="ft"><span class="nt">Solución 1 · chmod básico</span><span class="ctr">13 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque C · Principio de Menor Privilegio (PoLP)</div>
+<div class="ct tc">
+<div>
+<h2>Definición y fundamento</h2>
+<p><strong>PoLP</strong>: cada usuario, proceso o servicio debe tener <em>exactamente</em> los permisos necesarios para su función y ninguno más.</p>
+<ul style="margin-top:8px;">
+<li><strong>Contención:</strong> un proceso comprometido solo accede a lo que podía tocar.</li>
+<li><strong>Auditabilidad:</strong> menos permisos = menos vías = más fácil rastrear cambios no autorizados.</li>
+<li><strong>Error accidental:</strong> sin permiso de escritura, un bug no puede borrar datos.</li>
+</ul>
+</div>
+<div class="cad">
+<p><strong>Antipatrón: chmod 777 "para que funcione"</strong></p>
+<p>El error más común en estudiantes y producción. Al dar 777 a un directorio web:</p>
+<ul>
+<li>Cualquier usuario del sistema puede leer los archivos.</li>
+<li>Un proceso comprometido puede escribir y ejecutar código malicioso.</li>
+<li>El servidor se vuelve vector de ataque para el resto del sistema.</li>
+</ul>
+<p class="nt" style="margin-top:5px;">Regla: si 777 "lo arregla", el problema es otro. El dueño o el grupo están mal asignados.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque C · PoLP y antipatrón 777</span><span class="ctr">14 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque C · Bits especiales: SUID, SGID y Sticky</div>
+<div class="ct tc">
+<div>
+<h2>SUID — Set User ID</h2>
+<p>Cuando un binario tiene SUID activo, el proceso hereda el <strong>UID del dueño del archivo</strong>. La <code>s</code> reemplaza la <code>x</code> del dueño en <code>ls -l</code>.</p>
+<div class="cod" style="margin-top:6px;"><span class="cc">ls</span> <span class="cf">-l</span> /usr/bin/passwd
+<span class="cm">-rw<span style="color:#fbbf24;">s</span>r-xr-x 1 root root /usr/bin/passwd
+<span class="cm"># passwd corre como root aunque lo lance
+# un usuario normal. Puede escribir en
+# /etc/shadow (root:shadow 640).</span></span></div>
+</div>
+<div class="crd">
+<h2>SGID y Sticky bit</h2>
+<p><strong>SGID:</strong> aplica el GID del archivo. En directorios, archivos creados dentro heredan el grupo.</p>
+<div class="cod"><span class="cc">ls</span> <span class="cf">-l</span> /usr/bin/write
+<span class="cm">-rwxr-<span style="color:#fbbf24;">s</span>r-x 1 root tty  (SGID activo)</span></div>
+<p style="margin-top:7px;"><strong>Sticky bit</strong> (<code>t</code>): solo el dueño del archivo puede borrarlo aunque otros tengan <code>w</code> en el directorio.</p>
+<div class="cod"><span class="cc">ls</span> <span class="cf">-ld</span> /tmp
+<span class="cm">drwxrwxrw<span style="color:#fbbf24;">t</span> 10 root root  /tmp</span></div>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque C · Bits especiales SUID/SGID/Sticky</span><span class="ctr">15 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual C · Por qué passwd puede escribir en /etc/shadow</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="height:min(52vh,360px);padding:8px;">
+<svg viewBox="0 0 760 262" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="12">
+<defs>
+<marker id="va" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#6b7280"/></marker>
+<marker id="vb" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#dc2626"/></marker>
+<marker id="vc" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#dc2626"/></marker>
+</defs>
+<rect x="14" y="82" width="116" height="62" rx="7" fill="#201F4B"/>
+<text x="72" y="107" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">usuario</text>
+<text x="72" y="123" text-anchor="middle" fill="#e5edf8" font-size="10">UID=1001</text>
+<text x="72" y="137" text-anchor="middle" fill="#e5edf8" font-size="10">GID=1001</text>
+<line x1="130" y1="113" x2="186" y2="113" stroke="#6b7280" stroke-width="2" marker-end="url(#va)"/>
+<text x="158" y="105" text-anchor="middle" fill="#6b7280" font-size="9">execve()</text>
+<rect x="186" y="66" width="152" height="84" rx="7" fill="#015583" stroke="#f7df00" stroke-width="2"/>
+<text x="262" y="90" text-anchor="middle" fill="#f7df00" font-size="11" font-weight="bold">/usr/bin/passwd</text>
+<text x="262" y="107" text-anchor="middle" fill="#e5edf8" font-size="10">dueño: root</text>
+<text x="262" y="122" text-anchor="middle" fill="#e5edf8" font-family="monospace" font-size="11">-rw<tspan fill="#f87171">s</tspan>r-xr-x</text>
+<text x="262" y="139" text-anchor="middle" fill="#fbbf24" font-size="9">bit SUID activo</text>
+<rect x="186" y="168" width="152" height="32" rx="6" fill="#e6a817"/>
+<text x="262" y="186" text-anchor="middle" fill="#201F4B" font-size="11" font-weight="bold">Proceso hereda</text>
+<text x="262" y="197" text-anchor="middle" fill="#201F4B" font-size="9">eUID = 0 (root)</text>
+<line x1="338" y1="128" x2="410" y2="128" stroke="#dc2626" stroke-width="2" marker-end="url(#vb)"/>
+<text x="374" y="120" text-anchor="middle" fill="#dc2626" font-size="9">open() con eUID=0</text>
+<rect x="410" y="66" width="154" height="84" rx="7" fill="#0b1020" stroke="#dc2626" stroke-width="2"/>
+<text x="487" y="90" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="bold">/etc/shadow</text>
+<text x="487" y="107" text-anchor="middle" fill="#e5edf8" font-size="10">dueño: root</text>
+<text x="487" y="122" text-anchor="middle" fill="#e5edf8" font-family="monospace" font-size="11">-rw-r-----</text>
+<text x="487" y="139" text-anchor="middle" fill="#6b7280" font-size="9">grupo: shadow · 640</text>
+<rect x="410" y="168" width="154" height="32" rx="6" fill="#15803d"/>
+<text x="487" y="187" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">PERMITIDO</text>
+<text x="487" y="198" text-anchor="middle" fill="#fff" font-size="9">eUID 0 = dueño del archivo</text>
+<line x1="72" y1="144" x2="72" y2="228" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3"/>
+<line x1="72" y1="228" x2="472" y2="228" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3"/>
+<line x1="472" y1="228" x2="472" y2="200" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#vc)"/>
+<text x="272" y="244" text-anchor="middle" fill="#dc2626" font-size="10">acceso directo del usuario (UID 1001) → DENEGADO</text>
+</svg>
+</div>
+<p class="nt" style="text-align:center;">El bit SUID permite a <code>passwd</code> escribir en <code>/etc/shadow</code> aunque el usuario no tenga acceso directo a ese archivo.</p>
+</div>
+<div class="ft"><span class="nt">Visual C · Recurso propio SVG · SUID y /etc/shadow</span><span class="ctr">16 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque C · umask: los permisos por defecto al crear archivos</div>
+<div class="ct tc">
+<div>
+<h2>¿Por qué los archivos no nacen con 777?</h2>
+<p>El kernel parte de un máximo y resta la <strong>umask</strong>. La umask bloquea ciertos bits automáticamente.</p>
+<div class="cod" style="margin-top:6px;"><span class="cm"># Ver la umask actual</span>
+<span class="cc">umask</span>
+<span class="cn">0022</span>     <span class="cm"># valor más común</span>
+
+<span class="cm"># Archivo nuevo:
+# máximo 666 → rw-rw-rw-
+# umask  022 → ---w--w- (bloqueados)
+# resultado 644 → rw-r--r--</span>
+
+<span class="cm"># Directorio nuevo:
+# máximo 777 - umask 022 = 755</span>
+
+<span class="cm"># Cambiar umask en la sesión actual</span>
+<span class="cc">umask</span> <span class="cn">027</span>  <span class="cm"># archivos: 640 · dirs: 750</span></div>
+</div>
+<div class="cal">
+<p><strong>umask 027 en servidores</strong></p>
+<p>Con umask 022 (defecto), "otros" pueden leer archivos nuevos. En producción conviene <strong>027</strong>: archivos nacen con 640 (solo dueño y grupo leen) y directorios con 750. Los archivos de configuración no son legibles por usuarios no autorizados desde su creación.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque C · umask</span><span class="ctr">17 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica guiada 2 · Auditoría de permisos de un servidor web</div>
+<div class="ct tc">
+<div>
+<h2>Escenario: heredaste un servidor con 777</h2>
+<div class="cod"><span class="cm"># 1. Simular el problema</span>
+<span class="cc">mkdir</span> <span class="cf">-p</span> ~/webroot/{html,logs,conf}
+<span class="cc">touch</span> ~/webroot/html/index.html
+<span class="cc">touch</span> ~/webroot/conf/app.conf
+<span class="cc">touch</span> ~/webroot/logs/access.log
+<span class="cc">chmod</span> <span class="cf">-R</span> <span class="cn">777</span> ~/webroot
+
+<span class="cm"># 2. Auditar: archivos world-writable</span>
+<span class="cc">find</span> ~/webroot <span class="cf">-perm -o+w</span> <span class="cf">-ls</span>
+
+<span class="cm"># 3. Corregir con PoLP</span>
+<span class="cc">find</span> ~/webroot/html <span class="cf">-type d</span> <span class="cf">-exec</span> <span class="cc">chmod</span> <span class="cn">755</span> {} <span class="cs">\;</span>
+<span class="cc">find</span> ~/webroot/html <span class="cf">-type f</span> <span class="cf">-exec</span> <span class="cc">chmod</span> <span class="cn">644</span> {} <span class="cs">\;</span>
+<span class="cc">chmod</span> <span class="cn">750</span> ~/webroot/conf
+<span class="cc">chmod</span> <span class="cn">640</span> ~/webroot/conf/app.conf
+<span class="cc">chmod</span> <span class="cn">750</span> ~/webroot/logs
+<span class="cc">chmod</span> <span class="cn">640</span> ~/webroot/logs/access.log
+<span class="cc">chmod</span> <span class="cn">755</span> ~/webroot
+
+<span class="cm"># 4. Verificar y guardar evidencia</span>
+<span class="cc">find</span> ~/webroot <span class="cf">-perm -o+w</span> <span class="cf">-ls</span> > ~/auditoria_permisos.txt</div>
+</div>
+<div class="crd">
+<p><strong>Preguntas de análisis</strong></p>
+<ol>
+<li>¿Por qué usamos <code>-type d</code> y <code>-type f</code> por separado en el paso 3?</li>
+<li>¿Qué significa el flag <code>-perm -o+w</code> en <code>find</code>?</li>
+<li>¿Por qué el log tiene 640 y no 644?</li>
+</ol>
+</div>
+</div>
+<div class="ft"><span class="nt">Práctica 2 · Auditoría y corrección de permisos</span><span class="ctr">18 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Solución guiada 2</div>
+<div class="ct tc">
+<div>
+<h2>Estado final esperado</h2>
+<div class="cod">drwxr-xr-x webroot/
+drwxr-xr-x webroot/html/
+-rw-r--r-- webroot/html/index.html
+drwxr-x--- webroot/conf/
+-rw-r----- webroot/conf/app.conf
+drwxr-x--- webroot/logs/
+-rw-r----- webroot/logs/access.log
+
+<span class="cm"># Paso 4: sin salida = sin world-writable
+# cat ~/auditoria_permisos.txt → vacío</span></div>
+</div>
+<div class="crd">
+<p><strong>Respuestas</strong></p>
+<ol>
+<li><code>-type d</code> y <code>-type f</code> por separado: los directorios necesitan <code>x</code> para poder entrar con <code>cd</code>. Un directorio 644 no permite entrada. Los HTML no son ejecutables, 644 es correcto para ellos.</li>
+<li><code>-perm -o+w</code>: el guión es el modo "al menos estos bits". Encuentra cualquier archivo donde el bit de escritura para "otros" esté activo.</li>
+<li>Los logs tienen IPs de clientes, rutas internas y mensajes de error que revelan la arquitectura. Bajo PoLP, solo el proceso servidor (dueño) y los administradores (grupo) acceden.</li>
+</ol>
+</div>
+</div>
+<div class="ft"><span class="nt">Solución 2 · Auditoría de permisos</span><span class="ctr">19 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Errores frecuentes y cómo corregirlos</div>
+<div class="ct">
+<table>
+<thead><tr><th>Error</th><th>Causa</th><th>Corrección</th></tr></thead>
+<tbody>
+<tr>
+<td><code>chmod 777</code> como solución rápida</td>
+<td>El proceso falla y se aplica 777 para evitar el error.</td>
+<td>Identificar qué usuario corre el proceso (<code>ps aux</code>), asignar el dueño correcto con <code>chown</code> y aplicar el permiso mínimo.</td>
+</tr>
+<tr>
+<td>Confundir <code>w</code> en archivo con poder borrarlo</td>
+<td>Se cree que sin <code>w</code> en el archivo no se puede borrar.</td>
+<td>Borrar requiere <code>w</code>+<code>x</code> en el directorio padre. Demostrar: quitar <code>w</code> del dir → <code>rm</code> falla aunque el archivo tenga 777.</td>
+</tr>
+<tr>
+<td>Calcular mal el octal (<code>rw-r--r--</code> = 664 en vez de 644)</td>
+<td>Confundir posiciones o sumar incorrectamente.</td>
+<td>Leer los tres bloques de izquierda a derecha, calcular suma por bloque. Verificar con <code>stat -c %a archivo</code>.</td>
+</tr>
+<tr>
+<td><code>chown otroUsuario archivo</code> sin ser root</td>
+<td>Se cree que el dueño puede reasignar la propiedad libremente.</td>
+<td>Solo root puede reasignar. El usuario puede cambiar el grupo a uno del que sea miembro: <code>chown :migrupo archivo</code>.</td>
+</tr>
+<tr>
+<td>Directorio 444: parece "de solo lectura" pero está roto</td>
+<td>Se aplica 444 a un directorio esperando que solo permita lectura.</td>
+<td>Sin <code>x</code>, <code>cd</code> falla y ningún acceso a archivos internos funciona. Los directorios siempre necesitan <code>x</code> para ser navegables.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="ft"><span class="nt">Errores comunes · Sesión 18</span><span class="ctr">20 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Síntesis técnica · Lo esencial de hoy</div>
+<div class="ct tc">
+<div>
+<h2>Mapa en 6 puntos</h2>
+<ul>
+<li><strong>DAC:</strong> el dueño decide. Tres sujetos: dueño, grupo, otros.</li>
+<li><strong>10 caracteres:</strong> tipo (1) + dueño (3) + grupo (3) + otros (3). r=4, w=2, x=1.</li>
+<li><strong>Octal:</strong> suma de bits por bloque. <code>rwxr-xr-x</code> = 755.</li>
+<li><strong>chmod / chown:</strong> dos herramientas, dos tareas distintas. Solo root cambia el dueño a otro usuario.</li>
+<li><strong>PoLP:</strong> permiso mínimo necesario. 777 nunca es la solución correcta.</li>
+<li><strong>SUID:</strong> el proceso hereda el UID del dueño del binario. Base de <code>sudo</code> y <code>passwd</code>.</li>
+</ul>
+</div>
+<div class="cal">
+<p><strong>Competencia adquirida</strong></p>
+<p>Puedes heredar un servidor con permisos incorrectos, auditarlo con <code>find -perm</code>, entender por qué cada archivo tiene los permisos que tiene, y corregirlos aplicando PoLP sin romper el sistema.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Síntesis · Sesión 18</span><span class="ctr">21 / 22</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Puente técnico · Sesión 19</div>
+<div class="ct tc">
+<div>
+<h2>Próxima sesión: Bases de Scripting y Automatización</h2>
+<p>Hoy aplicamos permisos manualmente. En producción, miles de archivos necesitan permisos correctos después de cada despliegue. La solución es un script.</p>
+<ul>
+<li><strong>Variables de entorno y Shell:</strong> parametrizar comportamiento.</li>
+<li><strong>Condicionales (<code>if</code>, <code>test</code>):</strong> ejecutar solo si se cumple una condición.</li>
+<li><strong>Bucles (<code>for</code>, <code>while</code>):</strong> aplicar operaciones a múltiples archivos.</li>
+<li><strong>Shebang (<code>#!/bin/bash</code>):</strong> declarar el intérprete del script.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Preparación sugerida</strong></p>
+<div class="cod" style="margin-top:5px;"><span class="cc">echo</span> <span class="cs">'#!/bin/bash
+echo "Hola desde mi primer script"
+echo "Usuario: $(whoami)"
+echo "Directorio: $(pwd)"'</span> > ~/hola.sh
+<span class="cc">chmod</span> <span class="cn">755</span> ~/hola.sh
+<span class="cc">./hola.sh</span></div>
+<p class="nt" style="margin-top:5px;">¿Funciona? ¿Qué hace el <code>./</code> antes del nombre? La sesión 19 lo explica.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Puente · Hacia la Sesión 19</span><span class="ctr">22 / 22</span></div>
+</div>
+</section>
+<div class="tnv" id="tnv">
+<button id="btnP">&#8592;</button>
+<button id="btnN">&#8594;</button>
+</div>
+</div></div>
+
+<script>
+(function(){
+  const slides=Array.from(document.querySelectorAll('.slide'));
+  let idx=0;
+  function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+  function show(i){
+    idx=clamp(i,0,slides.length-1);
+    slides.forEach((s,k)=>s.classList.toggle('active',k===idx));
+    document.querySelectorAll('.ctr').forEach(el=>el.textContent=(idx+1)+' / '+slides.length);
+    history.replaceState(null,'','#'+(idx+1));
+    slides[idx].querySelectorAll('.sq').forEach((el,k)=>{
+      el.classList.remove('vs');
+      setTimeout(()=>el.classList.add('vs'),75*k+45);
+    });
+  }
+  function next(){show(idx+1);}
+  function prev(){show(idx-1);}
+  const m=(location.hash||'').match(/^#(\d+)$/);
+  if(m)idx=clamp(parseInt(m[1],10)-1,0,slides.length-1);
+  show(idx);
+  document.getElementById('btnP').onclick=prev;
+  document.getElementById('btnN').onclick=next;
+  document.addEventListener('keydown',e=>{
+    if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();return;}
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='Home'){e.preventDefault();show(0);}
+    else if(e.key==='End'){e.preventDefault();show(slides.length-1);}
+  });
+  if('ontouchstart' in window||navigator.maxTouchPoints>0){
+    let x0=null,t0=0;
+    const st=document.getElementById('stage');
+    st.addEventListener('touchstart',e=>{const t=e.changedTouches[0];x0=t.clientX;t0=Date.now();},{passive:true});
+    st.addEventListener('touchend',e=>{
+      if(x0===null)return;
+      const t=e.changedTouches[0],dx=t.clientX-x0,dt=Date.now()-t0;
+      x0=null;if(dt>700)return;
+      if(dx<=-48)next();else if(dx>=48)prev();
+    },{passive:true});
+  }
+})();
+</script>
+</body>
+</html>

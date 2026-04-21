@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Sistemas Operativos · Sesión 17 · Gestión de Procesos y Flujos de Información</title>
+  <style>
+    :root{
+      --texto:#201F4B;--azul-medio:#015583;--turquesa:#05ADBC;--muted:#6b7280;
+      --h1:clamp(30px,3.4vw,48px);--h2:clamp(22px,2.3vw,34px);
+      --p:clamp(15px,1.3vw,19px);--li:clamp(15px,1.3vw,19px);
+      --safe-top-cover:clamp(208px,9vh,128px);--safe-left-cover:clamp(585px,5.5vw,110px);
+      --safe-right-cover:clamp(28px,3vw,72px);--safe-bottom-cover:clamp(54px,6vh,92px);
+      --safe-top:clamp(100px,9vh,132px);--safe-side:clamp(66px,5.5vw,108px);--safe-bottom:clamp(52px,6vh,90px);
+    }
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+    .deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(10px,2vw,22px);box-sizing:border-box;background:#fff;}
+    .stage{width:min(96vw,calc(92vh*(16/9)));aspect-ratio:16/9;position:relative;}
+    .slide{position:absolute;inset:0;display:none;box-shadow:0 14px 40px rgba(0,0,0,.35);overflow:hidden;}
+    .slide.active{display:block;}
+    .slide.cover{background:url("./Portada.png") center/cover no-repeat;color:#fff;}
+    .slide.content-slide{background:url("./Contenido.png") top left/contain no-repeat,#fff;color:var(--texto);}
+    .inner{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom) var(--safe-side);display:flex;flex-direction:column;gap:clamp(10px,1.1vw,18px);}
+    .cover .inner{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);}
+    .content{flex:1;display:flex;flex-direction:column;gap:clamp(10px,1.1vw,16px);min-height:0;}
+    .header{color:var(--azul-medio);font-size:clamp(18px,1.6vw,22px);font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+    h1{margin:0;font-size:var(--h1);line-height:1.08;color:var(--texto);}
+    h2{margin:0;font-size:var(--h2);line-height:1.15;color:var(--azul-medio);}
+    p{margin:0;font-size:var(--p);line-height:1.4;color:var(--texto);}
+    li{font-size:var(--li);line-height:1.4;color:var(--texto);}
+    ul,ol{margin:0;padding-left:1.2em;}
+    .subtitle{color:var(--turquesa);font-weight:800;font-size:clamp(18px,1.8vw,24px);margin-top:clamp(6px,1vw,10px);}
+    .cover h1{color:#fff;}.cover p{color:#e5edf8;}.cover .subtitle{color:#f7df00;}
+    .note{color:var(--muted);font-size:clamp(12px,1.05vw,14px);line-height:1.35;}
+    .callout{background:rgba(255,255,255,.94);border-left:6px solid var(--turquesa);padding:clamp(10px,1.1vw,14px);border-radius:6px;}
+    .callout-warn{background:#fffbe6;border-left:6px solid #e6a817;padding:clamp(10px,1.1vw,14px);border-radius:6px;}
+    .two-col{display:grid;grid-template-columns:1.15fr 0.9fr;gap:clamp(12px,1.6vw,22px);align-items:flex-start;min-height:0;}
+    .two-col-eq{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,1.6vw,22px);align-items:flex-start;min-height:0;}
+    @media(max-width:980px){.two-col,.two-col-eq{grid-template-columns:1fr;}}
+    .card{background:rgba(255,255,255,.96);border:1px solid #dde2f1;border-radius:10px;padding:clamp(10px,1.1vw,14px);}
+    .kbd{font-family:ui-monospace,monospace;background:#111827;color:#e5e7eb;padding:2px 8px;border-radius:7px;font-size:clamp(11px,1vw,13px);}
+    .code{font-family:ui-monospace,monospace;font-size:clamp(12px,1.05vw,14px);line-height:1.5;background:#0b1020;color:#e5e7eb;border-radius:10px;padding:clamp(10px,1.1vw,14px);overflow:auto;max-height:46vh;border:1px solid rgba(17,24,39,.25);white-space:pre-wrap;}
+    /* syntax highlight helpers */
+    .c-cmt{color:#6b7280;} .c-cmd{color:#7dd3fc;font-weight:bold;} .c-str{color:#86efac;}
+    .c-num{color:#fde68a;} .c-flag{color:#c4b5fd;} .c-op{color:#f9a8d4;}
+    .imgwrap{width:100%;border-radius:10px;border:1px solid #dde2f1;background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:8px;box-sizing:border-box;}
+    table{width:100%;border-collapse:collapse;background:rgba(255,255,255,.96);}
+    th,td{border:1px solid #dde2f1;padding:clamp(7px,.9vw,11px);font-size:clamp(13px,1.15vw,17px);color:var(--texto);vertical-align:top;}
+    th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(11px,1.05vw,13px);letter-spacing:.06em;color:var(--azul-medio);}
+    .footer{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:clamp(12px,1.05vw,14px);gap:14px;}
+    .counter{font-weight:800;color:var(--azul-medio);}.cover .counter{color:#e5edf8;}
+    .touch-nav{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 12px;pointer-events:none;z-index:10;}
+    .touch-nav button{pointer-events:auto;width:44px;height:44px;border-radius:999px;padding:0;border:1px solid rgba(221,226,241,.95);background:rgba(255,255,255,.92);color:var(--texto);font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.12);cursor:pointer;}
+    #touchNav{opacity:0;transform:translateY(-50%) translateY(6px);transition:.15s ease;}
+    .stage:hover #touchNav{opacity:1;transform:translateY(-50%) translateY(0);}
+    @media(hover:none){#touchNav{opacity:1;transform:translateY(-50%);}}
+    /* pipe animation */
+    .pipe-step{opacity:0;transform:translateX(-14px);transition:opacity .4s ease,transform .4s ease;}
+    .pipe-step.vis{opacity:1;transform:translateX(0);}
+  </style>
+</head>
+<body>
+<div class="deck"><div class="stage" id="stage">
+
+<!-- ══ 1 PORTADA ══════════════════════════════════════════ -->
+<section class="slide cover active">
+ <div class="inner"><div class="content">
+  <span class="header">Sistemas Operativos · Unidad 3</span>
+  <h1>Sesión 17 · Gestión de Procesos y Flujos de Información</h1>
+  <div class="subtitle">ps · top · kill · pipes · grep · sort · wc</div>
+  <div class="callout" style="max-width:74%;margin-top:clamp(14px,1.8vw,22px);">
+   <p>Un administrador de sistemas pasa gran parte de su tiempo observando qué corre en el servidor y canalizando esa información para tomar decisiones. Hoy aprendemos las herramientas que hacen posible ambas cosas.</p>
+  </div>
+  <p class="note" style="margin-top:auto;">Navegación: <span class="kbd">←</span><span class="kbd">→</span> · <span class="kbd">Home</span>/<span class="kbd">End</span> · <span class="kbd">F</span> pantalla completa.</p>
+ </div>
+ <div class="footer"><span style="color:#e5edf8;">I.U. Pascual Bravo · Ingeniería de Sistemas</span><span class="counter">1 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 2 PROPÓSITO ════════════════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Propósito técnico de la sesión</div>
+  <div class="content two-col">
+   <div>
+    <h2>¿Qué dominaremos hoy?</h2>
+    <ul>
+     <li>Listar y monitorear procesos activos con <code>ps</code> y <code>top</code>.</li>
+      <li>Comparar herramientas de monitorización entre Windows y Linux (<code>Taskmgr</code>/<code>Get-Process</code> vs <code>top</code>/<code>ps</code>).</li>
+     <li>Comprender qué es un <strong>proceso</strong>, un <strong>PID</strong> y un <strong>estado de proceso</strong>.</li>
+     <li>Enviar señales a procesos con <code>kill</code> y <code>killall</code>.</li>
+     <li>Conectar la salida de un comando con la entrada de otro usando <strong>pipes</strong> (<code>|</code>).</li>
+     <li>Filtrar, contar y ordenar información del sistema con <code>grep</code>, <code>wc</code> y <code>sort</code>.</li>
+    </ul>
+   </div>
+   <div class="card">
+    <p><strong>Resultado observable</strong></p>
+    <p>Al finalizar, el estudiante puede identificar procesos que consumen recursos excesivos, terminarlos de forma controlada y construir pipelines de comandos para responder preguntas de diagnóstico de un servidor sin instalar ninguna herramienta adicional.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Propósito · Sesión 17</span><span class="counter">2 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 3 BASE PREVIA ══════════════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Lo que ya sabemos — puente desde la sesión 16</div>
+  <div class="content two-col">
+   <div>
+    <h2>Conceptos confirmados</h2>
+    <ul>
+     <li>El Shell ejecuta comandos mediante <strong>fork + exec</strong>: crea un proceso hijo y lo reemplaza con el binario.</li>
+     <li>Cada proceso hereda tres flujos: <strong>stdin (0)</strong>, <strong>stdout (1)</strong> y <strong>stderr (2)</strong>.</li>
+     <li>La redirección (<code>&gt;</code>, <code>&gt;&gt;</code>, <code>2&gt;</code>) cambia el destino de esos flujos hacia archivos.</li>
+     <li>Navegamos el FHS con <code>pwd</code>, <code>cd</code>, <code>ls -l</code>.</li>
+    </ul>
+   </div>
+   <div class="callout">
+    <p><strong>Pregunta de enlace</strong></p>
+    <p>En la sesión 16 ejecutamos <code>ps aux | head -10</code> como preparación. ¿Entendiste cada columna de esa salida? Hoy diseccionamos exactamente qué representa cada campo y cómo el kernel produce esa información en tiempo real.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Continuidad curricular S16 → S17</span><span class="counter">3 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 4 BLOQUE A — QUÉ ES UN PROCESO ════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Bloque A · El proceso: unidad de ejecución del SO</div>
+  <div class="content two-col">
+   <div>
+    <h2>Definiciones de primer uso</h2>
+    <ul>
+     <li><strong>Proceso:</strong> instancia en ejecución de un programa. Un mismo programa puede originar múltiples procesos simultáneos e independientes.</li>
+     <li><strong>PID</strong> (<em>Process Identifier</em>): número entero único que el kernel asigna a cada proceso al crearlo. Nunca se repite mientras el proceso vive.</li>
+     <li><strong>PPID</strong> (<em>Parent PID</em>): PID del proceso que lo creó. Todo proceso tiene un padre; el proceso raíz es <code>init</code> / <code>systemd</code> con PID 1.</li>
+     <li><strong>Señal</strong> (<em>signal</em>): notificación asíncrona enviada por el kernel o un proceso a otro proceso para indicarle que ocurrió un evento.</li>
+    </ul>
+   </div>
+   <div class="card">
+    <p><strong>El árbol de procesos</strong></p>
+    <p>Todos los procesos del sistema forman un árbol con <code>systemd</code> (PID 1) en la raíz. Cuando el Shell ejecuta un comando, ese comando es un hijo del Shell, que a su vez es hijo del terminal emulator, que es hijo de <code>systemd</code>.</p>
+    <p style="margin-top:8px;">Esto explica por qué al cerrar una terminal los procesos que lanzaste desde ella también mueren: el kernel propaga la señal de muerte a los hijos.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Bloque A · Definiciones: proceso, PID, PPID, señal</span><span class="counter">4 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 5 ESTADOS DE UN PROCESO ════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Bloque A · Ciclo de vida y estados de un proceso</div>
+  <div class="content two-col">
+   <div>
+    <h2>Los cinco estados principales</h2>
+    <table>
+     <thead><tr><th>Código</th><th>Estado</th><th>Significado</th></tr></thead>
+     <tbody>
+      <tr><td><code>R</code></td><td>Running / Runnable</td><td>Ejecutándose en CPU o listo en la cola del scheduler.</td></tr>
+      <tr><td><code>S</code></td><td>Sleeping (interruptible)</td><td>Esperando un evento de E/S. Puede recibir señales.</td></tr>
+      <tr><td><code>D</code></td><td>Sleeping (uninterruptible)</td><td>Esperando E/S de bajo nivel (disco). No acepta señales. Problema si persiste.</td></tr>
+      <tr><td><code>Z</code></td><td>Zombie</td><td>Terminó pero su padre no leyó su código de salida. Ocupa una entrada en la tabla de procesos.</td></tr>
+      <tr><td><code>T</code></td><td>Stopped</td><td>Detenido por señal <code>SIGSTOP</code> o por el usuario con <kbd>Ctrl+Z</kbd>.</td></tr>
+     </tbody>
+    </table>
+   </div>
+   <div class="callout">
+    <p><strong>¿Por qué importa el estado D?</strong></p>
+    <p>Un proceso en estado <code>D</code> no puede ser terminado con <code>kill -9</code>. Solo se elimina cuando completa la operación de E/S o al reiniciar. Ver muchos procesos en <code>D</code> es síntoma de un problema de disco o sistema de archivos.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Bloque A · Estados del ciclo de vida de un proceso</span><span class="counter">5 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 6 VISUAL A — ÁRBOL DE PROCESOS SVG ════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Visual A · Árbol de procesos: de systemd a tu comando</div>
+  <div class="content" style="align-items:center;">
+   <div class="imgwrap" style="height:min(50vh,360px);">
+    <svg viewBox="0 0 780 300" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New',monospace" font-size="12">
+     <!-- PID 1 -->
+     <rect x="320" y="8" width="140" height="36" rx="7" fill="#201F4B"/>
+     <text x="390" y="27" text-anchor="middle" fill="#fff" font-weight="bold" font-size="13">systemd</text>
+     <text x="390" y="40" text-anchor="middle" fill="#e5edf8" font-size="10">PID 1</text>
+     <!-- linea desde pid1 -->
+     <line x1="390" y1="44" x2="390" y2="60" stroke="#6b7280" stroke-width="1.5"/>
+     <line x1="160" y1="60" x2="620" y2="60" stroke="#6b7280" stroke-width="1.5"/>
+     <!-- sshd -->
+     <line x1="200" y1="60" x2="200" y2="76" stroke="#6b7280" stroke-width="1.5"/>
+     <rect x="140" y="76" width="120" height="34" rx="6" fill="#015583"/>
+     <text x="200" y="96" text-anchor="middle" fill="#fff" font-size="12">sshd</text>
+     <text x="200" y="108" text-anchor="middle" fill="#e5edf8" font-size="10">PID 312</text>
+     <!-- gnome-terminal -->
+     <line x1="390" y1="60" x2="390" y2="76" stroke="#6b7280" stroke-width="1.5"/>
+     <rect x="305" y="76" width="170" height="34" rx="6" fill="#015583"/>
+     <text x="390" y="96" text-anchor="middle" fill="#fff" font-size="12">gnome-terminal</text>
+     <text x="390" y="108" text-anchor="middle" fill="#e5edf8" font-size="10">PID 1847</text>
+     <!-- nginx -->
+     <line x1="590" y1="60" x2="590" y2="76" stroke="#6b7280" stroke-width="1.5"/>
+     <rect x="530" y="76" width="120" height="34" rx="6" fill="#015583"/>
+     <text x="590" y="96" text-anchor="middle" fill="#fff" font-size="12">nginx</text>
+     <text x="590" y="108" text-anchor="middle" fill="#e5edf8" font-size="10">PID 2201</text>
+     <!-- bash desde sshd -->
+     <line x1="200" y1="110" x2="200" y2="130" stroke="#6b7280" stroke-width="1.5"/>
+     <rect x="145" y="130" width="110" height="34" rx="6" fill="#05ADBC"/>
+     <text x="200" y="150" text-anchor="middle" fill="#fff" font-size="12">bash</text>
+     <text x="200" y="162" text-anchor="middle" fill="#e5edf8" font-size="10">PID 5421</text>
+     <!-- bash desde gnome-terminal -->
+     <line x1="390" y1="110" x2="390" y2="130" stroke="#6b7280" stroke-width="1.5"/>
+     <rect x="335" y="130" width="110" height="34" rx="6" fill="#05ADBC"/>
+     <text x="390" y="150" text-anchor="middle" fill="#fff" font-size="12">bash</text>
+     <text x="390" y="162" text-anchor="middle" fill="#e5edf8" font-size="10">PID 6102</text>
+     <!-- nginx worker -->
+     <line x1="590" y1="110" x2="590" y2="130" stroke="#6b7280" stroke-width="1.5"/>
+     <rect x="530" y="130" width="120" height="34" rx="6" fill="#015583" opacity=".8"/>
+     <text x="590" y="150" text-anchor="middle" fill="#fff" font-size="12">nginx worker</text>
+     <text x="590" y="162" text-anchor="middle" fill="#e5edf8" font-size="10">PID 2202</text>
+     <!-- ls desde bash 5421 -->
+     <line x1="200" y1="164" x2="200" y2="184" stroke="#6b7280" stroke-width="1.5"/>
+     <rect x="140" y="184" width="120" height="34" rx="6" fill="#fffbe6" stroke="#e6a817" stroke-width="2"/>
+     <text x="200" y="204" text-anchor="middle" fill="#b45309" font-size="12" font-weight="bold">ls -l</text>
+     <text x="200" y="216" text-anchor="middle" fill="#6b7280" font-size="10">PID 5789 · estado R</text>
+     <!-- ps desde bash 6102 -->
+     <line x1="390" y1="164" x2="390" y2="184" stroke="#6b7280" stroke-width="1.5"/>
+     <rect x="330" y="184" width="120" height="34" rx="6" fill="#fffbe6" stroke="#e6a817" stroke-width="2"/>
+     <text x="390" y="204" text-anchor="middle" fill="#b45309" font-size="12" font-weight="bold">ps aux</text>
+     <text x="390" y="216" text-anchor="middle" fill="#6b7280" font-size="10">PID 6310 · estado R</text>
+     <!-- leyenda -->
+     <rect x="30" y="248" width="14" height="14" rx="3" fill="#201F4B"/>
+     <text x="50" y="260" fill="#201F4B" font-size="11">Init / sistema</text>
+     <rect x="160" y="248" width="14" height="14" rx="3" fill="#015583"/>
+     <text x="180" y="260" fill="#015583" font-size="11">Servicios / daemons</text>
+     <rect x="330" y="248" width="14" height="14" rx="3" fill="#05ADBC"/>
+     <text x="350" y="260" fill="#05ADBC" font-size="11">Shell interactivo</text>
+     <rect x="500" y="248" width="14" height="14" rx="3" fill="#fffbe6" stroke="#e6a817" stroke-width="1.5"/>
+     <text x="520" y="260" fill="#b45309" font-size="11">Comando del usuario</text>
+    </svg>
+   </div>
+   <p class="note" style="text-align:center;">Cada comando que ejecutas en el terminal es un nodo hoja en este árbol. Su PPID es el PID de tu Shell.</p>
+  </div>
+  <div class="footer"><span class="note">Visual A · Recurso propio (SVG)</span><span class="counter">6 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 7 ps y top ══════════════════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Bloque B · ps y top: observar el sistema</div>
+  <div class="content two-col">
+   <div>
+    <h2>ps — snapshot de procesos</h2>
+    <div class="code"><span class="c-cmt"># Todos los procesos, formato BSD</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span>
+
+<span class="c-cmt"># Formato largo POSIX, todos los procesos</span>
+<span class="c-cmd">ps</span> <span class="c-flag">-ef</span>
+
+<span class="c-cmt"># Solo los procesos del usuario actual</span>
+<span class="c-cmd">ps</span> <span class="c-flag">-u</span> <span class="c-str">$(whoami)</span>
+
+<span class="c-cmt"># Árbol de procesos con jerarquía visual</span>
+<span class="c-cmd">ps</span> <span class="c-flag">axjf</span></div>
+   </div>
+   <div class="card">
+    <h2>top — monitor interactivo en tiempo real</h2>
+    <div class="code" style="font-size:clamp(11px,.9vw,12px);"><span class="c-cmd">top</span>        <span class="c-cmt"># lanza el monitor</span>
+
+<span class="c-cmt"># Dentro de top:</span>
+<span class="c-str">q</span>          <span class="c-cmt"># salir</span>
+<span class="c-str">k</span>          <span class="c-cmt"># matar proceso (pide PID)</span>
+<span class="c-str">M</span>          <span class="c-cmt"># ordenar por uso de memoria</span>
+<span class="c-str">P</span>          <span class="c-cmt"># ordenar por uso de CPU</span>
+<span class="c-str">1</span>          <span class="c-cmt"># mostrar cada núcleo por separado</span>
+<span class="c-str">u usuario</span>  <span class="c-cmt"># filtrar por usuario</span></div>
+    <p class="note" style="margin-top:8px;"><strong>htop</strong> es una versión mejorada y visual de top. Puede no estar instalado por defecto: <code>sudo apt install htop</code>.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Bloque B · ps y top</span><span class="counter">7 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 8 WINDOWS VS LINUX ═══════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Bloque B · Equivalencias Windows y Linux para procesos</div>
+  <div class="content two-col">
+   <div>
+  <h2>Monitorizar y terminar procesos en ambos sistemas</h2>
+  <table>
+   <thead><tr><th>Tarea</th><th>Linux (CLI)</th><th>Windows (GUI/CLI)</th></tr></thead>
+   <tbody>
+    <tr><td>Ver procesos en tiempo real</td><td><code>top</code> o <code>htop</code></td><td><code>Taskmgr</code> (Administrador de tareas)</td></tr>
+    <tr><td>Listar procesos en formato tabla</td><td><code>ps aux</code> o <code>ps -ef</code></td><td><code>tasklist</code> o <code>Get-Process</code></td></tr>
+    <tr><td>Filtrar por nombre</td><td><code>ps aux | grep nginx</code></td><td><code>tasklist | findstr /I nginx</code></td></tr>
+    <tr><td>Terminar por PID</td><td><code>kill PID</code> / <code>kill -9 PID</code></td><td><code>taskkill /PID PID</code> / <code>Stop-Process -Id PID -Force</code></td></tr>
+    <tr><td>Terminar por nombre</td><td><code>killall firefox</code></td><td><code>taskkill /IM firefox.exe /F</code></td></tr>
+   </tbody>
+  </table>
+   </div>
+   <div class="card">
+  <p><strong>Idea clave de interoperabilidad</strong></p>
+  <p>La lógica de administración es la misma en ambos sistemas: observar, identificar el proceso problemático, decidir una terminación elegante o forzada, y verificar el resultado.</p>
+  <div class="code" style="margin-top:8px;"><span class="c-cmt"># Linux</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">sort</span> <span class="c-flag">-k3 -rn</span> | <span class="c-cmd">head</span> <span class="c-flag">-6</span>
+
+<span class="c-cmt"># Windows PowerShell</span>
+<span class="c-cmd">Get-Process</span> | <span class="c-cmd">Sort-Object</span> <span class="c-str">CPU</span> <span class="c-flag">-Descending</span> | <span class="c-cmd">Select-Object</span> <span class="c-flag">-First</span> <span class="c-num">5</span></div>
+  <p class="note" style="margin-top:8px;">Comparar ambos comandos ayuda a transferir la competencia a cualquier entorno operativo real.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Bloque B · Taskmgr vs top/ps</span><span class="counter">8 / 22</span></div>
+ </div>
+</section>
+
+<!-- ══ 8 ANATOMÍA DE ps aux ═══════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Bloque B · Anatomía de la salida de ps aux</div>
+  <div class="content">
+   <div class="code" style="margin-bottom:clamp(8px,1vw,12px);font-size:clamp(11px,.95vw,13px);">USER       PID  %CPU %MEM    VSZ   RSS TTY   STAT START   TIME COMMAND
+root         1   0.0  0.1  16952  6512  ?   Ss   Apr13   0:02 /sbin/init
+estudiante 6102  0.2  0.3  23164 12404 pts/0 Ss  10:10   0:00 -bash
+estudiante 6310  4.8  0.1   9440  3320 pts/0 R+  10:22   0:00 ps aux</div>
+   <table>
+    <thead><tr><th>Columna</th><th>Significado</th><th>Valores típicos</th></tr></thead>
+    <tbody>
+     <tr><td><code>USER</code></td><td>Propietario del proceso</td><td><code>root</code>, nombre de usuario</td></tr>
+     <tr><td><code>PID</code></td><td>Identificador único del proceso</td><td>Entero ≥ 1</td></tr>
+     <tr><td><code>%CPU</code></td><td>Uso de CPU promediado desde el inicio del proceso</td><td>0.0 – 100.0 (por núcleo)</td></tr>
+     <tr><td><code>%MEM</code></td><td>Porcentaje de RAM física usada</td><td>0.0 – 100.0</td></tr>
+     <tr><td><code>VSZ</code></td><td>Memoria virtual total (incluyendo porciones no en RAM)</td><td>KB</td></tr>
+     <tr><td><code>RSS</code></td><td>Memoria física real usada actualmente (<em>Resident Set Size</em>)</td><td>KB</td></tr>
+     <tr><td><code>STAT</code></td><td>Estado del proceso (R, S, D, Z, T + modificadores)</td><td>Ss, R+, Sl</td></tr>
+     <tr><td><code>COMMAND</code></td><td>Nombre del binario y argumentos con que fue lanzado</td><td>Ruta o nombre</td></tr>
+    </tbody>
+   </table>
+  </div>
+  <div class="footer"><span class="note">Bloque B · Campos de ps aux</span><span class="counter">8 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 9 kill y señales ═══════════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Bloque B · Señales y kill: recuperar el control</div>
+  <div class="content two-col">
+   <div>
+    <h2>Señales más usadas</h2>
+    <table>
+     <thead><tr><th>Número</th><th>Nombre</th><th>Efecto</th></tr></thead>
+     <tbody>
+      <tr><td><code>1</code></td><td>SIGHUP</td><td>Recarga configuración (hang up). Muchos daemons lo interpretan como "relee tu config".</td></tr>
+      <tr><td><code>2</code></td><td>SIGINT</td><td>Interrupción. Equivale a <kbd>Ctrl+C</kbd> en el terminal.</td></tr>
+      <tr><td><code>15</code></td><td>SIGTERM</td><td>Terminación elegante. El proceso puede limpiar recursos antes de salir. <strong>Es la señal por defecto de kill.</strong></td></tr>
+      <tr><td><code>9</code></td><td>SIGKILL</td><td>Terminación inmediata e incondicional. El kernel la ejecuta; el proceso no puede ignorarla ni capturarla.</td></tr>
+      <tr><td><code>19</code></td><td>SIGSTOP</td><td>Pausa el proceso (equivale a <kbd>Ctrl+Z</kbd>). No se puede ignorar.</td></tr>
+      <tr><td><code>18</code></td><td>SIGCONT</td><td>Reanuda un proceso detenido con SIGSTOP.</td></tr>
+     </tbody>
+    </table>
+   </div>
+   <div class="callout-warn">
+    <p><strong>Regla de oro: SIGTERM antes que SIGKILL</strong></p>
+    <p>Siempre intenta primero <code>kill PID</code> (SIGTERM). Si el proceso no responde en ~5 segundos, usa <code>kill -9 PID</code>. SIGKILL no da tiempo al proceso de cerrar conexiones, escribir en disco o liberar locks: puede dejar datos corruptos.</p>
+    <div class="code" style="margin-top:8px;"><span class="c-cmt"># Señal por defecto (SIGTERM = 15)</span>
+<span class="c-cmd">kill</span> <span class="c-num">6310</span>
+
+<span class="c-cmt"># Terminación forzada (SIGKILL = 9)</span>
+<span class="c-cmd">kill</span> <span class="c-flag">-9</span> <span class="c-num">6310</span>
+
+<span class="c-cmt"># Por nombre de proceso (mata todos los matches)</span>
+<span class="c-cmd">killall</span> <span class="c-str">firefox</span></div>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Bloque B · Señales UNIX y kill</span><span class="counter">9 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 10 PRÁCTICA GUIADA 1 ══════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Práctica guiada 1 · Observar y controlar procesos</div>
+  <div class="content two-col">
+   <div>
+    <h2>Escenario: diagnóstico de CPU y memoria</h2>
+    <div class="code"><span class="c-cmt"># 1. Ver todos los procesos con su usuario y estado</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span>
+
+<span class="c-cmt"># 2. Ver el árbol de procesos</span>
+<span class="c-cmd">ps</span> <span class="c-flag">axjf</span> | <span class="c-cmd">head</span> <span class="c-flag">-20</span>
+
+<span class="c-cmt"># 3. Lanzar un proceso en segundo plano</span>
+<span class="c-cmd">sleep</span> <span class="c-num">120</span> &
+
+<span class="c-cmt"># 4. Encontrar su PID</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">grep</span> <span class="c-str">sleep</span>
+
+<span class="c-cmt"># 5. Terminar el proceso con SIGTERM</span>
+<span class="c-cmd">kill</span> <span class="c-str">%1</span>     <span class="c-cmt"># o kill PID que encontraste</span>
+
+<span class="c-cmt"># 6. Verificar que ya no existe</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">grep</span> <span class="c-str">sleep</span></div>
+   </div>
+   <div class="card">
+    <p><strong>Preguntas de análisis</strong></p>
+    <ol>
+     <li>¿Qué hace el operador <code>&</code> al final del comando <code>sleep 120 &</code>?</li>
+     <li>¿Cuántos procesos con el nombre <code>sleep</code> ves en el paso 4? ¿Por qué aparece también un proceso de <code>grep</code>?</li>
+     <li>¿Por qué en el paso 6 el proceso <code>sleep</code> ya no aparece (o aparece brevemente como <code>Z</code>)?</li>
+    </ol>
+    <p class="note" style="margin-top:8px;">El profesor ejecuta cada paso en pantalla compartida antes de que el estudiante lo repita.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Práctica 1 · Procesos y señales</span><span class="counter">10 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 11 SOLUCIÓN PRÁCTICA 1 ════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Solución guiada 1</div>
+  <div class="content two-col">
+   <div>
+    <h2>Salida esperada</h2>
+    <div class="code"><span class="c-cmt"># Paso 3: Shell confirma el job</span>
+[1] 7214
+
+<span class="c-cmt"># Paso 4: dos líneas: sleep y grep mismo</span>
+estudiante 7214  0.0  0.0   7236  764 pts/0 S  10:35 sleep 120
+estudiante 7219  0.0  0.0   8164  724 pts/0 S+ 10:35 grep sleep
+
+<span class="c-cmt"># Paso 5: Shell confirma terminación</span>
+[1]+  Terminated  sleep 120
+
+<span class="c-cmt"># Paso 6: solo queda la línea del grep actual</span>
+estudiante 7230  0.0  0.0   8164  724 pts/0 S+ 10:36 grep sleep</div>
+   </div>
+   <div class="card">
+    <p><strong>Respuestas</strong></p>
+    <ol>
+     <li><code>&amp;</code> lanza el proceso en <em>background</em> (segundo plano): el Shell no espera a que termine y devuelve el prompt inmediatamente. El número entre corchetes es el <em>job number</em>.</li>
+     <li>Aparecen dos líneas: el <code>sleep</code> real y el propio <code>grep sleep</code>, que también contiene la palabra "sleep" en su COMMAND. Para excluirlo: <code>grep [s]leep</code> o <code>grep -v grep</code>.</li>
+     <li>SIGTERM pide al proceso que termine limpiamente. El kernel retira el PID de la tabla de procesos; la próxima ejecución de <code>ps</code> ya no lo encuentra.</li>
+    </ol>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Solución 1 · Procesos y señales</span><span class="counter">11 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 12 PIPES — CONCEPTO ════════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Bloque C · El pipe: conectar procesos en cadena</div>
+  <div class="content two-col">
+   <div>
+    <h2>¿Qué es un pipe?</h2>
+    <p>Un <strong>pipe</strong> (<code>|</code>) es un mecanismo del kernel que conecta el <strong>stdout</strong> de un proceso directamente con el <strong>stdin</strong> del siguiente, sin escribir nada en disco. Los dos procesos corren <em>concurrentemente</em>: el primero produce datos mientras el segundo los consume.</p>
+    <div class="code"><span class="c-cmt"># Sin pipe: dos pasos, archivo temporal</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> > /tmp/procesos.txt
+<span class="c-cmd">grep</span> <span class="c-str">bash</span> /tmp/procesos.txt
+
+<span class="c-cmt"># Con pipe: un paso, sin disco</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">grep</span> <span class="c-str">bash</span>
+
+<span class="c-cmt"># Cadena de tres comandos</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">grep</span> <span class="c-str">bash</span> | <span class="c-cmd">wc</span> <span class="c-flag">-l</span></div>
+   </div>
+   <div class="callout">
+    <p><strong>Filosofía Unix</strong></p>
+    <p>"Escribe programas que hagan una cosa y la hagan bien. Escribe programas que trabajen juntos."</p>
+    <p style="margin-top:6px;" class="note">— Doug McIlroy, inventor del pipe Unix (Bell Labs, ~1973)</p>
+    <p style="margin-top:8px;">El pipe es la herramienta que hace posible esa filosofía: cada comando es una pieza especializada; la cadena es el sistema completo.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Bloque C · Concepto de pipe</span><span class="counter">12 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 13 VISUAL B — PIPE SVG CON ANIMACIÓN ══════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Visual B · Cómo fluyen los datos por un pipeline</div>
+  <div class="content" style="align-items:center;">
+   <p style="text-align:center;color:var(--azul-medio);font-weight:800;font-size:clamp(14px,1.3vw,18px);">
+    <code>ps aux | grep bash | sort -k3 -n | tail -5</code>
+   </p>
+   <div class="imgwrap" style="height:min(44vh,310px);">
+    <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="12">
+     <!-- paso 1 -->
+     <g class="pipe-step" id="pp1">
+      <rect x="20" y="70" width="120" height="80" rx="8" fill="#201F4B"/>
+      <text x="80" y="106" text-anchor="middle" fill="#fff" font-weight="bold" font-size="13">ps aux</text>
+      <text x="80" y="122" text-anchor="middle" fill="#e5edf8" font-size="10">genera todas</text>
+      <text x="80" y="134" text-anchor="middle" fill="#e5edf8" font-size="10">las líneas</text>
+     </g>
+     <!-- flecha 1→2 -->
+     <g class="pipe-step" id="pp2">
+      <line x1="140" y1="110" x2="190" y2="110" stroke="#05ADBC" stroke-width="3" marker-end="url(#pa)"/>
+      <text x="165" y="103" text-anchor="middle" fill="#05ADBC" font-size="10">stdout→stdin</text>
+     </g>
+     <!-- paso 2 -->
+     <g class="pipe-step" id="pp3">
+      <rect x="190" y="70" width="130" height="80" rx="8" fill="#015583"/>
+      <text x="255" y="106" text-anchor="middle" fill="#fff" font-weight="bold" font-size="13">grep bash</text>
+      <text x="255" y="122" text-anchor="middle" fill="#e5edf8" font-size="10">filtra líneas que</text>
+      <text x="255" y="134" text-anchor="middle" fill="#e5edf8" font-size="10">contienen "bash"</text>
+     </g>
+     <!-- flecha 2→3 -->
+     <g class="pipe-step" id="pp4">
+      <line x1="320" y1="110" x2="370" y2="110" stroke="#05ADBC" stroke-width="3" marker-end="url(#pa)"/>
+      <text x="345" y="103" text-anchor="middle" fill="#05ADBC" font-size="10">stdout→stdin</text>
+     </g>
+     <!-- paso 3 -->
+     <g class="pipe-step" id="pp5">
+      <rect x="370" y="70" width="130" height="80" rx="8" fill="#015583"/>
+      <text x="435" y="106" text-anchor="middle" fill="#fff" font-weight="bold" font-size="13">sort -k3 -n</text>
+      <text x="435" y="122" text-anchor="middle" fill="#e5edf8" font-size="10">ordena por</text>
+      <text x="435" y="134" text-anchor="middle" fill="#e5edf8" font-size="10">columna 3 (%CPU)</text>
+     </g>
+     <!-- flecha 3→4 -->
+     <g class="pipe-step" id="pp6">
+      <line x1="500" y1="110" x2="550" y2="110" stroke="#05ADBC" stroke-width="3" marker-end="url(#pa)"/>
+      <text x="525" y="103" text-anchor="middle" fill="#05ADBC" font-size="10">stdout→stdin</text>
+     </g>
+     <!-- paso 4 -->
+     <g class="pipe-step" id="pp7">
+      <rect x="550" y="70" width="120" height="80" rx="8" fill="#05ADBC"/>
+      <text x="610" y="106" text-anchor="middle" fill="#fff" font-weight="bold" font-size="13">tail -5</text>
+      <text x="610" y="122" text-anchor="middle" fill="#e5edf8" font-size="10">muestra los</text>
+      <text x="610" y="134" text-anchor="middle" fill="#e5edf8" font-size="10">5 últimos</text>
+     </g>
+     <!-- flecha final a pantalla -->
+     <g class="pipe-step" id="pp8">
+      <line x1="670" y1="110" x2="710" y2="110" stroke="#15803d" stroke-width="3" marker-end="url(#pb)"/>
+      <rect x="712" y="88" width="40" height="44" rx="4" fill="#f0fdf4" stroke="#15803d" stroke-width="2"/>
+      <text x="732" y="113" text-anchor="middle" fill="#15803d" font-weight="bold" font-size="11">stdout</text>
+     </g>
+     <!-- etiqueta "ningún archivo en disco" -->
+     <rect x="200" y="168" width="340" height="22" rx="6" fill="#fef2f2" stroke="#dc2626"/>
+     <text x="370" y="183" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="bold">Ningún paso escribe en disco — todo fluye por la RAM del kernel</text>
+     <defs>
+      <marker id="pa" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#05ADBC"/></marker>
+      <marker id="pb" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#15803d"/></marker>
+     </defs>
+    </svg>
+   </div>
+   <p class="note" style="text-align:center;">Los cuatro procesos existen <strong>simultáneamente</strong> en el sistema. El kernel gestiona el buffer del pipe entre cada par.</p>
+  </div>
+  <div class="footer"><span class="note">Visual B · Recurso propio (SVG)</span><span class="counter">13 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 14 grep wc sort ════════════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Bloque C · grep, wc y sort: el trío de filtrado</div>
+  <div class="content two-col">
+   <div>
+    <h2>grep — filtrar líneas por patrón</h2>
+    <div class="code"><span class="c-cmt"># Líneas que contienen la palabra "error"</span>
+<span class="c-cmd">grep</span> <span class="c-str">"error"</span> /var/log/syslog
+
+<span class="c-cmt"># Sin distinguir mayúsculas/minúsculas</span>
+<span class="c-cmd">grep</span> <span class="c-flag">-i</span> <span class="c-str">"error"</span> /var/log/syslog
+
+<span class="c-cmt"># Líneas que NO contienen "error"</span>
+<span class="c-cmd">grep</span> <span class="c-flag">-v</span> <span class="c-str">"error"</span> /var/log/syslog
+
+<span class="c-cmt"># Solo mostrar el número de línea coincidente</span>
+<span class="c-cmd">grep</span> <span class="c-flag">-n</span> <span class="c-str">"FAILED"</span> /var/log/auth.log
+
+<span class="c-cmt"># Patrón extendido (ERE): líneas con error O warning</span>
+<span class="c-cmd">grep</span> <span class="c-flag">-E</span> <span class="c-str">"error|warning"</span> /var/log/syslog</div>
+   </div>
+   <div class="card">
+    <h2>wc y sort</h2>
+    <div class="code"><span class="c-cmt"># wc: contar líneas, palabras, bytes</span>
+<span class="c-cmd">wc</span> <span class="c-flag">-l</span> /etc/passwd      <span class="c-cmt"># nº de líneas</span>
+<span class="c-cmd">wc</span> <span class="c-flag">-w</span> /etc/hosts       <span class="c-cmt"># nº de palabras</span>
+<span class="c-cmd">wc</span> <span class="c-flag">-c</span> /etc/hostname    <span class="c-cmt"># nº de bytes</span>
+
+<span class="c-cmt"># sort: ordenar líneas alfabética o numéricamente</span>
+<span class="c-cmd">sort</span> /etc/passwd            <span class="c-cmt"># orden alfabético</span>
+<span class="c-cmd">sort</span> <span class="c-flag">-r</span> /etc/passwd         <span class="c-cmt"># orden inverso</span>
+<span class="c-cmd">sort</span> <span class="c-flag">-k3 -n</span> archivo.txt    <span class="c-cmt"># por col 3, numérico</span>
+<span class="c-cmd">sort</span> <span class="c-flag">-u</span> archivo.txt         <span class="c-cmt"># eliminar duplicados</span></div>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Bloque C · grep, wc, sort</span><span class="counter">14 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 15 PIPELINES APLICADOS ════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Bloque C · Pipelines aplicados a administración de sistemas</div>
+  <div class="content two-col">
+   <div>
+    <h2>Preguntas que responde un pipeline</h2>
+    <div class="code"><span class="c-cmt"># ¿Cuántos procesos corre el usuario "root"?</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">grep</span> <span class="c-flag">^root</span> | <span class="c-cmd">wc</span> <span class="c-flag">-l</span>
+
+<span class="c-cmt"># Los 5 procesos que más CPU consumen ahora</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">sort</span> <span class="c-flag">-k3 -rn</span> | <span class="c-cmd">head</span> <span class="c-flag">-6</span>
+
+<span class="c-cmt"># Los 5 procesos que más RAM ocupan</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">sort</span> <span class="c-flag">-k4 -rn</span> | <span class="c-cmd">head</span> <span class="c-flag">-6</span>
+
+<span class="c-cmt"># ¿Cuántas veces aparece "error" en el log de hoy?</span>
+<span class="c-cmd">grep</span> <span class="c-flag">-i</span> <span class="c-str">"error"</span> /var/log/syslog | <span class="c-cmd">wc</span> <span class="c-flag">-l</span>
+
+<span class="c-cmt"># Usuarios únicos con sesión activa</span>
+<span class="c-cmd">who</span> | <span class="c-cmd">awk</span> <span class="c-str">'{print $1}'</span> | <span class="c-cmd">sort</span> <span class="c-flag">-u</span></div>
+   </div>
+   <div class="callout">
+    <p><strong>Patrón de construcción</strong></p>
+    <p>Cuando construyes un pipeline, empieza por el primer comando y verifica su salida antes de añadir el siguiente. Construye de izquierda a derecha, una pieza a la vez:</p>
+    <div class="code" style="margin-top:8px;font-size:clamp(11px,.9vw,12px);"><span class="c-cmd">ps</span> <span class="c-flag">aux</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">sort</span> <span class="c-flag">-k3 -rn</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">sort</span> <span class="c-flag">-k3 -rn</span> | <span class="c-cmd">head</span> <span class="c-flag">-6</span></div>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Bloque C · Pipelines de administración</span><span class="counter">15 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 16 VISUAL C — DIAGRAMA PIPELINE ANIMADO ═══════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Visual C · Pipeline completo: top-5 procesos por CPU</div>
+  <div class="content" style="align-items:center;justify-content:center;gap:clamp(12px,1.5vw,20px);">
+   <p style="text-align:center;color:var(--azul-medio);font-weight:800;font-size:clamp(14px,1.3vw,18px);">
+    <code>ps aux | sort -k3 -rn | head -6</code>
+   </p>
+   <div class="imgwrap" style="height:min(48vh,340px);">
+    <svg viewBox="0 0 760 270" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New',monospace" font-size="11">
+     <!-- columnas: entrada, proceso, salida -->
+     <!-- ps aux output simulation -->
+     <rect x="20" y="10" width="190" height="200" rx="8" fill="#0b1020" stroke="#05ADBC" stroke-width="2"/>
+     <text x="115" y="28" text-anchor="middle" fill="#05ADBC" font-size="11" font-weight="bold">ps aux (stdout)</text>
+     <text x="30" y="48" fill="#7dd3fc">USER  PID %CPU %MEM COMMAND</text>
+     <text x="30" y="64" fill="#e5e7eb">root    1  0.0  0.1 systemd</text>
+     <text x="30" y="80" fill="#fde68a">mysql 821  8.2  5.3 mysqld</text>
+     <text x="30" y="96" fill="#fde68a">www   455  5.1  2.1 nginx</text>
+     <text x="30" y="112" fill="#e5e7eb">est  6102  0.2  0.3 bash</text>
+     <text x="30" y="128" fill="#fde68a">root  312  3.7  0.2 sshd</text>
+     <text x="30" y="144" fill="#e5e7eb">est  6310  0.1  0.1 ps</text>
+     <text x="30" y="160" fill="#6b7280">... (decenas más)</text>
+     <!-- pipe 1 -->
+     <line x1="210" y1="100" x2="270" y2="100" stroke="#05ADBC" stroke-width="3" marker-end="url(#vc1)"/>
+     <text x="240" y="92" text-anchor="middle" fill="#05ADBC" font-size="10">pipe</text>
+     <!-- sort -->
+     <rect x="270" y="60" width="150" height="80" rx="8" fill="#201F4B" stroke="#e6a817" stroke-width="2"/>
+     <text x="345" y="88" text-anchor="middle" fill="#f7df00" font-weight="bold" font-size="12">sort</text>
+     <text x="345" y="104" text-anchor="middle" fill="#e5edf8" font-size="10">-k3 -rn</text>
+     <text x="345" y="118" text-anchor="middle" fill="#6b7280" font-size="10">ordena col 3</text>
+     <text x="345" y="130" text-anchor="middle" fill="#6b7280" font-size="10">mayor→menor</text>
+     <!-- pipe 2 -->
+     <line x1="420" y1="100" x2="480" y2="100" stroke="#05ADBC" stroke-width="3" marker-end="url(#vc1)"/>
+     <text x="450" y="92" text-anchor="middle" fill="#05ADBC" font-size="10">pipe</text>
+     <!-- head -->
+     <rect x="480" y="60" width="110" height="80" rx="8" fill="#201F4B" stroke="#15803d" stroke-width="2"/>
+     <text x="535" y="88" text-anchor="middle" fill="#86efac" font-weight="bold" font-size="12">head -6</text>
+     <text x="535" y="104" text-anchor="middle" fill="#e5edf8" font-size="10">primeras 6</text>
+     <text x="535" y="118" text-anchor="middle" fill="#e5edf8" font-size="10">líneas</text>
+     <!-- salida final -->
+     <rect x="610" y="10" width="140" height="200" rx="8" fill="#0b1020" stroke="#15803d" stroke-width="2"/>
+     <text x="680" y="28" text-anchor="middle" fill="#86efac" font-size="11" font-weight="bold">Resultado</text>
+     <text x="620" y="48" fill="#7dd3fc">USER  PID %CPU</text>
+     <text x="620" y="64" fill="#fde68a">mysql 821  8.2</text>
+     <text x="620" y="80" fill="#fde68a">www   455  5.1</text>
+     <text x="620" y="96" fill="#fde68a">root  312  3.7</text>
+     <text x="620" y="112" fill="#e5e7eb">est  6102  0.2</text>
+     <text x="620" y="128" fill="#e5e7eb">est  6310  0.1</text>
+     <!-- flecha entrada a sort -->
+     <line x1="590" y1="100" x2="620" y2="100" stroke="#15803d" stroke-width="3" marker-end="url(#vc2)"/>
+     <!-- etiqueta nota -->
+     <rect x="220" y="190" width="320" height="22" rx="5" fill="#fef2f2" stroke="#dc2626"/>
+     <text x="380" y="205" text-anchor="middle" fill="#dc2626" font-size="10">Primera línea de ps aux (cabecera) — incluirla explica por qué usamos head -6 y no head -5</text>
+     <defs>
+      <marker id="vc1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#05ADBC"/></marker>
+      <marker id="vc2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#15803d"/></marker>
+     </defs>
+    </svg>
+   </div>
+   <p class="note" style="text-align:center;">La cabecera de <code>ps aux</code> también fluye por el pipe. Se usa <code>head -6</code> (no <code>-5</code>) para conservarla e identificar las columnas en la salida.</p>
+  </div>
+  <div class="footer"><span class="note">Visual C · Recurso propio (SVG)</span><span class="counter">16 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 17 PRÁCTICA GUIADA 2 ══════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Práctica guiada 2 · Pipeline de diagnóstico de servidor</div>
+  <div class="content two-col">
+   <div>
+    <h2>Escenario: el servidor está lento</h2>
+    <p>Un servidor de producción responde con lentitud. Debes construir un informe rápido usando solo la línea de comandos.</p>
+    <div class="code"><span class="c-cmt"># 1. ¿Cuántos procesos están corriendo en total?</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">wc</span> <span class="c-flag">-l</span>
+
+<span class="c-cmt"># 2. Top 5 procesos por CPU (excluyendo cabecera)</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">sort</span> <span class="c-flag">-k3 -rn</span> | <span class="c-cmd">head</span> <span class="c-flag">-6</span>
+
+<span class="c-cmt"># 3. ¿Hay algún proceso zombie?</span>
+<span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">grep</span> <span class="c-str">" Z "</span>
+
+<span class="c-cmt"># 4. Cuántas líneas de error hay en el log del sistema</span>
+<span class="c-cmd">grep</span> <span class="c-flag">-i</span> <span class="c-str">"error"</span> /var/log/syslog 2>/dev/null | <span class="c-cmd">wc</span> <span class="c-flag">-l</span>
+
+<span class="c-cmt"># 5. Guarda el informe completo en ~/informe_procesos.txt</span>
+{
+  echo <span class="c-str">"=== Procesos totales ==="</span>
+  <span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">wc</span> <span class="c-flag">-l</span>
+  echo <span class="c-str">"=== Top 5 CPU ==="</span>
+  <span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">sort</span> <span class="c-flag">-k3 -rn</span> | <span class="c-cmd">head</span> <span class="c-flag">-6</span>
+  echo <span class="c-str">"=== Zombies ==="</span>
+  <span class="c-cmd">ps</span> <span class="c-flag">aux</span> | <span class="c-cmd">grep</span> <span class="c-str">" Z "</span>
+} > ~/informe_procesos.txt
+<span class="c-cmd">cat</span> ~/informe_procesos.txt</div>
+   </div>
+   <div class="card">
+    <p><strong>Preguntas de análisis</strong></p>
+    <ol>
+     <li>El paso 1 devuelve un número mayor al de procesos reales. ¿Por qué?</li>
+     <li>¿Por qué el <code>sort -k3 -rn</code> ordena de mayor a menor CPU?</li>
+     <li>Si el paso 3 no devuelve nada, ¿hay un error o simplemente no hay zombies?</li>
+    </ol>
+    <p class="note" style="margin-top:8px;">Conservar <code>informe_procesos.txt</code> como evidencia de práctica formativa en clase (actividad no evaluativa).</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Práctica 2 · Pipeline de diagnóstico</span><span class="counter">17 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 18 SOLUCIÓN PRÁCTICA 2 ════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Solución guiada 2</div>
+  <div class="content two-col">
+   <div>
+    <h2>Contenido esperado de informe_procesos.txt</h2>
+    <div class="code">=== Procesos totales ===
+187
+=== Top 5 CPU ===
+USER       PID %CPU %MEM COMMAND
+mysql      821  8.2  5.3 mysqld
+www-data   455  5.1  2.1 nginx: worker
+root       312  3.7  0.2 sshd: estudiante
+root         1  0.2  0.1 /sbin/init
+root       234  0.3  0.4 /usr/lib/systemd/...
+=== Zombies ===
+<span class="c-cmt">(vacío si no hay zombies)</span></div>
+   </div>
+   <div class="card">
+    <p><strong>Respuestas</strong></p>
+    <ol>
+     <li><code>ps aux | wc -l</code> cuenta también la <em>línea de cabecera</em> de <code>ps</code>. El número real de procesos es el resultado menos 1. Para excluirla: <code>ps aux | tail -n +2 | wc -l</code>.</li>
+     <li><code>-r</code> invierte el orden (de menor a mayor pasa a ser mayor a menor). <code>-n</code> interpreta los valores como números en lugar de texto: sin <code>-n</code>, "10" aparecería antes que "9" (comparación de caracteres).</li>
+     <li>Salida vacía significa que no hay procesos en estado Z: <code>grep</code> devuelve código de error 1, pero no imprime nada. Ausencia de salida = sin zombies = todo bien.</li>
+    </ol>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Solución 2 · Pipeline de diagnóstico</span><span class="counter">18 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 19 ERRORES COMUNES ═════════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Errores frecuentes y cómo corregirlos</div>
+  <div class="content">
+   <table>
+    <thead><tr><th>Error</th><th>Causa</th><th>Corrección</th></tr></thead>
+    <tbody>
+     <tr>
+      <td>Usar <code>kill -9</code> directamente sin intentar SIGTERM primero</td>
+      <td>El estudiante cree que SIGKILL es "más seguro" porque garantiza la muerte del proceso.</td>
+      <td>SIGTERM primero; esperar ~5 s; solo entonces usar <code>kill -9</code>. SIGKILL puede dejar datos corruptos si el proceso tenía transacciones abiertas.</td>
+     </tr>
+     <tr>
+      <td><code>ps aux | grep proceso</code> devuelve la línea del propio grep</td>
+      <td>El proceso <code>grep</code> aparece en la lista porque su COMMAND contiene el patrón buscado.</td>
+      <td>Usar <code>grep -v grep</code> al final: <code>ps aux | grep nginx | grep -v grep</code>. O el truco de corchetes: <code>grep [n]ginx</code>.</td>
+     </tr>
+     <tr>
+      <td><code>sort -k3 -n</code> da orden incorrecto (0.1 antes que 9.8)</td>
+      <td>Los valores de CPU con punto decimal se leen mal si no se especifica locale decimal.</td>
+      <td>Agregar <code>-t' '</code> o usar <code>sort -k3 -rn</code> y verificar que el separador de columnas es espacio. En muchos sistemas funciona directamente.</td>
+     </tr>
+     <tr>
+      <td>Confundir <code>VSZ</code> con <code>RSS</code> en <code>ps aux</code></td>
+      <td>El estudiante cree que VSZ es la RAM real usada.</td>
+      <td>VSZ = memoria virtual total (incluye zonas aún no cargadas en RAM). RSS = lo que realmente está en RAM ahora. Para diagnosticar presión de memoria, mirar RSS y <code>%MEM</code>.</td>
+     </tr>
+     <tr>
+      <td>El pipe no parece funcionar: <code>command1 | command2</code> no muestra nada</td>
+      <td>command1 produce salida en stderr en lugar de stdout, y el pipe solo conecta stdout.</td>
+      <td>Redirigir stderr al pipe: <code>command1 2>&amp;1 | command2</code>. O usar <code>|&amp;</code> en bash como atajo equivalente.</td>
+     </tr>
+    </tbody>
+   </table>
+  </div>
+  <div class="footer"><span class="note">Errores comunes · Sesión 17</span><span class="counter">19 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 20 SÍNTESIS TÉCNICA ════════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Síntesis técnica · Lo esencial de hoy</div>
+  <div class="content two-col">
+   <div>
+    <h2>Mapa mental en 5 puntos</h2>
+    <ul>
+     <li><strong>Proceso y PID:</strong> toda ejecución tiene un identificador único; todos los procesos forman un árbol cuya raíz es <code>systemd</code> (PID 1).</li>
+     <li><strong>Estados:</strong> R (ejecutando), S (durmiendo), D (E/S irrompible), Z (zombie), T (detenido). El estado D no acepta señales.</li>
+     <li><strong>kill y señales:</strong> SIGTERM (15) es la vía elegante; SIGKILL (9) es el último recurso. Siempre intentar SIGTERM primero.</li>
+     <li><strong>Pipe (<code>|</code>):</strong> conecta stdout de un proceso con stdin del siguiente, sin pasar por disco. Los procesos corren concurrentemente.</li>
+     <li><strong>grep / sort / wc:</strong> los tres filtros fundamentales. Combinados en un pipeline responden cualquier pregunta de diagnóstico sobre el sistema.</li>
+    </ul>
+   </div>
+   <div class="callout">
+    <p><strong>Competencia adquirida</strong></p>
+    <p>A partir de hoy puedes conectarte a un servidor que responde lento y en menos de 60 segundos, usando solo herramientas ya instaladas, identificar qué proceso está consumiendo los recursos, terminar o pausar ese proceso de forma controlada y documentar el hallazgo en un archivo de texto.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Síntesis · Sesión 17</span><span class="counter">20 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 21 PUENTE A SESIÓN 18 ══════════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Puente técnico · Sesión 18</div>
+  <div class="content two-col">
+   <div>
+    <h2>Próxima sesión: Seguridad de Archivos y Permisos POSIX</h2>
+    <p>Hoy vimos que algunos procesos corren como <code>root</code> y otros como usuarios normales. Esa distinción no es arbitraria: controla quién puede leer, escribir o ejecutar cada archivo del sistema.</p>
+    <ul>
+     <li><strong>chmod:</strong> modificar permisos de lectura, escritura y ejecución.</li>
+     <li><strong>chown:</strong> cambiar el propietario y grupo de un archivo.</li>
+     <li><strong>Notación octal</strong> de permisos: por qué <code>755</code> significa lo que significa.</li>
+     <li><strong>Principio de Menor Privilegio (PoLP):</strong> por qué nunca se trabaja como root por defecto.</li>
+    </ul>
+   </div>
+   <div class="card">
+    <p><strong>Preparación sugerida</strong></p>
+    <p>En tu terminal, ejecuta ahora:</p>
+    <div class="code" style="margin-top:6px;"><span class="c-cmd">ls</span> <span class="c-flag">-l</span> /etc/passwd /etc/shadow
+<span class="c-cmd">ls</span> <span class="c-flag">-l</span> /usr/bin/sudo</div>
+    <p style="margin-top:8px;" class="note">Observa los permisos y el propietario de esos tres archivos. ¿Por qué uno de ellos no puedes leerlo? La sesión 18 explicará exactamente esos 10 caracteres de permisos.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Puente · Hacia la Sesión 18</span><span class="counter">21 / 21</span></div>
+ </div>
+</section>
+
+<!-- ══ 22 FUENTES Y ATRIBUCIONES ═════════════════════════ -->
+<section class="slide content-slide">
+ <div class="inner">
+  <div class="header">Fuentes técnicas y atribuciones</div>
+  <div class="content two-col">
+   <div>
+    <h2>Referencias usadas en la sesión</h2>
+    <ul>
+     <li><strong>Manual POSIX/Linux:</strong> páginas <code>man ps</code>, <code>man top</code>, <code>man kill</code>, <code>man grep</code>, <code>man sort</code>, <code>man wc</code>.</li>
+     <li><strong>Microsoft Learn:</strong> documentación de <code>tasklist</code>, <code>taskkill</code> y <code>Get-Process</code>.</li>
+     <li><strong>Contexto histórico:</strong> mención de la filosofía Unix atribuida a Doug McIlroy (Bell Labs).</li>
+    </ul>
+    <p class="note">No se usaron imágenes externas en las diapositivas: los diagramas visuales A, B y C fueron elaborados como SVG propios para fines didácticos.</p>
+   </div>
+   <div class="card">
+    <p><strong>Trazabilidad de recursos visuales</strong></p>
+    <table style="margin-top:8px;">
+     <thead><tr><th>Recurso</th><th>Origen</th><th>Licencia/uso</th></tr></thead>
+     <tbody>
+      <tr><td>Visual A (árbol de procesos)</td><td>Elaboración propia del curso</td><td>Uso académico interno</td></tr>
+      <tr><td>Visual B (flujo de pipeline)</td><td>Elaboración propia del curso</td><td>Uso académico interno</td></tr>
+      <tr><td>Visual C (top-5 CPU)</td><td>Elaboración propia del curso</td><td>Uso académico interno</td></tr>
+     </tbody>
+    </table>
+    <p class="note" style="margin-top:8px;">Esta trazabilidad facilita reutilización institucional y auditoría de derechos de autor.</p>
+   </div>
+  </div>
+  <div class="footer"><span class="note">Cierre documental · Sesión 17</span><span class="counter">22 / 22</span></div>
+ </div>
+</section>
+
+<!-- navegación -->
+<div class="touch-nav" id="touchNav">
+ <button id="btnPrev" aria-label="Anterior">&#8592;</button>
+ <button id="btnNext" aria-label="Siguiente">&#8594;</button>
+</div>
+</div></div>
+
+<script>
+(function(){
+  const slides=Array.from(document.querySelectorAll('.slide'));
+  const counters=Array.from(document.querySelectorAll('.counter'));
+  const stage=document.getElementById('stage');
+  let idx=0;
+  function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+  function show(i){
+    idx=clamp(i,0,slides.length-1);
+    slides.forEach((s,k)=>s.classList.toggle('active',k===idx));
+    const lbl=(idx+1)+' / '+slides.length;
+    counters.forEach(el=>el.textContent=lbl);
+    history.replaceState(null,'','#'+(idx+1));
+    // pipe steps animation
+    slides[idx].querySelectorAll('.pipe-step').forEach((el,k)=>{
+      el.classList.remove('vis');
+      setTimeout(()=>el.classList.add('vis'),100*k+60);
+    });
+  }
+  function next(){show(idx+1);}function prev(){show(idx-1);}
+  const m=(location.hash||'').match(/^#(\d+)$/);
+  if(m){const s=parseInt(m[1],10);if(!isNaN(s))idx=clamp(s-1,0,slides.length-1);}
+  show(idx);
+  document.getElementById('btnPrev').addEventListener('click',prev);
+  document.getElementById('btnNext').addEventListener('click',next);
+  document.addEventListener('keydown',e=>{
+    const k=e.key;
+    if(k==='f'||k==='F'){if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.();return;}
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){e.preventDefault();show(0);}
+    else if(k==='End'){e.preventDefault();show(slides.length-1);}
+  });
+  if('ontouchstart' in window||navigator.maxTouchPoints>0){
+    let x0=null,y0=null,t0=0;
+    stage.addEventListener('touchstart',e=>{const t=e.changedTouches[0];x0=t.clientX;y0=t.clientY;t0=Date.now();},{passive:true});
+    stage.addEventListener('touchend',e=>{
+      if(x0===null)return;
+      const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0,dt=Date.now()-t0;
+      x0=null;y0=null;
+      if(dt>800||Math.abs(dy)>80)return;
+      if(dx<=-50)next();else if(dx>=50)prev();
+    },{passive:true});
+  }
+})();
+</script>
+</body>
+</html>
