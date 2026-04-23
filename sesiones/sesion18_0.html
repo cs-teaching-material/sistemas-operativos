@@ -5,16 +5,25 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>SO · S18 · Permisos POSIX</title>
 <style>
-:root{--az:#015583;--tur:#05ADBC;--txt:#201F4B;--mu:#6b7280;}
+:root{
+--az:#015583;--tur:#05ADBC;--txt:#201F4B;--mu:#6b7280;
+--safe-top-cover:clamp(208px,9vh,128px);
+--safe-left-cover:clamp(585px,5.5vw,110px);
+--safe-right-cover:clamp(28px,3vw,72px);
+--safe-bottom-cover:clamp(54px,6vh,92px);
+--safe-top:clamp(100px,9vh,132px);
+--safe-side:clamp(66px,5.5vw,108px);
+--safe-bottom:clamp(52px,6vh,90px);
+}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
 .deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,20px);box-sizing:border-box;}
 .stage{width:min(96vw,calc(90vh*(16/9)));aspect-ratio:16/9;position:relative;}
 .slide{position:absolute;inset:0;display:none;box-shadow:0 12px 36px rgba(0,0,0,.3);overflow:hidden;}
 .slide.active{display:block;}
-.cov{background:#201F4B;color:#fff;}
-.cnt{background:#fff;color:var(--txt);}
-.inn{height:100%;box-sizing:border-box;padding:clamp(72px,7.5vh,108px) clamp(56px,5vw,96px) clamp(44px,5.5vh,80px);display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);}
-.cov .inn{padding:clamp(72px,8vh,112px) clamp(56px,5vw,96px) clamp(44px,5.5vh,80px);}
+.cov{background:url("./Portada.png") center/cover no-repeat;color:#fff;}
+.cnt{background:url("./Contenido.png") top left/contain no-repeat,#fff;color:var(--txt);}
+.inn{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom);display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);}
+.cov .inn{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);}
 .ct{flex:1;display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);min-height:0;overflow:hidden;}
 .hd{color:var(--tur);font-size:clamp(12px,1.1vw,15px);font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-bottom:2px solid var(--tur);padding-bottom:3px;}
 h1{margin:0;font-size:clamp(26px,3.2vw,44px);line-height:1.08;color:#fff;}
@@ -93,7 +102,7 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 </div>
 <div class="crd">
 <p><strong>Resultado observable</strong></p>
-<p>Al finalizar, el estudiante lee cualquier cadena de permisos, calcula su octal, decide los permisos para el escenario y los establece con <code>chmod</code>/<code>chown</code> justificando desde el PoLP.</p>
+<p>Al finalizar, el estudiante interpreta cualquier cadena de permisos, traduce simbólico↔octal, y configura un árbol de directorios compartido con <code>chmod</code>/<code>chown</code> aplicando el Principio de Menor Privilegio para proteger la confidencialidad.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Propósito · Sesión 18</span><span class="ctr">2 / 22</span></div>
@@ -142,6 +151,8 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <li>Un equipo de trabajo comparte ciertos archivos.</li>
 <li>El resto del sistema debe tener acceso mínimo o nulo.</li>
 </ol>
+<p style="margin-top:6px;"><strong>Orden real de decisión en el kernel:</strong> primero compara UID (dueño), si no coincide compara GID (grupo), y solo si ambos fallan aplica "otros". No mezcla bloques.</p>
+<p class="nt" style="margin-top:4px;">Esto permite auditar con precisión: al conocer la identidad efectiva del proceso, puedes predecir exactamente qué triada usará el kernel.</p>
 <p class="nt">Para casos más finos: ACL (Access Control Lists), tema de cursos avanzados.</p>
 </div>
 </div>
@@ -378,6 +389,7 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <li><strong>Octal:</strong> establecer el estado final exacto. Más rápido en scripts.</li>
 <li><strong>Simbólico:</strong> modificar solo un bit sin afectar los demás. Más legible interactivamente.</li>
 </ul>
+<p style="margin-top:6px;"><strong>Precaución operativa:</strong> en árboles grandes, evita aplicar <code>chmod -R</code> sin criterio sobre enlaces simbólicos. Para despliegues seguros, separa directorios y archivos con <code>find -type d</code>/<code>-type f</code> y usa <code>a+rX</code> cuando quieras dar <code>x</code> solo a directorios (y a ejecutables ya marcados).</p>
 <p class="nt" style="margin-top:6px;">Solo el dueño (o root) puede cambiar los permisos de un archivo.</p>
 </div>
 </div>
@@ -527,6 +539,7 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <p style="margin-top:7px;"><strong>Sticky bit</strong> (<code>t</code>): solo el dueño del archivo puede borrarlo aunque otros tengan <code>w</code> en el directorio.</p>
 <div class="cod"><span class="cc">ls</span> <span class="cf">-ld</span> /tmp
 <span class="cm">drwxrwxrw<span style="color:#fbbf24;">t</span> 10 root root  /tmp</span></div>
+<p style="margin-top:7px;"><strong>Lectura fina de letras especiales:</strong> <code>s</code>/<code>t</code> minúscula indica bit especial + <code>x</code> activo. <code>S</code>/<code>T</code> mayúscula indica bit especial sin <code>x</code>, configuración válida pero poco útil en la mayoría de casos.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Bloque C · Bits especiales SUID/SGID/Sticky</span><span class="ctr">15 / 22</span></div>
@@ -603,6 +616,13 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <div class="cal">
 <p><strong>umask 027 en servidores</strong></p>
 <p>Con umask 022 (defecto), "otros" pueden leer archivos nuevos. En producción conviene <strong>027</strong>: archivos nacen con 640 (solo dueño y grupo leen) y directorios con 750. Los archivos de configuración no son legibles por usuarios no autorizados desde su creación.</p>
+<div class="cod" style="margin-top:7px;"><span class="cm"># Vista simbólica de máscara efectiva</span>
+<span class="cc">umask</span> <span class="cf">-S</span>
+<span class="cm">u=rwx,g=rx,o=</span>
+
+<span class="cm"># Regla operativa</span>
+<span class="cm">archivos: 666 - umask</span>
+<span class="cm">directorios: 777 - umask</span></div>
 </div>
 </div>
 <div class="ft"><span class="nt">Bloque C · umask</span><span class="ctr">17 / 22</span></div>
@@ -740,6 +760,65 @@ drwxr-x--- webroot/logs/
 </section>
 <section class="slide cnt">
 <div class="inn">
+<div class="hd">Profundización técnica · Cobertura validada</div>
+<div class="ct tc">
+<div>
+<h2>Matriz de cobertura no superficial</h2>
+<table>
+<thead><tr><th>Eje técnico</th><th>Qué cubre esta sesión</th><th>Estado</th></tr></thead>
+<tbody>
+<tr><td>Modelo u/g/o y evaluación DAC</td><td>Definición de sujetos + orden real de decisión por identidad efectiva.</td><td>Completo</td></tr>
+<tr><td>Permisos en archivos vs directorios</td><td>Semántica diferencial de r,w,x y efectos sobre borrado/acceso.</td><td>Completo</td></tr>
+<tr><td>Operación con chmod/chown/chgrp</td><td>Octal y simbólico, propiedad, límites por privilegio.</td><td>Completo</td></tr>
+<tr><td>Bits especiales</td><td>SUID/SGID/Sticky con lectura s/S y t/T.</td><td>Completo</td></tr>
+<tr><td>Defaults seguros</td><td>umask con fórmula y verificación en shell.</td><td>Completo</td></tr>
+<tr><td>Hardening práctico</td><td>Auditoría y corrección de árbol con <code>find</code>.</td><td>Completo</td></tr>
+</tbody>
+</table>
+</div>
+<div class="crd">
+<p><strong>Plataformas libres usadas para validar</strong></p>
+<ul>
+<li>Linux Foundation LFS101: continuidad de operaciones de archivos, usuarios/grupos y seguridad local.</li>
+<li>GNU Coreutils: semántica oficial de <code>chmod</code>/<code>chown</code>, recursividad y consideraciones de symlinks.</li>
+<li>ArchWiki: detalle operativo de permisos, métodos textual/numérico, umask y ACL.</li>
+</ul>
+<p class="nt" style="margin-top:6px;">Criterio docente: cada comando se acompaña con el "por qué" de seguridad para evitar uso mecánico.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Cobertura validada · Sesión 18</span><span class="ctr">22 / 24</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Fuentes y atribuciones de recursos</div>
+<div class="ct tc">
+<div>
+<h2>Trazabilidad de contenido técnico</h2>
+<ul>
+<li><strong>Linux Foundation (LFS101):</strong> referencia de progresión en administración Linux y seguridad local.</li>
+<li><strong>GNU Coreutils:</strong> manual oficial de <code>chmod</code> y <code>chown</code>.</li>
+<li><strong>ArchWiki:</strong> "File permissions and attributes" para semántica detallada y prácticas seguras.</li>
+<li><strong>Manual del sistema local:</strong> <code>man chmod</code>, <code>man chown</code>, <code>man umask</code>, <code>man find</code>, <code>man passwd</code>.</li>
+<li><strong>Ejemplos de binarios SUID:</strong> verificación en laboratorio con <code>ls -l /usr/bin/passwd /usr/bin/sudo</code>.</li>
+<li><strong>Semántica de permisos:</strong> estándar de comportamiento Linux/UNIX aplicado en prácticas de clase.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Licencias y autoría visual</strong></p>
+<ul>
+<li>Visual A, Visual B y Visual C: elaboración propia del curso (SVG embebido en el HTML).</li>
+<li>No se usaron imágenes externas con copyright restrictivo.</li>
+<li>Material para uso académico institucional interno.</li>
+</ul>
+<p class="nt" style="margin-top:6px;">Fecha de consulta de comandos de referencia: abril de 2026 (entorno de laboratorio).</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Fuentes · Sesión 18</span><span class="ctr">23 / 24</span></div>
+</div>
+</section>
+<section class="slide cnt">
+<div class="inn">
 <div class="hd">Puente técnico · Sesión 19</div>
 <div class="ct tc">
 <div>
@@ -763,7 +842,7 @@ echo "Directorio: $(pwd)"'</span> > ~/hola.sh
 <p class="nt" style="margin-top:5px;">¿Funciona? ¿Qué hace el <code>./</code> antes del nombre? La sesión 19 lo explica.</p>
 </div>
 </div>
-<div class="ft"><span class="nt">Puente · Hacia la Sesión 19</span><span class="ctr">22 / 22</span></div>
+<div class="ft"><span class="nt">Puente · Hacia la Sesión 19</span><span class="ctr">24 / 24</span></div>
 </div>
 </section>
 <div class="tnv" id="tnv">
