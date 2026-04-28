@@ -1,0 +1,1099 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SO · S19 · Automatizacion y Scripting</title>
+<style>
+:root{
+--az:#015583;--tur:#05ADBC;--txt:#201F4B;--mu:#6b7280;
+--safe-top-cover:clamp(208px,9vh,128px);
+--safe-left-cover:clamp(585px,5.5vw,110px);
+--safe-right-cover:clamp(28px,3vw,72px);
+--safe-bottom-cover:clamp(54px,6vh,92px);
+--safe-top:clamp(100px,9vh,132px);
+--safe-side:clamp(66px,5.5vw,108px);
+--safe-bottom:clamp(52px,6vh,90px);
+}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+.deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,20px);box-sizing:border-box;}
+.stage{width:min(96vw,calc(90vh*(16/9)));aspect-ratio:16/9;position:relative;}
+.slide{position:absolute;inset:0;display:none;box-shadow:0 12px 36px rgba(0,0,0,.3);overflow:hidden;}
+.slide.active{display:block;}
+.cov{background:url("./Portada.png") center/cover no-repeat;color:#fff;}
+.cnt{background:url("./Contenido.png") top left/contain no-repeat,#fff;color:var(--txt);}
+.inn{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom);display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);}
+.cov .inn{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);}
+.ct{flex:1;display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);min-height:0;overflow:auto;overflow-x:hidden;}
+.hd{color:var(--tur);font-size:clamp(12px,1.1vw,15px);font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-bottom:2px solid var(--tur);padding-bottom:3px;}
+h1{margin:0;font-size:clamp(26px,3.2vw,44px);line-height:1.08;color:#fff;}
+h2{margin:0;font-size:clamp(18px,2vw,28px);line-height:1.15;color:var(--az);}
+p{margin:0;font-size:clamp(13px,1.2vw,17px);line-height:1.4;}
+li{font-size:clamp(13px,1.2vw,17px);line-height:1.4;}
+ul,ol{margin:0;padding-left:1.2em;}
+.sub{color:#f7df00;font-weight:800;font-size:clamp(16px,1.7vw,22px);margin-top:8px;}
+.nt{color:var(--mu);font-size:clamp(10px,.95vw,13px);line-height:1.35;}
+.cal{background:#f0f9ff;border-left:5px solid var(--tur);padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.caw{background:#fffbe6;border-left:5px solid #e6a817;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cad{background:#fef2f2;border-left:5px solid #dc2626;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.tc{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(10px,1.4vw,20px);align-items:start;min-height:0;}
+.tce{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.4vw,20px);align-items:start;}
+.crd{background:#f8faff;border:1px solid #dde2f1;border-radius:8px;padding:clamp(8px,.9vw,12px);}
+.cod{font-family:ui-monospace,monospace;font-size:clamp(10px,.9vw,12.5px);line-height:1.5;background:#0b1020;color:#e5e7eb;border-radius:7px;padding:clamp(7px,.9vw,11px);white-space:pre-wrap;border:1px solid #1f2937;max-height:min(36vh,320px);overflow:auto;scrollbar-gutter:stable both-edges;}
+.cm{color:#6b7280;}.cc{color:#7dd3fc;font-weight:bold;}.cs{color:#86efac;}
+.cn{color:#fde68a;}.cf{color:#c4b5fd;}
+.iw{width:100%;border-radius:7px;border:1px solid #dde2f1;background:#fff;display:flex;align-items:center;justify-content:center;}
+table{width:100%;border-collapse:collapse;font-size:clamp(10px,.95vw,13px);}
+th,td{border:1px solid #dde2f1;padding:clamp(4px,.7vw,8px);color:var(--txt);vertical-align:top;}
+th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);letter-spacing:.05em;color:var(--az);}
+.ft{display:flex;justify-content:space-between;align-items:center;padding-top:3px;border-top:1px solid #dde2f1;}
+.cov .ft{border-top:1px solid rgba(255,255,255,.15);}
+.ctr{font-weight:800;color:var(--az);font-size:clamp(11px,.95vw,13px);}
+.cov .ctr{color:#e5edf8;}
+.tnv{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;z-index:10;}
+.tnv button{pointer-events:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(221,226,241,.9);background:rgba(255,255,255,.9);color:var(--txt);font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.1);}
+#tnv{opacity:0;transition:.15s;}
+.stage:hover #tnv{opacity:1;}
+@media(hover:none){#tnv{opacity:1;}}
+.sq{opacity:0;transform:translateY(9px);transition:opacity .32s,transform .32s;}
+.sq.vs{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+<div class="deck"><div class="stage" id="stage">
+
+<section class="slide cov active">
+<div class="inn"><div class="ct">
+<span class="hd">Sistemas Operativos · Unidad 3</span>
+<h1>Sesion 19</h1>
+<h1>Automatizacion:<br>Bases de Scripting</h1>
+<div class="sub">Bash · PowerShell · Batch · Variables · Control de flujo</div>
+<div class="cal" style="max-width:78%;margin-top:clamp(10px,1.4vw,18px);">
+<p style="color:var(--txt);">Pasamos de ejecutar comandos sueltos a disenar rutinas reproducibles que verifican, corrigen y documentan tareas operativas sin depender de pasos manuales.</p>
+</div>
+<p class="nt" style="margin-top:auto;color:#9ca3af;">&larr; &rarr; navegacion · F pantalla completa</p>
+</div>
+<div class="ft"><span class="nt" style="color:#9ca3af;">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">1 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Proposito tecnico de la sesion</div>
+<div class="ct tc">
+<div>
+<h2>Que dominaremos hoy</h2>
+<ul>
+<li>Diferenciar <strong>comando interactivo</strong> de <strong>script reproducible</strong>.</li>
+<li>Modelar datos con <strong>variables locales</strong> y <strong>variables de entorno</strong>.</li>
+<li>Controlar decisiones con <code>if</code>/<code>case</code> y repeticion con <code>for</code>/<code>while</code>.</li>
+<li>Construir funciones reutilizables, validar entrada y propagar codigos de salida.</li>
+<li>Comparar el enfoque Bash, PowerShell y Batch sin perder criterio de seguridad.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Resultado observable</strong></p>
+<p>Al finalizar, cada estudiante produce un script entre 20 y 35 lineas que audita un directorio, aplica reglas de permisos seguras y genera un log de ejecucion verificable.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Proposito · Sesion 19</span><span class="ctr">2 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Puente desde la sesion 18</div>
+<div class="ct tc">
+<div>
+<h2>Continuidad tecnica real</h2>
+<ul>
+<li>En S18 corregimos permisos con comandos manuales.</li>
+<li>Ese enfoque funciona en laboratorio, pero falla en entornos repetitivos.</li>
+<li>Un despliegue puede recrear cientos de archivos con permisos inseguros.</li>
+<li>La automatizacion asegura consistencia, velocidad y trazabilidad.</li>
+</ul>
+</div>
+<div class="cal">
+<p><strong>Pregunta de enlace</strong></p>
+<p>Si mañana heredas 12 servidores con el mismo error de permisos, quieres escribir 120 comandos uno por uno o ejecutar un script validado, con log y posibilidad de repetir sin sorpresas?</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Continuidad S18 &rarr; S19</span><span class="ctr">3 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque A · Que es scripting y que no es</div>
+<div class="ct tc">
+<div>
+<h2>Definiciones de primera aparicion</h2>
+<ul>
+<li><strong>Script</strong>: archivo de texto con instrucciones ejecutadas por un interprete (ej: Bash).</li>
+<li><strong>Interprete</strong>: programa que lee y ejecuta linea a linea (bash, pwsh, cmd).</li>
+<li><strong>Shebang</strong>: primera linea <code>#!/bin/bash</code> que define el interprete.</li>
+<li><strong>Idempotencia</strong>: ejecutar dos veces y mantener el mismo estado final correcto.</li>
+<li><strong>Exit code</strong>: numero de salida de un proceso. 0=exito; distinto de 0=error.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Diferencia clave</strong></p>
+<p>Un historial de comandos no es automaticamente un script: le falta validacion, manejo de errores, parametrizacion y una salida clara para diagnostico.</p>
+<div class="cod" style="margin-top:7px;"><span class="cm"># Script minimo valido</span>
+<span class="cf">#!/usr/bin/env bash</span>
+<span class="cc">set</span> <span class="cf">-euo pipefail</span>
+<span class="cc">echo</span> <span class="cs">"Inicio $(date -Iseconds)"</span>
+<span class="cc">echo</span> <span class="cs">"Usuario: $(whoami)"</span></div>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque A · Fundamentos</span><span class="ctr">4 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual A · Ciclo de vida de ejecucion de un script</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="height:min(54vh,370px);padding:8px;">
+<svg viewBox="0 0 760 278" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="12">
+<defs>
+<marker id="va1" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#6b7280"/></marker>
+<marker id="va2" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#05ADBC"/></marker>
+</defs>
+<rect class="sq" x="16" y="34" width="130" height="52" rx="8" fill="#201F4B"/>
+<text class="sq" x="81" y="55" text-anchor="middle" fill="#fff" font-weight="bold">1. Archivo .sh</text>
+<text class="sq" x="81" y="71" text-anchor="middle" fill="#e5edf8" font-size="10">texto + shebang</text>
+
+<line class="sq" x1="146" y1="60" x2="194" y2="60" stroke="#6b7280" stroke-width="2" marker-end="url(#va1)"/>
+
+<rect class="sq" x="194" y="34" width="138" height="52" rx="8" fill="#015583"/>
+<text class="sq" x="263" y="55" text-anchor="middle" fill="#fff" font-weight="bold">2. Interprete</text>
+<text class="sq" x="263" y="71" text-anchor="middle" fill="#e5edf8" font-size="10">bash / pwsh / cmd</text>
+
+<line class="sq" x1="332" y1="60" x2="382" y2="60" stroke="#6b7280" stroke-width="2" marker-end="url(#va1)"/>
+
+<rect class="sq" x="382" y="34" width="152" height="52" rx="8" fill="#0b1020" stroke="#05ADBC" stroke-width="2"/>
+<text class="sq" x="458" y="55" text-anchor="middle" fill="#05ADBC" font-weight="bold">3. Expansiones</text>
+<text class="sq" x="458" y="71" text-anchor="middle" fill="#e5edf8" font-size="10">variables, glob, quoting</text>
+
+<line class="sq" x1="534" y1="60" x2="582" y2="60" stroke="#6b7280" stroke-width="2" marker-end="url(#va1)"/>
+
+<rect class="sq" x="582" y="34" width="160" height="52" rx="8" fill="#15803d"/>
+<text class="sq" x="662" y="55" text-anchor="middle" fill="#fff" font-weight="bold">4. Syscalls</text>
+<text class="sq" x="662" y="71" text-anchor="middle" fill="#dcfce7" font-size="10">open, read, write, execve</text>
+
+<rect class="sq" x="44" y="124" width="672" height="126" rx="10" fill="#f3f6fb" stroke="#dde2f1"/>
+<text class="sq" x="380" y="147" text-anchor="middle" fill="#015583" font-weight="bold">Puntos de control que distinguen un script profesional</text>
+
+<rect class="sq" x="70" y="164" width="196" height="70" rx="8" fill="#fff" stroke="#05ADBC"/>
+<text class="sq" x="168" y="184" text-anchor="middle" fill="#015583" font-weight="bold">Validar entrada</text>
+<text class="sq" x="168" y="199" text-anchor="middle" fill="#201F4B" font-size="10">arg vacio? ruta existe?</text>
+<text class="sq" x="168" y="213" text-anchor="middle" fill="#201F4B" font-size="10">permisos suficientes?</text>
+
+<rect class="sq" x="282" y="164" width="196" height="70" rx="8" fill="#fff" stroke="#05ADBC"/>
+<text class="sq" x="380" y="184" text-anchor="middle" fill="#015583" font-weight="bold">Control de errores</text>
+<text class="sq" x="380" y="199" text-anchor="middle" fill="#201F4B" font-size="10">set -euo pipefail</text>
+<text class="sq" x="380" y="213" text-anchor="middle" fill="#201F4B" font-size="10">exit code + mensaje claro</text>
+
+<rect class="sq" x="494" y="164" width="196" height="70" rx="8" fill="#fff" stroke="#05ADBC"/>
+<text class="sq" x="592" y="184" text-anchor="middle" fill="#015583" font-weight="bold">Trazabilidad</text>
+<text class="sq" x="592" y="199" text-anchor="middle" fill="#201F4B" font-size="10">log con fecha y accion</text>
+<text class="sq" x="592" y="213" text-anchor="middle" fill="#201F4B" font-size="10">resultado reproducible</text>
+
+<line class="sq" x1="380" y1="86" x2="380" y2="124" stroke="#05ADBC" stroke-width="2" marker-end="url(#va2)"/>
+</svg>
+</div>
+<p class="nt" style="text-align:center;">Automatizar no es solo ejecutar comandos: es definir comportamiento predecible ante entradas validas e invalidas.</p>
+</div>
+<div class="ft"><span class="nt">Visual A · Recurso propio SVG</span><span class="ctr">5 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque A · Variables y alcance: local vs entorno</div>
+<div class="ct tc">
+<div>
+<h2>Concepto tecnico profundo</h2>
+<ul>
+<li><strong>Variable local</strong>: vive en el proceso actual del shell.</li>
+<li><strong>Variable de entorno</strong>: se exporta a procesos hijo y comandos invocados.</li>
+<li><strong>Subshell</strong>: proceso shell hijo; recibe entorno, no comparte cambios de regreso.</li>
+<li><strong>Expansion</strong>: sustitucion de <code>$VAR</code> por su valor en tiempo de ejecucion.</li>
+</ul>
+<div class="cod" style="margin-top:6px;"><span class="cc">APP_ENV</span>=<span class="cs">"dev"</span>
+<span class="cc">echo</span> <span class="cs">"$APP_ENV"</span>                <span class="cm"># visible aqui</span>
+<span class="cc">bash</span> <span class="cf">-c</span> <span class="cs">'echo "$APP_ENV"'</span>    <span class="cm"># vacio</span>
+
+<span class="cc">export</span> <span class="cc">APP_ENV</span>
+<span class="cc">bash</span> <span class="cf">-c</span> <span class="cs">'echo "$APP_ENV"'</span>    <span class="cm"># ahora si: dev</span></div>
+</div>
+<div class="caw">
+<p><strong>Riesgo comun</strong></p>
+<p>Usar variables sin comillas rompe rutas con espacios y abre fallos por expansion no deseada. Regla operativa: citar siempre <code>"$VAR"</code>, excepto cuando deliberadamente quieres separacion por espacios.</p>
+<p class="nt" style="margin-top:6px;">Para PowerShell la expansion segura usa <code>"$var"</code>; en Batch, <code>"%VAR%"</code>.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque A · Variables y entorno</span><span class="ctr">6 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual B · Orden de expansion y quoting seguro</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="height:min(53vh,365px);padding:8px;">
+<svg viewBox="0 0 760 272" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="12">
+<defs>
+<marker id="vb1" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#6b7280"/></marker>
+</defs>
+<rect x="24" y="26" width="714" height="220" rx="12" fill="#f3f6fb" stroke="#dde2f1"/>
+<text x="381" y="48" text-anchor="middle" fill="#015583" font-size="13" font-weight="bold">Pipeline mental para leer una linea de script</text>
+
+<rect class="sq" x="52" y="70" width="138" height="56" rx="8" fill="#201F4B"/>
+<text class="sq" x="121" y="92" text-anchor="middle" fill="#fff" font-weight="bold">Texto crudo</text>
+<text class="sq" x="121" y="108" text-anchor="middle" fill="#e5edf8" font-size="10">echo "$RUTA"</text>
+
+<line class="sq" x1="190" y1="98" x2="242" y2="98" stroke="#6b7280" stroke-width="2" marker-end="url(#vb1)"/>
+
+<rect class="sq" x="242" y="70" width="138" height="56" rx="8" fill="#015583"/>
+<text class="sq" x="311" y="92" text-anchor="middle" fill="#fff" font-weight="bold">Expansion var</text>
+<text class="sq" x="311" y="108" text-anchor="middle" fill="#e5edf8" font-size="10">$RUTA -&gt; valor</text>
+
+<line class="sq" x1="380" y1="98" x2="432" y2="98" stroke="#6b7280" stroke-width="2" marker-end="url(#vb1)"/>
+
+<rect class="sq" x="432" y="70" width="138" height="56" rx="8" fill="#0b1020" stroke="#05ADBC" stroke-width="2"/>
+<text class="sq" x="501" y="92" text-anchor="middle" fill="#05ADBC" font-weight="bold">Word splitting</text>
+<text class="sq" x="501" y="108" text-anchor="middle" fill="#e5edf8" font-size="10">evitar con comillas</text>
+
+<line class="sq" x1="570" y1="98" x2="622" y2="98" stroke="#6b7280" stroke-width="2" marker-end="url(#vb1)"/>
+
+<rect class="sq" x="622" y="70" width="96" height="56" rx="8" fill="#15803d"/>
+<text class="sq" x="670" y="92" text-anchor="middle" fill="#fff" font-weight="bold">Exec</text>
+<text class="sq" x="670" y="108" text-anchor="middle" fill="#dcfce7" font-size="10">argv final</text>
+
+<rect class="sq" x="58" y="146" width="310" height="82" rx="8" fill="#fff" stroke="#dc2626"/>
+<text class="sq" x="213" y="167" text-anchor="middle" fill="#dc2626" font-weight="bold">Caso inseguro</text>
+<text class="sq" x="213" y="184" text-anchor="middle" fill="#201F4B" font-size="10">RUTA=/tmp/mi carpeta</text>
+<text class="sq" x="213" y="199" text-anchor="middle" fill="#201F4B" font-size="10">rm -rf $RUTA</text>
+<text class="sq" x="213" y="214" text-anchor="middle" fill="#201F4B" font-size="10">se interpreta como 2 argumentos</text>
+
+<rect class="sq" x="392" y="146" width="310" height="82" rx="8" fill="#fff" stroke="#15803d"/>
+<text class="sq" x="547" y="167" text-anchor="middle" fill="#15803d" font-weight="bold">Caso seguro</text>
+<text class="sq" x="547" y="184" text-anchor="middle" fill="#201F4B" font-size="10">RUTA=/tmp/mi carpeta</text>
+<text class="sq" x="547" y="199" text-anchor="middle" fill="#201F4B" font-size="10">rm -rf "$RUTA"</text>
+<text class="sq" x="547" y="214" text-anchor="middle" fill="#201F4B" font-size="10">argumento unico y controlado</text>
+</svg>
+</div>
+<p class="nt" style="text-align:center;">La mayoria de bugs en scripts basicos no son de logica; son de expansion y quoting.</p>
+</div>
+<div class="ft"><span class="nt">Visual B · Recurso propio SVG</span><span class="ctr">7 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque B · Condicionales y decisiones confiables</div>
+<div class="ct tc">
+<div>
+<h2>if, test y case en Bash</h2>
+<div class="cod"><span class="cf">#!/usr/bin/env bash</span>
+<span class="cc">set</span> <span class="cf">-euo pipefail</span>
+<span class="cc">RUTA</span>=<span class="cs">"${1:-}"</span>
+
+<span class="cc">if</span> [[ <span class="cf">-z</span> <span class="cs">"$RUTA"</span> ]]; <span class="cc">then</span>
+  <span class="cc">echo</span> <span class="cs">"Uso: $0 <ruta>"</span>
+  <span class="cc">exit</span> <span class="cn">2</span>
+<span class="cc">fi</span>
+
+<span class="cc">if</span> [[ <span class="cf">-d</span> <span class="cs">"$RUTA"</span> ]]; <span class="cc">then</span>
+  <span class="cc">echo</span> <span class="cs">"Directorio valido"</span>
+<span class="cc">else</span>
+  <span class="cc">echo</span> <span class="cs">"No existe: $RUTA"</span>
+  <span class="cc">exit</span> <span class="cn">3</span>
+<span class="cc">fi</span>
+
+<span class="cc">case</span> <span class="cs">"${2:-audit}"</span> <span class="cc">in</span>
+  audit) <span class="cc">echo</span> <span class="cs">"modo auditoria"</span> ;;
+  fix)   <span class="cc">echo</span> <span class="cs">"modo correccion"</span> ;;
+  *)     <span class="cc">echo</span> <span class="cs">"modo invalido"</span>; <span class="cc">exit</span> <span class="cn">4</span> ;;
+<span class="cc">esac</span></div>
+</div>
+<div class="crd">
+<p><strong>Diseno recomendado</strong></p>
+<ul>
+<li>Validar argumentos al inicio y terminar rapido si faltan.</li>
+<li>Usar codigos de salida distintos por tipo de error.</li>
+<li>Separar modo <code>audit</code> y <code>fix</code> para evitar cambios involuntarios.</li>
+<li>Evitar <code>if</code> anidados de forma excesiva: usar funciones pequenas.</li>
+</ul>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque B · Condicionales</span><span class="ctr">8 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque B · Iteracion: for, while y lectura robusta</div>
+<div class="ct tc">
+<div>
+<h2>Procesar colecciones sin romper datos</h2>
+<div class="cod"><span class="cm"># Evitar: for f in $(ls)  # rompe nombres con espacios</span>
+
+<span class="cm"># Correcto para archivos: while + find + -print0</span>
+<span class="cc">while</span> IFS= <span class="cc">read</span> <span class="cf">-r -d ''</span> f; <span class="cc">do</span>
+  <span class="cc">echo</span> <span class="cs">"Procesando: $f"</span>
+  <span class="cc">chmod</span> <span class="cn">640</span> <span class="cs">"$f"</span>
+<span class="cc">done</span> &lt; &lt;(<span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-type f -name '*.conf' -print0</span>)
+
+<span class="cm"># for sigue siendo util en listas pequenas controladas</span>
+<span class="cc">for</span> m <span class="cc">in</span> audit fix report; <span class="cc">do</span>
+  <span class="cc">echo</span> <span class="cs">"modo: $m"</span>
+<span class="cc">done</span></div>
+</div>
+<div class="caw">
+<p><strong>Idea clave</strong></p>
+<p>Un script operativo debe sobrevivir a casos reales: nombres con espacios, caracteres especiales, rutas vacias, permisos insuficientes y ejecuciones repetidas.</p>
+<p class="nt" style="margin-top:6px;">Si tu logica funciona solo con nombres "limpios", aun no esta lista para produccion.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque B · Bucles robustos</span><span class="ctr">9 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Practica guiada 1 · Script de inventario operativo</div>
+<div class="ct tc">
+<div>
+<h2>Enunciado de clase</h2>
+<p>Crear <code>inventario.sh</code> que reciba una ruta y genere un resumen con:</p>
+<ul>
+<li>Total de archivos y directorios.</li>
+<li>Cantidad de <code>.sh</code>, <code>.conf</code> y <code>.log</code>.</li>
+<li>Fecha/hora de ejecucion y usuario.</li>
+<li>Guardado en <code>reporte_inventario.txt</code>.</li>
+</ul>
+<div class="cod" style="margin-top:6px;"><span class="cm"># 1. Crear directorio de prueba con archivos variados</span>
+<span class="cc">mkdir</span> <span class="cf">-p</span> <span class="cs">~/practica19/conf ~/practica19/logs</span>
+<span class="cc">touch</span> <span class="cs">~/practica19/deploy.sh ~/practica19/setup.sh</span>
+<span class="cc">touch</span> <span class="cs">~/practica19/conf/app.conf ~/practica19/conf/db.conf</span>
+<span class="cc">touch</span> <span class="cs">~/practica19/logs/sistema.log ~/practica19/logs/error.log</span>
+
+<span class="cm"># 2. Crear el archivo del script</span>
+<span class="cc">nano</span> inventario.sh          <span class="cm"># escribir la solucion aqui</span>
+
+<span class="cm"># 3. Dar permisos de ejecucion</span>
+<span class="cc">chmod</span> <span class="cn">755</span> inventario.sh
+<span class="cc">ls</span> <span class="cf">-l</span> inventario.sh          <span class="cm"># verificar: -rwxr-xr-x</span>
+
+<span class="cm"># 4. Ejecutar sobre el directorio creado</span>
+<span class="cc">./inventario.sh</span> <span class="cs">~/practica19</span>
+
+<span class="cm"># 5. Verificar el reporte generado</span>
+<span class="cc">cat</span> reporte_inventario.txt
+
+<span class="cm"># 6. Confirmar idempotencia (resultado identico)</span>
+<span class="cc">./inventario.sh</span> <span class="cs">~/practica19</span> ; <span class="cc">diff</span> reporte_inventario.txt reporte_inventario.txt</div>
+</div>
+<div class="crd">
+<p><strong>Pistas tecnicas</strong></p>
+<ol>
+<li>Validar argumento con <code>[[ -d "${1:-}" ]]</code>.</li>
+<li>Usar <code>find</code> + <code>wc -l</code> para conteos.</li>
+<li>Encapsular en funciones para legibilidad.</li>
+<li>Salir con codigo distinto si la ruta no existe.</li>
+</ol>
+</div>
+</div>
+<div class="ft"><span class="nt">Practica 1 · Inventario de sistema</span><span class="ctr">10 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Solucion guiada 1</div>
+<div class="ct tc">
+<div>
+<h2>Script referencia (Bash)</h2>
+<div class="cod"><span class="cf">#!/usr/bin/env bash</span>
+<span class="cm"># 1) Modo estricto: aborta en errores, variables no definidas y pipes fallidas</span>
+<span class="cc">set</span> <span class="cf">-euo pipefail</span>
+
+<span class="cm"># 2) Parametros de entrada y archivo de salida</span>
+<span class="cc">RUTA</span>=<span class="cs">"${1:-}"</span>
+<span class="cc">SALIDA</span>=<span class="cs">"reporte_inventario.txt"</span>
+
+<span class="cm"># 3) Validacion temprana: si falla, terminar con codigo 2</span>
+<span class="cc">if</span> [[ <span class="cf">-z</span> <span class="cs">"$RUTA"</span> || ! <span class="cf">-d</span> <span class="cs">"$RUTA"</span> ]]; <span class="cc">then</span>
+  <span class="cc">echo</span> <span class="cs">"Uso: $0 <directorio_valido>"</span>
+  <span class="cc">exit</span> <span class="cn">2</span>
+<span class="cc">fi</span>
+
+<span class="cm"># 4) Funcion reutilizable para contar archivos por patron</span>
+<span class="cc">contar</span>() {
+  <span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-type f -name "$1" | wc -l</span>
+}
+
+<span class="cm"># 5) Recoleccion de metricas de inventario</span>
+<span class="cc">TOTAL_DIR</span>=$(<span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-type d | wc -l</span>)
+<span class="cc">TOTAL_FILE</span>=$(<span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-type f | wc -l</span>)
+<span class="cc">N_SH</span>=$(<span class="cc">contar</span> <span class="cs">"*.sh"</span>)
+<span class="cc">N_CONF</span>=$(<span class="cc">contar</span> <span class="cs">"*.conf"</span>)
+<span class="cc">N_LOG</span>=$(<span class="cc">contar</span> <span class="cs">"*.log"</span>)
+
+{
+  <span class="cc">echo</span> <span class="cs">"Inventario: $RUTA"</span>
+  <span class="cc">echo</span> <span class="cs">"Fecha: $(date -Iseconds)"</span>
+  <span class="cc">echo</span> <span class="cs">"Usuario: $(whoami)"</span>
+  <span class="cc">echo</span> <span class="cs">"Directorios: $TOTAL_DIR"</span>
+  <span class="cc">echo</span> <span class="cs">"Archivos: $TOTAL_FILE"</span>
+  <span class="cc">echo</span> <span class="cs">"*.sh: $N_SH"</span>
+  <span class="cc">echo</span> <span class="cs">"*.conf: $N_CONF"</span>
+  <span class="cc">echo</span> <span class="cs">"*.log: $N_LOG"</span>
+} > <span class="cs">"$SALIDA"</span>
+
+<span class="cc">echo</span> <span class="cs">"Reporte generado en $SALIDA"</span></div>
+</div>
+<div class="cal">
+<p><strong>Validacion de la solucion</strong></p>
+<ul>
+<li>Termina con codigo 2 si la ruta es invalida.</li>
+<li>No rompe por espacios porque todas las rutas van con comillas.</li>
+<li>Puede ejecutarse varias veces y siempre sobrescribe reporte consistente.</li>
+</ul>
+</div>
+</div>
+<div class="ft"><span class="nt">Solucion 1 · Inventario</span><span class="ctr">11 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque C · Funciones, parametros y codigos de retorno</div>
+<div class="ct tc">
+<div>
+<h2>Diseño modular de scripts</h2>
+<ul>
+<li>Una funcion debe hacer una sola tarea observable.</li>
+<li>Recibe parametros posicionales (<code>$1</code>, <code>$2</code>, ...).</li>
+<li>Retorna con <code>return N</code> (0 exito, otro valor falla).</li>
+<li>El script principal orquesta funciones y decide salida final.</li>
+</ul>
+<div class="cod" style="margin-top:6px;"><span class="cm"># Funcion de traza para mensajes consistentes con hora</span>
+<span class="cc">log</span>() {
+  <span class="cc">echo</span> <span class="cs">"[$(date +%H:%M:%S)] $*"</span>
+}
+
+<span class="cm"># Verifica existencia de directorio; retorna 10 en caso de error</span>
+<span class="cc">asegurar_dir</span>() {
+  <span class="cc">local</span> d=<span class="cs">"$1"</span>
+  [[ <span class="cf">-d</span> <span class="cs">"$d"</span> ]] || <span class="cc">return</span> <span class="cn">10</span>
+}
+
+<span class="cc">asegurar_dir</span> <span class="cs">"$RUTA"</span> || { <span class="cc">log</span> <span class="cs">"ruta invalida"</span>; <span class="cc">exit</span> <span class="cn">10</span>; }</div>
+</div>
+<div class="crd">
+<p><strong>Convencion util de codigos</strong></p>
+<table>
+<thead><tr><th>Codigo</th><th>Significado</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>Ejecucion correcta.</td></tr>
+<tr><td>2</td><td>Uso incorrecto de argumentos.</td></tr>
+<tr><td>10</td><td>Ruta no valida o inaccesible.</td></tr>
+<tr><td>20</td><td>Falla al aplicar permisos.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque C · Funciones y retorno</span><span class="ctr">12 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual C · Manejo de errores: fail-fast y trazabilidad</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="height:min(54vh,372px);padding:8px;">
+<svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="12">
+<defs>
+<marker id="vc1" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#6b7280"/></marker>
+<marker id="vc2" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#dc2626"/></marker>
+</defs>
+<rect x="22" y="22" width="716" height="236" rx="12" fill="#f3f6fb" stroke="#dde2f1"/>
+<text x="380" y="44" text-anchor="middle" fill="#015583" font-size="13" font-weight="bold">Patron recomendado para scripts operativos</text>
+
+<rect class="sq" x="54" y="64" width="178" height="56" rx="8" fill="#201F4B"/>
+<text class="sq" x="143" y="86" text-anchor="middle" fill="#fff" font-weight="bold">Inicio</text>
+<text class="sq" x="143" y="102" text-anchor="middle" fill="#e5edf8" font-size="10">set -euo pipefail</text>
+
+<line class="sq" x1="232" y1="92" x2="290" y2="92" stroke="#6b7280" stroke-width="2" marker-end="url(#vc1)"/>
+
+<rect class="sq" x="290" y="64" width="178" height="56" rx="8" fill="#015583"/>
+<text class="sq" x="379" y="86" text-anchor="middle" fill="#fff" font-weight="bold">Validar entrada</text>
+<text class="sq" x="379" y="102" text-anchor="middle" fill="#e5edf8" font-size="10">args, ruta, permisos</text>
+
+<line class="sq" x1="468" y1="92" x2="526" y2="92" stroke="#6b7280" stroke-width="2" marker-end="url(#vc1)"/>
+
+<rect class="sq" x="526" y="64" width="178" height="56" rx="8" fill="#15803d"/>
+<text class="sq" x="615" y="86" text-anchor="middle" fill="#fff" font-weight="bold">Ejecutar acciones</text>
+<text class="sq" x="615" y="102" text-anchor="middle" fill="#dcfce7" font-size="10">audit / fix / report</text>
+
+<rect class="sq" x="54" y="148" width="316" height="88" rx="8" fill="#fff" stroke="#15803d"/>
+<text class="sq" x="212" y="170" text-anchor="middle" fill="#15803d" font-weight="bold">Flujo exitoso</text>
+<text class="sq" x="212" y="187" text-anchor="middle" fill="#201F4B" font-size="10">log "OK"</text>
+<text class="sq" x="212" y="202" text-anchor="middle" fill="#201F4B" font-size="10">exit 0</text>
+<text class="sq" x="212" y="217" text-anchor="middle" fill="#201F4B" font-size="10">estado final consistente</text>
+
+<rect class="sq" x="390" y="148" width="314" height="88" rx="8" fill="#fff" stroke="#dc2626"/>
+<text class="sq" x="547" y="170" text-anchor="middle" fill="#dc2626" font-weight="bold">Flujo de error</text>
+<text class="sq" x="547" y="187" text-anchor="middle" fill="#201F4B" font-size="10">trap 'echo "ERROR en linea $LINENO"' ERR</text>
+<text class="sq" x="547" y="202" text-anchor="middle" fill="#201F4B" font-size="10">mensaje legible + codigo != 0</text>
+<text class="sq" x="547" y="217" text-anchor="middle" fill="#201F4B" font-size="10">no continuar en estado incierto</text>
+
+<line class="sq" x1="615" y1="120" x2="615" y2="148" stroke="#dc2626" stroke-width="2" marker-end="url(#vc2)"/>
+</svg>
+</div>
+<p class="nt" style="text-align:center;">Controlar el error no significa ocultarlo: significa detenerse en el punto correcto y dejar evidencia util para diagnostico.</p>
+</div>
+<div class="ft"><span class="nt">Visual C · Recurso propio SVG</span><span class="ctr">13 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque C · Bash vs PowerShell vs Batch</div>
+<div class="ct" style="gap:clamp(6px,.8vw,10px);">
+<table>
+<thead><tr><th>Eje</th><th>Bash (Linux/macOS)</th><th>PowerShell (Windows/Linux)</th><th>Batch CMD (Windows)</th></tr></thead>
+<tbody>
+<tr><td>Modelo de datos</td><td>Texto y streams.</td><td>Objetos .NET en pipeline.</td><td>Texto plano.</td></tr>
+<tr><td>Variables</td><td><code>VAR="x"</code>, <code>$VAR</code>.</td><td><code>$var="x"</code>.</td><td><code>set VAR=x</code>, <code>%VAR%</code>.</td></tr>
+<tr><td>Condicional</td><td><code>if [[ ... ]]</code></td><td><code>if (...) { ... }</code></td><td><code>if exist ...</code></td></tr>
+<tr><td>Bucle</td><td><code>for/while</code></td><td><code>foreach/while</code></td><td><code>for %%f in (...) do</code></td></tr>
+<tr><td>Fortaleza</td><td>Automatizacion UNIX y servidores.</td><td>Administracion Windows y APIs del sistema.</td><td>Tareas simples legacy.</td></tr>
+<tr><td>Limitacion comun</td><td>Errores por quoting si no se domina.</td><td>Sintaxis extensa para tareas basicas.</td><td>Poca robustez para casos complejos.</td></tr>
+</tbody>
+</table>
+<div class="caw">
+<p><strong>Criterio pedagogico</strong></p>
+<p>No se trata de escoger "el mejor". Se trata de entender la logica comun de automatizar: entrada, validacion, accion, control de error y evidencia.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque C · Comparativa de shells</span><span class="ctr">14 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque Batch · Estructura, directivas y variables de entorno</div>
+<div class="ct tc">
+<div>
+<h2>Anatomia de un archivo .bat</h2>
+<ul>
+<li><strong>@echo off</strong>: suprime la impresion de comandos; solo muestra la salida util.</li>
+<li><strong>REM texto</strong>: comentario; no se ejecuta ni se muestra en pantalla.</li>
+<li><strong>ECHO mensaje</strong>: imprime texto. <code>ECHO.</code> imprime una linea en blanco.</li>
+<li><strong>ECHO ON / ECHO OFF</strong>: activa o desactiva el eco de comandos desde el interior del script.</li>
+<li><strong>PAUSE</strong>: detiene ejecucion hasta tecla. <code>PAUSE&gt;NUL</code> espera sin mostrar texto.</li>
+<li><strong>SET VAR=valor</strong>: define variable local; se accede con <code>%VAR%</code>.</li>
+<li><strong>%username%</strong>, <strong>%TEMP%</strong>, <strong>%DATE%</strong>, <strong>%TIME%</strong>: variables de entorno del sistema.</li>
+</ul>
+<div class="cod" style="margin-top:6px;"><span class="cc">@echo off</span>
+<span class="cm">REM Script de identificacion del sistema</span>
+<span class="cc">SET</span> NOMBRE=<span class="cs">SistemaOS</span>
+<span class="cc">SET</span> VERSION=<span class="cs">1.0</span>
+<span class="cc">ECHO</span> <span class="cs">Script: %NOMBRE% v%VERSION%</span>
+<span class="cc">ECHO</span> <span class="cs">Usuario activo : %username%</span>
+<span class="cc">ECHO</span> <span class="cs">Carpeta temporal: %TEMP%</span>
+<span class="cc">ECHO.</span>
+<span class="cc">ECHO</span> <span class="cs">Fecha: %DATE%   Hora: %TIME%</span>
+<span class="cm">REM Pausa silenciosa: espera tecla sin mostrar mensaje</span>
+<span class="cc">PAUSE</span><span class="cf">&gt;NUL</span></div>
+</div>
+<div class="crd">
+<p><strong>Crear un .bat desde la terminal CMD</strong></p>
+<div class="cod"><span class="cm">:: Crear un archivo escribiendo directamente en consola</span>
+<span class="cm">:: Ctrl+Z + Enter guarda el archivo</span>
+<span class="cc">copy</span> <span class="cf">con</span> <span class="cs">tiempo.bat</span>
+<span class="cs">date</span>
+<span class="cs">time</span>
+<span class="cm">:: (Ctrl+Z para guardar)</span>
+
+<span class="cm">:: Ejecutar el archivo creado</span>
+<span class="cs">tiempo.bat</span>
+
+<span class="cm">:: Editar con Notepad en cualquier momento</span>
+<span class="cc">notepad</span> <span class="cs">tiempo.bat</span></div>
+<p class="nt" style="margin-top:6px;">La extension <strong>.bat</strong> indica a <code>cmd.exe</code> que trate el archivo como script de procesamiento por lotes.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque Batch · Fundamentos</span><span class="ctr">15 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque Batch · START, shutdown, limpieza y desfragmentacion</div>
+<div class="ct tc">
+<div>
+<h2>Automatizacion de tareas del sistema</h2>
+<div class="cod"><span class="cm">:: Abrir sitio web en el navegador predeterminado</span>
+<span class="cc">START</span> <span class="cs">https://www.pascualbravo.edu.co</span>
+
+<span class="cm">:: Cargar tres sitios con espera de 6 s entre cada uno</span>
+<span class="cc">START</span> <span class="cs">https://wikipedia.com</span>
+<span class="cc">timeout</span> <span class="cf">/nobreak</span> <span class="cn">6</span>
+<span class="cc">START</span> <span class="cs">https://github.com</span>
+<span class="cc">timeout</span> <span class="cf">/nobreak</span> <span class="cn">6</span>
+
+<span class="cm">:: Opciones del comando SHUTDOWN</span>
+<span class="cc">shutdown</span> <span class="cf">/s /t 60 /c</span> <span class="cs">"Cerrando en 60 s"</span> <span class="cm">:: apagar</span>
+<span class="cc">shutdown</span> <span class="cf">/r /t 0</span>              <span class="cm">:: reiniciar inmediato</span>
+<span class="cc">shutdown</span> <span class="cf">/H /F</span>                <span class="cm">:: hibernar (forzado)</span>
+<span class="cc">shutdown</span> <span class="cf">/l</span>                   <span class="cm">:: cerrar sesion</span>
+<span class="cc">shutdown</span> <span class="cf">/a</span>                   <span class="cm">:: cancelar apagado pendiente</span>
+
+<span class="cm">:: Liberar espacio y desfragmentar (START /WAIT = esperar)</span>
+<span class="cc">START /WAIT</span> <span class="cs">CLEANMGR</span> <span class="cf">/D D:</span>
+<span class="cc">START</span> <span class="cs">DEFRAG D:</span> <span class="cf">/U</span></div>
+</div>
+<div class="caw">
+<p><strong>Limpieza de archivos temporales</strong></p>
+<div class="cod"><span class="cm">:: Temporales del usuario actual</span>
+<span class="cc">del</span> <span class="cs">C:\Users\%username%\AppData\Local\Temp</span> <span class="cf">/f /s /q</span>
+<span class="cc">rd</span>  <span class="cs">C:\Users\%username%\AppData\Local\Temp</span> <span class="cf">/s /q</span>
+<span class="cm">:: Temporales globales de Windows</span>
+<span class="cc">del</span> <span class="cs">c:\Windows\Temp</span> <span class="cf">/f /s /q</span>
+<span class="cc">rd</span>  <span class="cs">c:\Windows\Temp</span> <span class="cf">/s /q</span>
+<span class="cc">PAUSE</span></div>
+<p class="nt" style="margin-top:6px;"><code>/f</code> fuerza el borrado; <code>/s</code> recursivo en subdirectorios; <code>/q</code> silencioso. Los temporales de Windows requieren permisos de administrador.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque Batch · Comandos del sistema</span><span class="ctr">16 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Practica guiada Batch · Script de limpieza y mantenimiento</div>
+<div class="ct tc">
+<div>
+<h2>Enunciado de clase</h2>
+<p>Crear <code>mantenimiento.bat</code> que de forma automatizada:</p>
+<ul>
+<li>Muestre usuario, fecha y hora al inicio.</li>
+<li>Limpie la carpeta de temporales del usuario con flags correctos.</li>
+<li>Ejecute el liberador de espacio en disco en <code>C:</code>.</li>
+<li>Registre en pantalla el resultado de cada paso con mensajes claros.</li>
+<li>Espere confirmacion del usuario antes de cerrar.</li>
+</ul>
+<div class="cod" style="margin-top:6px;"><span class="cm">:: 1. Crear y editar el script con Notepad</span>
+<span class="cc">notepad</span> <span class="cs">mantenimiento.bat</span>
+
+<span class="cm">:: 2. Ejecutar el script (como Administrador si es necesario)</span>
+<span class="cs">mantenimiento.bat</span>
+
+<span class="cm">:: 3. Verificar que la carpeta Temp quedo vacia</span>
+<span class="cc">dir</span> <span class="cs">"%TEMP%"</span>
+
+<span class="cm">:: 4. Ejecutar por segunda vez y confirmar que no genera errores</span>
+<span class="cs">mantenimiento.bat</span></div>
+</div>
+<div class="crd">
+<p><strong>Criterios de validacion</strong></p>
+<ol>
+<li>Primera linea es <code>@echo off</code>: sin eco de comandos.</li>
+<li>Cada seccion tiene comentarios <code>REM</code> y mensajes <code>ECHO</code> descriptivos.</li>
+<li>Limpieza usa <code>/f /s /q</code>: silenciosa, recursiva y forzada.</li>
+<li>Usa <code>START /WAIT</code> para que CLEANMGR termine antes de continuar.</li>
+<li>Termina con <code>PAUSE</code> para que el usuario revise la salida.</li>
+</ol>
+</div>
+</div>
+<div class="ft"><span class="nt">Practica Batch · Mantenimiento</span><span class="ctr">17 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Solucion guiada Batch · mantenimiento.bat completo</div>
+<div class="ct tc">
+<div>
+<h2>Script referencia (Windows Batch)</h2>
+<div class="cod"><span class="cc">@echo off</span>
+<span class="cm">REM =============================================</span>
+<span class="cm">REM  mantenimiento.bat</span>
+<span class="cm">REM  Proposito: limpieza automatizada del sistema</span>
+<span class="cm">REM  Ejecutar como Administrador</span>
+<span class="cm">REM =============================================</span>
+<span class="cc">SET</span> DISCO=<span class="cs">C</span>
+
+<span class="cc">ECHO</span> <span class="cs">===== Mantenimiento del Sistema =====</span>
+<span class="cc">ECHO</span> <span class="cs">Usuario : %username%</span>
+<span class="cc">ECHO</span> <span class="cs">Fecha   : %DATE%</span>
+<span class="cc">ECHO</span> <span class="cs">Hora    : %TIME%</span>
+<span class="cc">ECHO.</span>
+
+<span class="cm">REM --- Paso 1: limpiar temporales del usuario ---</span>
+<span class="cc">ECHO</span> <span class="cs">Limpiando archivos temporales...</span>
+<span class="cc">del</span> <span class="cs">"C:\Users\%username%\AppData\Local\Temp"</span> <span class="cf">/f /s /q</span>
+<span class="cc">rd</span>  <span class="cs">"C:\Users\%username%\AppData\Local\Temp"</span> <span class="cf">/s /q</span>
+<span class="cc">ECHO</span> <span class="cs">Temporales del usuario eliminados.</span>
+<span class="cc">ECHO.</span>
+
+<span class="cm">REM --- Paso 2: liberar espacio en disco ---</span>
+<span class="cc">ECHO</span> <span class="cs">Iniciando liberador de espacio en %DISCO%:...</span>
+<span class="cc">START /WAIT</span> <span class="cs">CLEANMGR</span> <span class="cf">/D %DISCO%:</span>
+<span class="cc">ECHO</span> <span class="cs">Limpieza de disco completada.</span>
+<span class="cc">ECHO.</span>
+
+<span class="cc">ECHO</span> <span class="cs">===== Mantenimiento finalizado =====</span>
+<span class="cc">PAUSE</span></div>
+</div>
+<div class="cal">
+<p><strong>Puntos de validacion docente</strong></p>
+<ul>
+<li><code>@echo off</code> en la primera linea suprime el eco de todos los comandos.</li>
+<li>Variable <code>DISCO</code> centraliza la unidad destino para ajuste sin editar la logica.</li>
+<li><code>START /WAIT</code> garantiza que CLEANMGR termine antes de continuar.</li>
+<li>Las rutas entre comillas toleran espacios en nombres de carpeta.</li>
+<li><code>PAUSE</code> al final mantiene la ventana abierta para revisar la salida.</li>
+</ul>
+</div>
+</div>
+<div class="ft"><span class="nt">Solucion Batch · Mantenimiento</span><span class="ctr">18 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Practica guiada 2 · Auditoria y correccion por script</div>
+<div class="ct tc">
+<div>
+<h2>Enunciado de clase</h2>
+<p>Construir <code>seguridad_webroot.sh</code> que reciba una ruta y un modo:</p>
+<ul>
+<li><code>audit</code>: listar recursos con <code>o+w</code> y salir sin cambios.</li>
+<li><code>fix</code>: aplicar permisos seguros por tipo de archivo.</li>
+<li>Generar log con fecha y resumen de acciones.</li>
+</ul>
+<div class="cod" style="margin-top:6px;"><span class="cm"># 1. Crear estructura de webroot de prueba</span>
+<span class="cc">mkdir</span> <span class="cf">-p</span> <span class="cs">~/webroot/html ~/webroot/conf ~/webroot/logs</span>
+<span class="cc">touch</span> <span class="cs">~/webroot/html/index.html ~/webroot/html/app.js ~/webroot/html/main.css</span>
+<span class="cc">touch</span> <span class="cs">~/webroot/conf/nginx.conf ~/webroot/logs/access.log</span>
+
+<span class="cm"># 2. Simular permisos inseguros (escritura para otros)</span>
+<span class="cc">chmod</span> <span class="cn">777</span> <span class="cs">~/webroot/html/index.html</span>
+<span class="cc">chmod</span> <span class="cn">777</span> <span class="cs">~/webroot/conf/nginx.conf</span>
+
+<span class="cm"># 3. Crear el archivo del script</span>
+<span class="cc">nano</span> seguridad_webroot.sh   <span class="cm"># escribir la solucion aqui</span>
+
+<span class="cm"># 4. Dar permisos de ejecucion</span>
+<span class="cc">chmod</span> <span class="cn">755</span> seguridad_webroot.sh
+
+<span class="cm"># 5. Auditoria inicial: debe listar los recursos con o+w</span>
+<span class="cc">./seguridad_webroot.sh</span> <span class="cs">~/webroot audit</span>
+
+<span class="cm"># 6. Aplicar correccion de permisos</span>
+<span class="cc">./seguridad_webroot.sh</span> <span class="cs">~/webroot fix</span>
+
+<span class="cm"># 7. Auditoria final: no debe listar ningun recurso</span>
+<span class="cc">./seguridad_webroot.sh</span> <span class="cs">~/webroot audit</span>
+
+<span class="cm"># 8. Revisar el log completo generado</span>
+<span class="cc">cat</span> seguridad_webroot.log</div>
+</div>
+<div class="crd">
+<p><strong>Reglas de correccion esperadas</strong></p>
+<ul>
+<li>Directorios: 755 en contenido publico, 750 en <code>conf</code> y <code>logs</code>.</li>
+<li>Archivos <code>.html/.css/.js</code>: 644.</li>
+<li>Archivos <code>.conf/.log</code>: 640.</li>
+<li>Salir con codigo 20 si alguna aplicacion de permisos falla.</li>
+</ul>
+</div>
+</div>
+<div class="ft"><span class="nt">Practica 2 · Script de hardening local</span><span class="ctr">19 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Solucion guiada 2</div>
+<div class="ct tc">
+<div>
+<h2>Script referencia completo</h2>
+<div class="cod"><span class="cf">#!/usr/bin/env bash</span>
+<span class="cm"># 1) Modo estricto para evitar estado parcial en errores</span>
+<span class="cc">set</span> <span class="cf">-euo pipefail</span>
+
+<span class="cm"># 2) Parametros principales y bitacora</span>
+<span class="cc">RUTA</span>=<span class="cs">"${1:-}"</span>
+<span class="cc">MODO</span>=<span class="cs">"${2:-audit}"</span>
+<span class="cc">LOG</span>=<span class="cs">"seguridad_webroot.log"</span>
+
+<span class="cm"># 3) Logger central: consola + archivo</span>
+<span class="cc">log</span>() { <span class="cc">echo</span> <span class="cs">"[$(date -Iseconds)] $*"</span> | <span class="cc">tee</span> <span class="cf">-a</span> <span class="cs">"$LOG"</span> >/dev/null; }
+
+<span class="cm"># 4) Validar argumentos y modo permitido</span>
+<span class="cc">validar</span>() {
+  [[ <span class="cf">-n</span> <span class="cs">"$RUTA"</span> &amp;&amp; <span class="cf">-d</span> <span class="cs">"$RUTA"</span> ]] || { <span class="cc">echo</span> <span class="cs">"Uso: $0 <ruta> <audit|fix>"</span>; <span class="cc">exit</span> <span class="cn">2</span>; }
+  [[ <span class="cs">"$MODO"</span> == <span class="cs">"audit"</span> || <span class="cs">"$MODO"</span> == <span class="cs">"fix"</span> ]] || { <span class="cc">echo</span> <span class="cs">"Modo invalido"</span>; <span class="cc">exit</span> <span class="cn">3</span>; }
+}
+
+<span class="cc">auditar</span>() {
+  <span class="cc">log</span> <span class="cs">"Auditoria en $RUTA"</span>
+  <span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-perm -o+w -print</span> | <span class="cc">tee</span> <span class="cf">-a</span> <span class="cs">"$LOG"</span>
+}
+
+<span class="cc">corregir</span>() {
+  <span class="cc">log</span> <span class="cs">"Aplicando reglas de permisos"</span>
+  <span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-type d -path '*/conf' -exec chmod 750 {} \;</span>
+  <span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-type d -path '*/logs' -exec chmod 750 {} \;</span>
+  <span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-type d ! -path '*/conf' ! -path '*/logs' -exec chmod 755 {} \;</span>
+  <span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \) -exec chmod 644 {} \;</span>
+  <span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-type f \( -name '*.conf' -o -name '*.log' \) -exec chmod 640 {} \;</span>
+  <span class="cc">log</span> <span class="cs">"Correccion finalizada"</span>
+}
+
+<span class="cm"># 5) Cualquier fallo inesperado termina con codigo 20</span>
+<span class="cc">trap</span> <span class="cs">'echo "Fallo en linea $LINENO"; exit 20'</span> ERR
+<span class="cc">validar</span>
+
+<span class="cm"># 6) Flujo principal por modo de ejecucion</span>
+<span class="cc">if</span> [[ <span class="cs">"$MODO"</span> == <span class="cs">"audit"</span> ]]; <span class="cc">then</span>
+  <span class="cc">auditar</span>
+<span class="cc">else</span>
+  <span class="cc">corregir</span>
+  <span class="cc">auditar</span>
+<span class="cc">fi</span>
+
+<span class="cc">log</span> <span class="cs">"Proceso completado"</span></div>
+</div>
+<div class="cal">
+<p><strong>Salida final esperada</strong></p>
+<p>Despues de <code>fix</code>, el segundo <code>audit</code> no debe listar rutas con escritura para otros. El log debe registrar inicio, acciones y cierre con marca de tiempo.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Solucion 2 · Hardening automatizado</span><span class="ctr">20 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque D · Buenas practicas de produccion</div>
+<div class="ct tc">
+<div>
+<h2>Checklist tecnico operativo</h2>
+<ul>
+<li><strong>Idempotencia</strong>: no romper si se ejecuta dos veces.</li>
+<li><strong>Dry-run</strong>: modo simulacion antes de cambiar estado real.</li>
+<li><strong>Logs</strong>: fecha, accion, resultado, ruta afectada.</li>
+<li><strong>Parametros explicitos</strong>: evitar valores "magicos" incrustados.</li>
+<li><strong>Minimo privilegio</strong>: no ejecutar como root si no es necesario.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Patron sugerido de CLI</strong></p>
+<div class="cod"><span class="cc">./script.sh</span> <span class="cs">--path</span> /var/www <span class="cs">--mode</span> audit
+<span class="cc">./script.sh</span> <span class="cs">--path</span> /var/www <span class="cs">--mode</span> fix <span class="cs">--dry-run</span>
+
+<span class="cm"># beneficios:</span>
+<span class="cm"># - menos ambiguedad en argumentos</span>
+<span class="cm"># - mas legible para otros administradores</span>
+<span class="cm"># - base para integrar con CI/CD</span></div>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque D · Practicas profesionales</span><span class="ctr">21 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque D · Seguridad en scripting</div>
+<div class="ct tc">
+<div>
+<h2>Riesgos comunes que debemos prevenir</h2>
+<ul>
+<li><strong>Inyeccion por entrada</strong>: concatenar parametros no validados en comandos.</li>
+<li><strong>Uso de eval</strong>: ejecutar texto dinamico con alto riesgo.</li>
+<li><strong>Path traversal</strong>: aceptar rutas como <code>../../</code> sin control.</li>
+<li><strong>Sobrepermisos</strong>: <code>chmod -R 777</code> por conveniencia.</li>
+<li><strong>Silencio de errores</strong>: redirigir todo a <code>/dev/null</code> sin log.</li>
+</ul>
+</div>
+<div class="cad">
+<p><strong>Controles minimos recomendados</strong></p>
+<ol>
+<li>Validar formato de entrada con regex o listas permitidas.</li>
+<li>Abortar en primer error inesperado (fail-fast).</li>
+<li>Limitar rutas de trabajo a un directorio base controlado.</li>
+<li>Evitar <code>sudo</code> dentro del script salvo caso justificado.</li>
+<li>Registrar evidencia para auditoria tecnica.</li>
+</ol>
+</div>
+</div>
+<div class="ft"><span class="nt">Bloque D · Seguridad aplicada</span><span class="ctr">22 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Errores frecuentes y correccion guiada</div>
+<div class="ct">
+<table>
+<thead><tr><th>Error tipico</th><th>Causa</th><th>Correccion docente sugerida</th></tr></thead>
+<tbody>
+<tr><td>No usar comillas en variables de ruta</td><td>Desconocimiento de word splitting.</td><td>Demostrar caso con espacios y corregir a <code>"$VAR"</code>.</td></tr>
+<tr><td>Ignorar codigo de salida</td><td>Enfoque en "si imprime algo esta bien".</td><td>Verificar siempre <code>$?</code> y definir codigos del script.</td></tr>
+<tr><td>Escribir toda la logica en una sola funcion</td><td>Falta de modularidad.</td><td>Separar validar, auditar, corregir, reportar.</td></tr>
+<tr><td>Usar <code>for f in $(ls)</code></td><td>Patron comun pero inseguro.</td><td>Reemplazar por <code>find -print0</code> + <code>read -d ''</code>.</td></tr>
+<tr><td>Automatizar con privilegios excesivos</td><td>Resolver rapido sin criterio PoLP.</td><td>Ejecutar con usuario minimo y elevar solo operaciones puntuales.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="ft"><span class="nt">Errores comunes · Sesion 19</span><span class="ctr">23 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Sintesis tecnica · Competencia lograda</div>
+<div class="ct tc">
+<div>
+<h2>Mapa de cierre en 6 puntos</h2>
+<ul>
+<li>Script = automatizacion con validacion, control de flujo y evidencia.</li>
+<li>Variables locales y de entorno tienen alcance distinto.</li>
+<li>Comillas y expansion correcta previenen errores silenciosos.</li>
+<li>Funciones pequenas + codigos de salida mejoran mantenimiento.</li>
+<li>Modo audit/fix evita cambios no deseados.</li>
+<li>Automatizar sin seguridad no es mejora; es riesgo escalado.</li>
+</ul>
+</div>
+<div class="cal">
+<p><strong>Capacidad transferible</strong></p>
+<p>Ahora puedes convertir un procedimiento operativo repetitivo en un script trazable que se integra con administracion de servidores, pipelines de despliegue y tareas de hardening local.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Sintesis · Sesion 19</span><span class="ctr">24 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Fuentes y atribuciones de recursos</div>
+<div class="ct tc">
+<div>
+<h2>Trazabilidad tecnica</h2>
+<ul>
+<li><strong>GNU Bash Manual:</strong> expansiones, funciones, condicionales y quoting.</li>
+<li><strong>GNU Coreutils:</strong> semantica de comandos usados en automatizacion.</li>
+<li><strong>Microsoft Learn PowerShell:</strong> estructura de scripts y buenas practicas.</li>
+<li><strong>SS64 CMD/Batch Reference:</strong> sintaxis base en entorno Windows.</li>
+<li><strong>Linux Foundation LFS101:</strong> continuidad pedagogica en administracion shell.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Licencias y autoria visual</strong></p>
+<ul>
+<li>Visual A, B y C: elaboracion propia (SVG embebido en el HTML).</li>
+<li>No se incluyeron imagenes externas con copyright restrictivo.</li>
+<li>Uso academico institucional.</li>
+</ul>
+<p class="nt" style="margin-top:6px;">Fecha de consulta de referencias: abril de 2026.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Fuentes · Sesion 19</span><span class="ctr">25 / 26</span></div>
+</div>
+</section>
+
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Puente tecnico · Sesion 20</div>
+<div class="ct tc">
+<div>
+<h2>Hacia virtualizacion y aprovisionamiento</h2>
+<p>La virtualizacion no es solo crear una VM: requiere tareas repetibles de configuracion. El scripting que aprendimos hoy sera la base para:</p>
+<ul>
+<li>Inicializar paquetes y usuarios en maquinas invitadas.</li>
+<li>Aplicar hardening basico al primer arranque.</li>
+<li>Recolectar diagnosticos de CPU, RAM y red de forma automatica.</li>
+<li>Construir laboratorios reproducibles Host/Guest.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Preparacion sugerida</strong></p>
+<div class="cod"><span class="cm"># Precheck para validar recursos minimos antes de crear VMs</span>
+<span class="cc">cat</span> > precheck_vm.sh &lt;&lt; 'EOF'
+<span class="cf">#!/usr/bin/env bash</span>
+<span class="cm"># Version de kernel activa</span>
+<span class="cc">echo</span> <span class="cs">"Kernel: $(uname -r)"</span>
+<span class="cm"># Numero de nucleos disponibles</span>
+<span class="cc">echo</span> <span class="cs">"CPU(s): $(nproc)"</span>
+<span class="cm"># Memoria total para estimar capacidad de virtualizacion</span>
+<span class="cc">echo</span> <span class="cs">"RAM MB: $(free -m | awk '/Mem:/ {print $2}')"</span>
+EOF
+<span class="cc">chmod</span> <span class="cn">755</span> precheck_vm.sh
+<span class="cc">./precheck_vm.sh</span></div>
+<p class="nt" style="margin-top:6px;">En S20 lo conectaremos con hipervisores tipo 1 y 2.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Puente · Hacia la Sesion 20</span><span class="ctr">26 / 26</span></div>
+</div>
+</section>
+
+<div class="tnv" id="tnv">
+<button id="btnP">&#8592;</button>
+<button id="btnN">&#8594;</button>
+</div>
+
+</div></div>
+
+<script>
+(function(){
+  const slides=Array.from(document.querySelectorAll('.slide'));
+  let idx=0;
+  function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+  function show(i){
+    idx=clamp(i,0,slides.length-1);
+    slides.forEach((s,k)=>s.classList.toggle('active',k===idx));
+    document.querySelectorAll('.ctr').forEach(el=>el.textContent=(idx+1)+' / '+slides.length);
+    history.replaceState(null,'','#'+(idx+1));
+    slides[idx].querySelectorAll('.sq').forEach((el,k)=>{
+      el.classList.remove('vs');
+      setTimeout(()=>el.classList.add('vs'),75*k+45);
+    });
+  }
+  function next(){show(idx+1);} 
+  function prev(){show(idx-1);} 
+  const m=(location.hash||'').match(/^#(\d+)$/);
+  if(m)idx=clamp(parseInt(m[1],10)-1,0,slides.length-1);
+  show(idx);
+  document.getElementById('btnP').onclick=prev;
+  document.getElementById('btnN').onclick=next;
+  document.addEventListener('keydown',e=>{
+    if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();return;}
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='Home'){e.preventDefault();show(0);} 
+    else if(e.key==='End'){e.preventDefault();show(slides.length-1);} 
+  });
+  if('ontouchstart' in window||navigator.maxTouchPoints>0){
+    let x0=null,t0=0;
+    const st=document.getElementById('stage');
+    st.addEventListener('touchstart',e=>{const t=e.changedTouches[0];x0=t.clientX;t0=Date.now();},{passive:true});
+    st.addEventListener('touchend',e=>{
+      if(x0===null)return;
+      const t=e.changedTouches[0],dx=t.clientX-x0,dt=Date.now()-t0;
+      x0=null;if(dt>700)return;
+      if(dx<=-48)next();else if(dx>=48)prev();
+    },{passive:true});
+  }
+})();
+</script>
+</body>
+</html>

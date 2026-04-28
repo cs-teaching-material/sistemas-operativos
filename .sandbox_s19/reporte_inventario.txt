@@ -1,0 +1,8 @@
+Inventario: /mnt/c/Users/nocti/source/repos/sistemas-operativos/.sandbox_s19/practica19
+Fecha: 2026-04-27T23:20:28-05:00
+Usuario: nocti
+Directorios: 3
+Archivos: 6
+*.sh: 2
+*.conf: 2
+*.log: 2
