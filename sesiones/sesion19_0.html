@@ -340,17 +340,27 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <div>
 <h2>Procesar colecciones sin romper datos</h2>
 <div class="cod"><span class="cm"># Evitar: for f in $(ls)  # rompe nombres con espacios</span>
+<span class="cm"># Caso para observar el problema</span>
+<span class="cc">mkdir</span> <span class="cf">-p</span> demo_ls ; <span class="cc">cd</span> demo_ls
+<span class="cc">touch</span> <span class="cs">"ok.conf" "mi archivo.conf"</span>
 
-<span class="cm"># Correcto para archivos: while + find + -print0</span>
+<span class="cc">for</span> f <span class="cc">in</span> $(<span class="cc">ls</span>); <span class="cc">do</span>
+  <span class="cc">echo</span> <span class="cs">"Archivo: $f"</span>
+<span class="cc">done</span>
+
+<span class="cm"># Salida tipica (incorrecta):</span>
+<span class="cm"># Archivo: mi</span>
+<span class="cm"># Archivo: archivo.conf</span>
+<span class="cm"># Archivo: ok.conf</span>
+
+<span class="cm"># Correcto para archivos reales: while + find + -print0</span>
 <span class="cc">while</span> IFS= <span class="cc">read</span> <span class="cf">-r -d ''</span> f; <span class="cc">do</span>
   <span class="cc">echo</span> <span class="cs">"Procesando: $f"</span>
-  <span class="cc">chmod</span> <span class="cn">640</span> <span class="cs">"$f"</span>
-<span class="cc">done</span> &lt; &lt;(<span class="cc">find</span> <span class="cs">"$RUTA"</span> <span class="cf">-type f -name '*.conf' -print0</span>)
+<span class="cc">done</span> &lt; &lt;(<span class="cc">find</span> . <span class="cf">-type f -name '*.conf' -print0</span>)
 
-<span class="cm"># for sigue siendo util en listas pequenas controladas</span>
-<span class="cc">for</span> m <span class="cc">in</span> audit fix report; <span class="cc">do</span>
-  <span class="cc">echo</span> <span class="cs">"modo: $m"</span>
-<span class="cc">done</span></div>
+<span class="cm"># Salida correcta:</span>
+<span class="cm"># Procesando: ./mi archivo.conf</span>
+<span class="cm"># Procesando: ./ok.conf</span></div>
 </div>
 <div class="caw">
 <p><strong>Idea clave</strong></p>
@@ -888,23 +898,38 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <div class="ct tc">
 <div>
 <h2>Checklist tecnico operativo</h2>
+<p class="nt" style="margin-bottom:6px;">Lectura practica: cada punto del checklist responde a una falla comun en scripts reales.</p>
 <ul>
-<li><strong>Idempotencia</strong>: no romper si se ejecuta dos veces.</li>
-<li><strong>Dry-run</strong>: modo simulacion antes de cambiar estado real.</li>
-<li><strong>Logs</strong>: fecha, accion, resultado, ruta afectada.</li>
-<li><strong>Parametros explicitos</strong>: evitar valores "magicos" incrustados.</li>
-<li><strong>Minimo privilegio</strong>: no ejecutar como root si no es necesario.</li>
+<li><strong>Idempotencia</strong>: si lo ejecutas dos veces, el resultado final sigue siendo correcto (no duplica ni rompe estado).</li>
+<li><strong>Dry-run</strong>: simula cambios y muestra "que haria" sin ejecutar acciones destructivas.</li>
+<li><strong>Logs</strong>: registrar fecha, accion, resultado y ruta para poder auditar y depurar.</li>
+<li><strong>Parametros explicitos</strong>: usar banderas como <code>--path</code> y <code>--mode</code> en lugar de valores fijos ocultos.</li>
+<li><strong>Minimo privilegio</strong>: correr como usuario normal y elevar privilegio solo en pasos puntuales.</li>
 </ul>
 </div>
 <div class="crd">
-<p><strong>Patron sugerido de CLI</strong></p>
+<p><strong>Dry-run en 30 segundos</strong></p>
 <div class="cod"><span class="cc">./script.sh</span> <span class="cs">--path</span> /var/www <span class="cs">--mode</span> audit
 <span class="cc">./script.sh</span> <span class="cs">--path</span> /var/www <span class="cs">--mode</span> fix <span class="cs">--dry-run</span>
 
-<span class="cm"># beneficios:</span>
-<span class="cm"># - menos ambiguedad en argumentos</span>
-<span class="cm"># - mas legible para otros administradores</span>
-<span class="cm"># - base para integrar con CI/CD</span></div>
+<span class="cm"># Implementacion minima del flag</span>
+<span class="cc">DRY_RUN</span>=<span class="cn">0</span>
+[[ <span class="cs">"$*"</span> == *<span class="cs">"--dry-run"</span>* ]] &amp;&amp; <span class="cc">DRY_RUN</span>=<span class="cn">1</span>
+
+<span class="cc">run</span>() {
+  <span class="cc">if</span> [[ <span class="cs">"$DRY_RUN"</span> <span class="cf">-eq</span> <span class="cn">1</span> ]]; <span class="cc">then</span>
+    <span class="cc">echo</span> <span class="cs">"[DRY-RUN] $*"</span>
+  <span class="cc">else</span>
+    <span class="cs">"$@"</span>
+  <span class="cc">fi</span>
+}
+
+<span class="cm"># En vez de: chmod 640 "$archivo"</span>
+<span class="cc">run</span> <span class="cc">chmod</span> <span class="cn">640</span> <span class="cs">"$archivo"</span>
+
+<span class="cm"># Salida esperada en simulacion:</span>
+<span class="cm"># [DRY-RUN] chmod 640 /var/www/conf/app.conf</span></div>
+<p class="nt" style="margin-top:6px;">Regla de uso: primero <code>--dry-run</code> para validar impacto; luego ejecucion real sin ese flag.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Bloque D · Practicas profesionales</span><span class="ctr">21 / 26</span></div>
@@ -1019,14 +1044,15 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <h2>Hacia virtualizacion y aprovisionamiento</h2>
 <p>La virtualizacion no es solo crear una VM: requiere tareas repetibles de configuracion. El scripting que aprendimos hoy sera la base para:</p>
 <ul>
-<li>Inicializar paquetes y usuarios en maquinas invitadas.</li>
-<li>Aplicar hardening basico al primer arranque.</li>
-<li>Recolectar diagnosticos de CPU, RAM y red de forma automatica.</li>
-<li>Construir laboratorios reproducibles Host/Guest.</li>
+<li>Inicializar paquetes y usuarios en maquinas invitadas (ejemplo: actualizar repositorios y crear usuario operador).</li>
+<li>Aplicar hardening basico al primer arranque (ejemplo: permisos en <code>/etc</code> y revision de servicios habilitados).</li>
+<li>Recolectar diagnosticos de CPU, RAM y red de forma automatica (ejemplo: <code>nproc</code>, <code>free -m</code>, <code>ip -br a</code>).</li>
+<li>Construir laboratorios reproducibles Host/Guest con una secuencia fija de preparacion y verificacion.</li>
 </ul>
 </div>
 <div class="crd">
 <p><strong>Preparacion sugerida</strong></p>
+<p class="nt" style="margin-bottom:6px;">Objetivo del precheck: antes de crear una VM, confirmar que el host tiene recursos minimos para evitar fallos durante el aprovisionamiento.</p>
 <div class="cod"><span class="cm"># Precheck para validar recursos minimos antes de crear VMs</span>
 <span class="cc">cat</span> > precheck_vm.sh &lt;&lt; 'EOF'
 <span class="cf">#!/usr/bin/env bash</span>
@@ -1039,7 +1065,8 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 EOF
 <span class="cc">chmod</span> <span class="cn">755</span> precheck_vm.sh
 <span class="cc">./precheck_vm.sh</span></div>
-<p class="nt" style="margin-top:6px;">En S20 lo conectaremos con hipervisores tipo 1 y 2.</p>
+<p class="nt" style="margin-top:6px;">Ejemplo de lectura rapida: si obtienes <code>CPU(s): 2</code> y <code>RAM MB: 2048</code>, podrias ejecutar una sola VM ligera; con <code>CPU(s): 8</code> y <code>RAM MB: 16384</code>, puedes planear un laboratorio con varias VMs.</p>
+<p class="nt" style="margin-top:6px;">Si trabajas en Windows, ejecuta este script en WSL o en una VM Linux para mantener comandos consistentes con la sesion.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Puente · Hacia la Sesion 20</span><span class="ctr">26 / 26</span></div>
