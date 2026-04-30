@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SO · S20 · Arquitectura de Virtualización</title>
+<style>
+:root{
+--az:#015583;--tur:#05ADBC;--txt:#201F4B;--mu:#6b7280;
+--safe-top-cover:clamp(208px,9vh,128px);
+--safe-left-cover:clamp(585px,5.5vw,110px);
+--safe-right-cover:clamp(28px,3vw,72px);
+--safe-bottom-cover:clamp(54px,6vh,92px);
+--safe-top:clamp(100px,9vh,132px);
+--safe-side:clamp(66px,5.5vw,108px);
+--safe-bottom:clamp(52px,6vh,90px);
+}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+.deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,20px);box-sizing:border-box;}
+.stage{width:min(96vw,calc(90vh*(16/9)));aspect-ratio:16/9;position:relative;}
+.slide{position:absolute;inset:0;display:none;box-shadow:0 12px 36px rgba(0,0,0,.3);overflow:hidden;}
+.slide.active{display:block;}
+.cov{background:url("../img/Portada.png") center/cover no-repeat, #015583;color:#fff;}
+.cnt{background:url("../img/Contenido.png") top left/contain no-repeat,#fff;color:var(--txt);}
+.inn{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom);display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);}
+.cov .inn{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover); justify-content:center;}
+.ct{flex:1;display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);min-height:0;overflow:auto;overflow-x:hidden;}
+.hd{color:var(--tur);font-size:clamp(12px,1.1vw,15px);font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-bottom:2px solid var(--tur);padding-bottom:3px;}
+h1{margin:0;font-size:clamp(26px,3.2vw,44px);line-height:1.08;color:#fff;}
+h2{margin:0;font-size:clamp(18px,2vw,28px);line-height:1.15;color:var(--az);}
+p{margin:0;font-size:clamp(13px,1.2vw,17px);line-height:1.4;}
+li{font-size:clamp(13px,1.2vw,17px);line-height:1.4; margin-bottom: 0.5em;}
+ul,ol{margin:0;padding-left:1.2em;}
+.sub{color:#f7df00;font-weight:800;font-size:clamp(16px,1.7vw,22px);margin-top:8px;}
+.nt{color:var(--mu);font-size:clamp(10px,.95vw,13px);line-height:1.35;}
+.cal{background:#f0f9ff;border-left:5px solid var(--tur);padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.caw{background:#fffbe6;border-left:5px solid #e6a817;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cad{background:#fef2f2;border-left:5px solid #dc2626;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.tc{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(10px,1.4vw,20px);align-items:start;min-height:0;}
+.tce{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.4vw,20px);align-items:start;}
+.crd{background:#f8faff;border:1px solid #dde2f1;border-radius:8px;padding:clamp(8px,.9vw,12px);}
+.cod{font-family:ui-monospace,monospace;font-size:clamp(10px,.9vw,12.5px);line-height:1.5;background:#0b1020;color:#e5e7eb;border-radius:7px;padding:clamp(7px,.9vw,11px);white-space:pre-wrap;border:1px solid #1f2937;max-height:min(36vh,320px);overflow:auto;scrollbar-gutter:stable both-edges;}
+.cm{color:#6b7280;}.cc{color:#7dd3fc;font-weight:bold;}.cs{color:#86efac;}
+.cn{color:#fde68a;}.cf{color:#c4b5fd;}
+.iw{width:100%;border-radius:7px;border:1px solid #dde2f1;background:#fff;display:flex;align-items:center;justify-content:center; overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:clamp(10px,.95vw,13px);}
+th,td{border:1px solid #dde2f1;padding:clamp(4px,.7vw,8px);color:var(--txt);vertical-align:top;}
+th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);letter-spacing:.05em;color:var(--az);}
+.ft{display:flex;justify-content:space-between;align-items:center;padding-top:3px;border-top:1px solid #dde2f1;}
+.cov .ft{border-top:1px solid rgba(255,255,255,.15); margin-top: auto;}
+.ctr{font-weight:800;color:var(--az);font-size:clamp(11px,.95vw,13px);}
+.cov .ctr{color:#e5edf8;}
+.tnv{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;z-index:10;}
+.tnv button{pointer-events:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(221,226,241,.9);background:rgba(255,255,255,.9);color:var(--txt);font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.1);}
+#tnv{opacity:0;transition:.15s;}
+.stage:hover #tnv{opacity:1;}
+@media(hover:none){#tnv{opacity:1;}}
+.sq{opacity:0;transform:translateY(9px);transition:opacity .32s,transform .32s;}
+.sq.vs{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+<div class="deck"><div class="stage" id="stage">
+
+<!-- Slide 1: Portada -->
+<section class="slide cov active">
+<div class="inn"><div class="ct" style="justify-content:center;">
+<span class="hd">Sistemas Operativos · Unidad 3</span>
+<h1>Sesión 20</h1>
+<h1>Fundamentos y Arquitectura<br>de Virtualización</h1>
+<div class="sub">Hypervisors · VMs · Tipo 1 vs Tipo 2 · Aislamiento</div>
+<div class="cal" style="max-width:78%;margin-top:clamp(10px,1.4vw,18px);">
+<p style="color:var(--txt);">Transición de la ejecución nativa en hardware (Bare-Metal) a la abstracción de recursos, permitiendo ejecutar múltiples Sistemas Operativos independientes en una misma máquina física de forma segura.</p>
+</div>
+<p class="nt" style="margin-top:auto;color:#201F4B; font-weight:bold;">&larr; &rarr; navegación · F pantalla completa</p>
+</div>
+<div class="ft"><span class="nt" style="color:#e5edf8;">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">1 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 2: Propósito Técnico -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Propósito técnico de la sesión</div>
+<div class="ct tc">
+<div>
+<h2>Qué dominaremos hoy</h2>
+<ul>
+<li>Abstraer y comprender la separación entre hardware físico y sistema operativo.</li>
+<li>Distinguir la arquitectura interna de un <strong>Hypervisor Tipo 1</strong> vs <strong>Tipo 2</strong>.</li>
+<li>Configurar y aislar una Máquina Virtual sin comprometer el SO base.</li>
+<li>Entender el impacto en rendimiento y la aceleración por hardware (VT-x / AMD-V).</li>
+<li>Preparar el entorno base para el despliegue moderno de infraestructuras.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Resultado observable</strong></p>
+<p>Al finalizar, el estudiante podrá operar una plataforma de virtualización (VirtualBox o Hyper-V), asignando recursos restringidos y deduciendo por qué un kernel panic en la VM no afecta al equipo real.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Propósito · Sesión 20</span><span class="ctr">2 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 3: Puente / Activación -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Activación de conocimiento base</div>
+<div class="ct tc">
+<div>
+<h2>¿Qué pasa si el SO falla irremediablemente?</h2>
+<ul>
+<li>En sesiones anteriores ejecutamos comandos y scripts (S15 a S19).</li>
+<li>Un script con permisos de `root` mal diseñado puede borrar `/bin` o modificar `/etc/shadow`, destruyendo el sistema.</li>
+<li>Probar nuevo software o configuraciones de red peligrosas en nuestra máquina personal es un riesgo inaceptable.</li>
+</ul>
+</div>
+<div class="cal">
+<p><strong>Pregunta crítica</strong></p>
+<p>¿Cómo podemos tener el poder absoluto (root/Administrador) para destruir, configurar y experimentar con un Sistema Operativo entero, sin dañar nuestra laptop de trabajo?</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Aislamiento Físico vs Lógico</span><span class="ctr">3 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 4: Bloque Conceptual A - Qué es Virtualización -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque A · Conceptos Fundamentales</div>
+<div class="ct tc">
+<div>
+<h2>Definiciones de Primera Aparición</h2>
+<ul>
+<li><strong>Virtualización:</strong> Tecnología que crea representaciones basadas en software de recursos físicos (servidores, almacenamiento, redes).</li>
+<li><strong>Host (Anfitrión):</strong> El equipo físico real que provee los recursos de hardware subyacentes.</li>
+<li><strong>Guest (Invitado o VM):</strong> El sistema operativo "virtual" que corre encima y cree poseer hardware físico dedicado.</li>
+<li><strong>Hypervisor (VMM):</strong> El software especializado ("Virtual Machine Monitor") encargado de repartir el hardware real entre las diferentes VMs.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>El engaño perfecto</strong></p>
+<p>El Guest (la Máquina Virtual) envía instrucciones al CPU pensando que está solo. El Hypervisor intercepta, traduce y programa esas instrucciones en el CPU real de manera segura.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Conceptos Base</span><span class="ctr">4 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 5: Visual A - Bare-Metal vs Virtualización -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual A · Bare-Metal vs Virtualización</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="height:min(58vh,400px);padding:20px; flex-direction: row; gap: 40px;">
+    
+    <!-- Bare Metal -->
+    <div style="width: 250px; display: flex; flex-direction: column; text-align: center; border: 2px dashed #6b7280; padding: 10px; border-radius: 8px;">
+        <h3 style="color: var(--txt); margin-top: 0;">Tradicional (Bare-Metal)</h3>
+        <div style="background: #eef2ff; border: 1px solid #93c5fd; padding: 10px; margin: 5px; border-radius: 4px;">App 1 + App 2</div>
+        <div style="background: #201F4B; color: #fff; padding: 10px; margin: 5px; border-radius: 4px;">Único Sistema Operativo (Windows/Linux)</div>
+        <div style="background: #6b7280; color: #fff; padding: 15px; margin: 5px; border-radius: 4px; font-weight: bold;">Hardware Físico (CPU, RAM, Disco)</div>
+    </div>
+
+    <div style="display: flex; align-items: center; color: var(--tur); font-size: 24px; font-weight: bold;">
+        &rarr;
+    </div>
+
+    <!-- Virtualizado -->
+    <div style="width: 350px; display: flex; flex-direction: column; text-align: center; border: 2px solid #05ADBC; padding: 10px; border-radius: 8px; background: #f0fdfa;">
+        <h3 style="color: var(--az); margin-top: 0;">Arquitectura Virtualizada</h3>
+        <div style="display: flex; justify-content: space-between; gap: 10px;">
+            <div style="flex:1; border: 1px solid #015583; border-radius: 4px; padding: 5px; background: #fff;">
+                <div style="font-size: 11px;">App 1</div>
+                <div style="background:#015583; color:#fff; font-size:12px; margin-top:4px;">Guest OS A (Ubuntu)</div>
+            </div>
+            <div style="flex:1; border: 1px solid #015583; border-radius: 4px; padding: 5px; background: #fff;">
+                <div style="font-size: 11px;">App 2</div>
+                <div style="background:#015583; color:#fff; font-size:12px; margin-top:4px;">Guest OS B (Win11)</div>
+            </div>
+        </div>
+        <div style="background: #05ADBC; color: #fff; padding: 10px; margin: 10px 5px 5px; border-radius: 4px; font-weight: bold; position: relative;">Hypervisor (VMM)
+           <div style="position: absolute; top:0; left:0; right:0; bottom:0; border: 3px solid #05ADBC; border-radius: 4px; animation: pulse 2s infinite;"></div>
+        </div>
+        <div style="background: #6b7280; color: #fff; padding: 15px; margin: 5px; border-radius: 4px; font-weight: bold;">Hardware Físico Compartido</div>
+    </div>
+</div>
+</div>
+<style>@keyframes pulse { 0% {transform: scale(1); opacity: 1;} 100% {transform: scale(1.1); opacity: 0;} }</style>
+<div class="ft"><span class="nt">Arquitectura base</span><span class="ctr">5 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 6: Bloque Conceptual B - Hypervisor Tipo 1 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque B · Hypervisor Tipo 1 (Bare-Metal)</div>
+<div class="ct tc">
+<div>
+<h2>La Virtualización de Grado Empresarial</h2>
+<ul>
+<li><strong>Ejecución Directa:</strong> El Hypervisor se instala <em>directamente</em> sobre el hardware desnudo, en lugar de instalar Windows o Linux primero.</li>
+<li><strong>Sin SO Intermediario:</strong> Elimina la latencia de pasar por un sistema operativo base. </li>
+<li>El Hypervisor Tipo 1 ES, en esencia, un kernel operativo altamente especializado y minimalista.</li>
+<li><strong>Casos de Uso:</strong> Datacenters, Cloud (AWS, Azure), Servidores corporativos de alta densidad.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Ejemplos Clásicos</strong></p>
+<ul>
+    <li>VMware ESXi / vSphere.</li>
+    <li>Microsoft Hyper-V Server.</li>
+    <li>Proxmox VE (KVM basado en Debian).</li>
+    <li>Xen.</li>
+</ul>
+<p class="nt" style="margin-top: 10px;">Poseen máxima eficiencia; no desperdician RAM dibujando GUIs innecesarias localmente.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Hypervisor Tipo 1</span><span class="ctr">6 / 25</span></div>
+</div>
+</section>
+
+
+<!-- Slide 7: Visual B - Diagrama Tipo 1 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual B · Arquitectura Tipo 1</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="height:min(58vh,400px);padding:20px;">
+    <!-- Diagrama simplificado Tipo 1 en HTML/CSS -->
+    <div style="width: 80%; display: flex; flex-direction: column; gap: 10px; font-family: monospace; font-size: 16px;">
+        <!-- Capa de Guests -->
+        <div style="display: flex; gap: 20px; justify-content: space-between;">
+            <div style="flex: 1; border: 2px solid #201F4B; text-align: center; border-radius: 8px; overflow: hidden;" class="sq">
+                <div style="background: #f3f6fb; padding: 15px; color: var(--txt);">Aplicaciones (CRM)</div>
+                <div style="background: #201F4B; color: #fff; padding: 10px;">Guest: Ubuntu Server</div>
+            </div>
+            <div style="flex: 1; border: 2px solid #201F4B; text-align: center; border-radius: 8px; overflow: hidden;" class="sq">
+                <div style="background: #f3f6fb; padding: 15px; color: var(--txt);">Aplicaciones (AD)</div>
+                <div style="background: #201F4B; color: #fff; padding: 10px;">Guest: Windows Server</div>
+            </div>
+        </div>
+        <!-- Capa Hypervisor Tipo 1 -->
+        <div style="background: #05ADBC; color: #fff; text-align: center; padding: 20px; font-weight: bold; border-radius: 8px; font-size: 20px; margin-top: 10px;" class="sq">
+            Hypervisor Tipo 1 (VMware ESXi / Proxmox)
+        </div>
+        <!-- Capa Hardware -->
+        <div style="background: #6b7280; color: #fff; text-align: center; padding: 25px; font-weight: bold; border-radius: 8px; letter-spacing: 2px;" class="sq">
+            HARDWARE FÍSICO (Servidor Dell/HP/Lenovo)
+        </div>
+    </div>
+</div>
+</div>
+<div class="ft"><span class="nt">Aislamiento eficiente</span><span class="ctr">7 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 8: Bloque Conceptual C - Hypervisor Tipo 2 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque C · Hypervisor Tipo 2 (Hosted)</div>
+<div class="ct tc">
+<div>
+<h2>Virtualización Doméstica y Desarrollo</h2>
+<ul>
+<li><strong>Con SO Intermediario:</strong> Se instala como una aplicación normal encima de un Sistema Operativo existente (tu Windows, macOS o Linux).</li>
+<li><strong>Sobrecarga (Overhead):</strong> Las instrucciones del Guest pasan por el Hypervisor y luego al SO Host antes de tocar el hardware físico.</li>
+<li>Al depender del SO Host, hereda sus vulnerabilidades y latencias.</li>
+<li><strong>Casos de Uso:</strong> Aulas de clase, laboratorios locales de desarrollo, pruebas de software (Testing).</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Ejemplos Clásicos</strong></p>
+<ul>
+    <li>Oracle VirtualBox.</li>
+    <li>VMware Workstation Player.</li>
+    <li>Parallels Desktop (macOS).</li>
+</ul>
+<p class="nt" style="margin-top: 10px;">Su ventaja radical es la conveniencia: puedes probar Linux en una ventana mientras mantienes Spotify abierto en tu Windows Host.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Hypervisor Tipo 2</span><span class="ctr">8 / 25</span></div>
+</div>
+</section>
+
+
+<!-- Slide 9: Visual C - Diagrama Tipo 2 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual C · Arquitectura Tipo 2</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="height:min(58vh,400px);padding:20px;">
+    <!-- Diagrama simplificado Tipo 2 en HTML/CSS -->
+    <div style="width: 80%; display: flex; flex-direction: column; gap: 8px; font-family: monospace; font-size: 16px;">
+        <!-- Capa de Guests -->
+        <div style="display: flex; gap: 10px; justify-content: space-between;">
+            <div style="flex: 1; border: 2px dashed #015583; text-align: center; border-radius: 8px; overflow: hidden;" class="sq">
+                <div style="background: #f3f6fb; padding: 10px; color: var(--txt); font-size:12px;">App (Bash)</div>
+                <div style="background: #201F4B; color: #fff; padding: 10px; font-size:14px;">Guest Ubuntu</div>
+            </div>
+            
+            <div style="flex: 1; display:flex; align-items:center; justify-content:center; background:#e0e7ff; border-radius:8px; font-weight:bold; color:#3730a3; border: 2px solid #818cf8;" class="sq">
+                Chrome / IDE Local
+            </div>
+        </div>
+        <!-- Capa Hypervisor Tipo 2 -->
+        <div style="display: flex; gap: 10px;" class="sq">
+            <div style="flex:1; background: #05ADBC; color: #fff; text-align: center; padding: 15px; font-weight: bold; border-radius: 8px; font-size: 18px;">
+                Hypervisor (VirtualBox)
+            </div>
+            <div style="flex:1;"> <!-- Espacio vacío --> </div>
+        </div>
+        <!-- Capa OS Host -->
+        <div style="background: #015583; color: #fff; text-align: center; padding: 15px; font-weight: bold; border-radius: 8px; font-size: 18px;" class="sq">
+            SISTEMA OPERATIVO HOST (Windows 11)
+        </div>
+        <!-- Capa Hardware -->
+        <div style="background: #6b7280; color: #fff; text-align: center; padding: 15px; font-weight: bold; border-radius: 8px; letter-spacing: 2px;" class="sq">
+            HARDWARE FÍSICO (Laptop)
+        </div>
+    </div>
+</div>
+</div>
+<div class="ft"><span class="nt">Hosted Hypervisor</span><span class="ctr">9 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 10: Comparativa -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Comparativa Estructural</div>
+<div class="ct tc" style="grid-template-columns: 1fr;">
+<table>
+    <thead>
+        <tr>
+            <th>Característica</th>
+            <th>Tipo 1 (Bare-Metal)</th>
+            <th>Tipo 2 (Hosted)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Instalación Base</strong></td>
+            <td>Directo en Hardware (Servidor vacío)</td>
+            <td>Sobre Sistema Operativo (Windows/macOS)</td>
+        </tr>
+        <tr>
+            <td><strong>Rendimiento</strong></td>
+            <td><strong style="color: green;">Muy Alto</strong> (Casi nativo)</td>
+            <td><strong style="color: #e6a817;">Medio / Bajo</strong> (Overhead del SO host)</td>
+        </tr>
+        <tr>
+            <td><strong>Simplicidad de Uso</strong></td>
+            <td>Requiere hardware dedicado y gestión remota</td>
+            <td>Fácil instalación como cualquier otra app (click & run)</td>
+        </tr>
+        <tr>
+            <td><strong>Uso Principal</strong></td>
+            <td>Infraestructura Cloud, Datacenters</td>
+            <td>Laboratorios, Desarrollo local, pruebas (Sandboxing)</td>
+        </tr>
+        <tr>
+            <td><strong>Gestión de Driver</strong></td>
+            <td>El Hypervisor incluye drivers corporativos limitados</td>
+            <td>El OS Host maneja el hardware, amplia compatibilidad</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<div class="ft"><span class="nt">Tabla Resumen</span><span class="ctr">10 / 25</span></div>
+</div>
+</section>
+
+
+<!-- Slide 11: Aceleración por Hardware -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Concepto Avanzado · Aceleración por Hardware (VT-x / AMD-V)</div>
+<div class="ct tc">
+<div>
+<h2>Cuando la CPU entiende la ilusión</h2>
+<ul>
+<li>Inicialmente, los Hypervisors atrapaban instrucciones privilegiadas del Guest y las emulaban (lentísimo).</li>
+<li><strong>Intel VT-x y AMD-V:</strong> Modificaciones en la silicona (CPU real) creadas para Virtualización.</li>
+<li>Añaden un <em>nivel de ejecución extra</em> (Anillos de privilegio bajo cero / Ring -1) exclusivo para el Hypervisor.</li>
+<li>Permiten que las instrucciones de la Máquina Virtual corran al ritmo veloz del procesador físico.</li>
+</ul>
+</div>
+<div class="cad">
+<p><strong>Configuración Crítica</strong></p>
+<p>Si la Virtualización no está activada en la BIOS/UEFI de la máquina host, los Hypervisores de 64 bits modernos fallarán o no permitirán instalar sistemas de 64 bits en el guest.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Soporte Silicona</span><span class="ctr">11 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 12: Virtualización de Memoria -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Concepto Avanzado · Virtualización de RAM</div>
+<div class="ct tc">
+<div>
+<h2>Traducción de Direcciones (EPT/SLAT)</h2>
+<ul>
+<li>Un SO normal traduce su <em>Memoria Virtual</em> a <em>Memoria Física</em> mediante la Tabla de Páginas (Unidad 2).</li>
+<li>En una VM, la "Memoria Física" del Guest sigue siendo solo Memoria Virtual provista por el Host.</li>
+<li>Se requiere <strong>Traducción de Dos Niveles</strong>: Virtual(Guest) &rarr; Física(Guest) &rarr; Física(Host).</li>
+<li>Las características SLAT (Second Level Address Translation) hacen este paso dual directamente por hardware.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Isla de RAM (Aislamiento total)</strong></p>
+<p>Si asignamos 4GB de RAM a una VM, el OS Host reserva y encapsula 4GB estrictos. El Guest no puede, matemáticamente, leer fuera de esos 4GB hacia la memoria del Host.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">SLAT y EPT</span><span class="ctr">12 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 13: Redes Virtuales -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Abstracción Transversal · Redes Virtuales</div>
+<div class="ct tc">
+<div>
+<h2>¿Cómo el Guest obtiene Internet?</h2>
+<ul>
+<li>El Hypervisor crea una Tarjeta de Red Virtual (vNIC) y la expone al Guest como hardware oficial.</li>
+<li><strong>Modo NAT (Network Address Translation):</strong> La VM obtiene una IP privada (10.0.2.15). El Host actúa como un Router para ella. Salida sí, entrada difícil.</li>
+<li><strong>Modo Bridged (Adaptador Puente):</strong> La VM se inyecta directamente a la red física de la oficina. Obtiene IP del DHCP oficial del edificio.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Capa 2 y Switches Virtuales</strong></p>
+<p>El software incluye <em>Switches por software</em>. Múltiples VMs pueden hablar entre sí en una red "Host-Only" aislada por completo del exterior, requerida para simulaciones de ciberataques seguras.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Switches Virtuales</span><span class="ctr">13 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 14: Práctica Guiada 1 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica En Clase</div>
+<div class="ct tc">
+<div>
+<h2>Construcción y Límite de Recursos en VM</h2>
+<div class="callout">
+<p><strong>Enunciado:</strong> Crear una configuración inicial segura para un laboratorio en VirtualBox / Hyper-V validando los límites de hardware del Host.</p>
+</div>
+<ol>
+<li>Abrir Task Manager local e inspeccionar (Cores Físicos y RAM total libre).</li>
+<li>Crear una nueva Máquina en Hypervisor (Tipo 2).</li>
+<li>Asignar un máximo del 50% de Cores físicos y 50% de RAM libre al Guest.</li>
+<li>Configurar red tipo NAT y provisionar un Disco Duro VDI de expansión dinámica.</li>
+</ol>
+<p class="nt" style="margin-top:10px;">Actividad formativa. No evaluativa.</p>
+</div>
+<div class="card" style="display:flex; justify-content:center; align-items:center;">
+    <div style="padding: 15px; border:1px solid #ccc; border-radius: 6px; background:#fafafa;">
+        <p style="font-weight:bold; color:var(--az);">Regla de Oro en Lab:</p>
+        <p style="font-size:14px; margin-top:5px;">Nunca asignar todos tus CPU cores a la VM. Si tienes 4 Cores nativos, asigna máximo 2. Si asignas los 4, el SO Host peleará con el Guest por tiempo de procesador, congelando el equipo.</p>
+    </div>
+</div>
+</div>
+<div class="ft"><span class="nt">Configuración Base (Práctica 1)</span><span class="ctr">14 / 25</span></div>
+</div>
+</section>
+
+
+<!-- Slide 15: Solución Práctica 1 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Desarrollo y Justificación</div>
+<div class="ct tc">
+<div>
+<h2>Decisiones en el dimensionamiento</h2>
+<ul>
+<li><strong>Límite CPU (50%):</strong> El Hypervisor es un proceso del Host. Si le damos todo el CPU a la VM, el Host no tendrá CPU para ejecutar sus instrucciones ni procesar el redibujado de la pantalla.</li>
+<li><strong>Expansión de Disco:</strong> 
+    <ul>
+        <li><em>Dinámico:</em> Archivo ligero que crece bajo demanda. Ahorra espacio físico en tu laptop.</li>
+        <li><em>Fijo:</em> Bloquea todos los gigas desde el segundo 1. Otorga mayor rendimiento transaccional.</li>
+    </ul>
+</li>
+</ul>
+</div>
+<div class="crd">
+<div class="cod" style="height:100%;"># Ejemplo de asignación correcta
+Host real: i5 4 Cores / 16GB RAM
+
+Guest Win10:
+- CPU: 2 Cores
+- RAM: 4096 MB (4GB)
+- Red: NAT
+- Disco VDI: 50GB (Dinámico)
+
+Guest Ubuntu Server CLI:
+- CPU: 1 Core
+- RAM: 1024 MB (1GB)
+- Red: NAT</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Dimensionamiento</span><span class="ctr">15 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 16: Guest Additions / VM Tools -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Simbiosis Host-Guest</div>
+<div class="ct tc">
+<div>
+<h2>Guest Additions / VMware Tools</h2>
+<ul>
+<li>Por defecto, el Hypervisor inyecta hardware "genérico y estándar" (VGA de 1995, ratón PS/2 estándar).</li>
+<li><strong>El Problema:</strong> Pantallas pequeñas, sin aceleración de video, puntero "atrapado" operativamente.</li>
+<li><strong>La Solución:</strong> Instalación de aplicaciones dentro del SO Guest que proveen drivers paravirtualizados optimizados.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Ventajas inmediatas:</strong></p>
+<ul>
+    <li>Portapapeles compartido (Copy-Paste).</li>
+    <li>Carpetas compartidas nativas.</li>
+    <li>Aceleración gráfica 3D y Drag & Drop.</li>
+</ul>
+</div>
+</div>
+<div class="ft"><span class="nt">Guest Additions</span><span class="ctr">16 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 17: Snapshots -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Cápsulas del Tiempo</div>
+<div class="ct tc">
+<div>
+<h2>Snapshots y Checkpoints</h2>
+<ul>
+<li>Permite congelar el estado exacto de una VM (disco rígido y RAM) en el tiempo.</li>
+<li>Al hacerlo, el disco original se vuelve de <em>solo lectura</em>, y todos los cambios futuros se guardan en un archivo "diferencial" (Delta).</li>
+<li><strong>Restauración:</strong> Si descartamos el archivo Delta, la máquina viaja al pasado, borrando cualquier daño o virus infectado.</li>
+</ul>
+</div>
+<div class="callout">
+<p><strong>Atención Operativa</strong></p>
+<p>Los Snapshots NO son Backups. Dependen del disco original inmutable. Solo se usan para regresiones por cambios temporales cortos.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Estados inmutables</span><span class="ctr">17 / 25</span></div>
+</div>
+</section>
+
+
+<!-- Slide 18: Práctica Guiada 2 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica En Clase</div>
+<div class="ct tc">
+<div>
+<h2>Ejecución de cambios destructivos</h2>
+<div class="callout">
+<p><strong>Enunciado:</strong> Proteger la infraestructura tomando un punto de restauración, ejecutar un comando de riesgo que destruya la operatividad, y recuperar la funcionalidad con 0 impacto.</p>
+</div>
+<ol>
+<li>En el entorno Linux, tomar "Snapshot 01 - Limpio".</li>
+<li>Dentro de la VM, como root, eliminar un directorio vital: `rm -rf /usr/bin`.</li>
+<li>Comprobar la incapacidad de la VM de responder, lanzar comandos o reiniciar.</li>
+<li>Apagar la VM y restaurar el "Snapshot 01".</li>
+</ol>
+</div>
+<div class="cad">
+    <p>La virtualización nos entrega el poder de destruir software para entender su dependencia, garantizando recuperación instantánea.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Prueba de resiliencia (Práctica 2)</span><span class="ctr">18 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 19: Solución Práctica 2 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Desarrollo y Justificación</div>
+<div class="ct tc">
+<div>
+<h2>¿Por qué la recuperación es instantánea?</h2>
+<ul>
+<li>Destruir el SO del Guest solo sobreescribe registros en el archivo diferencial en el disco de tu host de Windows.</li>
+<li>Al dar click en "Restaurar", el Hypervisor tira el archivo a la basura y reconecta el cabezal de lectura al disco base inmutable.</li>
+<li>Esto nos habilitará posteriormente a probar configuraciones de "Hardening" y testear "Malware" en las sesiones 22 y 23.</li>
+</ul>
+</div>
+<div class="crd">
+<div class="cod" style="height:100%;"><span class="cm"># Visión lógica en Windows (Tu laptop)</span>
+📁 VM_Laboratorio
+ ┣ 📄 Ubuntu.vdi <span class="cm">(Solo lectura post snapshot)</span>
+ ┣ 📄 Snapshot_01.sav <span class="cm">(Estado RAM)</span>
+ ┗ 📄 Diferencial.vdi <span class="cm">(Donde borramos /usr/bin)</span>
+
+<span class="cc">Al Restaurar:</span> Se elimina Diferencial.vdi.</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Gestión de Deltas</span><span class="ctr">19 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 20: Overhead Emulación -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">El costo de la Virtualización (Overhead)</div>
+<div class="ct tc">
+<div>
+<h2>La penalidad matemática</h2>
+<ul>
+<li>Abstraer componentes (pantalla virtual, disco virtual) requiere procesos intermedios.</li>
+<li>Cada vez que una VM tipo 2 escribe en su SSD virtual, el sistema Guest llama a su kernel, el Hypervisor lo procesa, el Sistema Host Windows lo recibe y luego va al hardware real.</li>
+<li>Por cada salto en esta cadena, se pierde tiempo, llegando a un <strong>5% y 15% de reducción de rendimiento</strong> (overhead).</li>
+</ul>
+</div>
+<div class="crd">
+<p style="font-weight:bold; color: var(--az);">La Gran Pregunta Industrial</p>
+<p>¿Qué pasa si solo necesito aislar una pequeña base de datos MySQL, pero no quiero cargar con el desperdicio de los 4GB de RAM y el arranque de todo un SO para esto?</p>
+<p class="nt" style="margin-top: 5px;">(El principio que da inicio a los contenedores).</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Overhead del Hypervisor</span><span class="ctr">20 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 21: Multimedia recomendada -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Recurso de Análisis Visual (External)</div>
+<div class="ct" style="align-items:center;">
+    <div style="width:100%; border-radius: 8px; overflow:hidden; border:1px solid #ccc; background:#fafafa; text-align:center; padding: 20px;">
+        <h2 style="font-size:22px; color:var(--tur); margin-bottom: 15px;">Video Sugerido: "What is Virtualization?"</h2>
+        <div style="width:100%; max-width: 600px; aspect-ratio: 16/9; background:#201F4B; margin: 0 auto; display:flex; align-items:center; justify-content:center; border-radius: 6px;">
+            <!-- Simulación de incrustación segura. -->
+            <p style="color:#fff; font-size:14px; padding: 20px;">[ Espacio para Embed de YouTube - IBM Technology / Red Hat ]<br><br>Recomendado para evidenciar el empaquetado y la revolución financiera que supuso VMware para el Cloud.</p>
+        </div>
+        <p class="nt" style="margin-top:15px;text-align:justify; max-width:800px; margin-left:auto; margin-right:auto;"><strong>Atribución:</strong> Enlazar material técnico avalado desde el aula virtual. Usar documentaciones visuales para exponer a nivel empresarial (Ej: IBM Cloud Education).</p>
+    </div>
+</div>
+<div class="ft"><span class="nt">Complemento de clase</span><span class="ctr">21 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 22: Causística -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Operativa · Troubleshooting Diario</div>
+<div class="ct tc">
+<div>
+<h2>Diagnóstico en el mundo real</h2>
+<ul>
+<li><strong>"La VM está increíblemente lenta y su disco al 100%"</strong><br>Causa: Falta de RAM en el Guest o hiper-asignación de CPU.</li>
+<li><strong>"La VM da Loop infinito de Boot"</strong><br>Causa: El controlador de almacenamiento en la config virtual (SATA vs IDE) o el estándar de firmware (BIOS vs UEFI) no coincide.</li>
+<li><strong>"No hay internet en el Guest"</strong><br>Causa: Cable Red Virtual desconectado en opciones, o protección corporativa bloqueando modo Puente (Bridged).</li>
+</ul>
+</div>
+<div class="cal">
+<p><strong>Reflexión Crítica</strong></p>
+<p>Dada la inmutabilidad de la virtualización, cuando falla la máquina, el error humano suele residir en los ajustes perimetrales proporcionados por el Hypervisor, rara vez en el sistema operativo Guest de base.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Errores Frecuentes</span><span class="ctr">22 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 23: OVA/OVF Portabilidad -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Portabilidad Pura · El estándar OVA</div>
+<div class="ct tc" style="grid-template-columns: 1fr;">
+<div style="padding: 10px;">
+<h2>Llevando Servidores en un Pendrive</h2>
+<ul>
+<li><strong>Open Virtualization Format (OVF):</strong> Estándar abierto mantenido por la DMTF para compartir de forma segura Máquinas Virtuales pre-configuradas.</li>
+<li>Integra discos comprimidos (`.vmdk`) y manifiestos de hardware (`.ovf`) validados criptográficamente.</li>
+<li><strong>OVA (Open Virtual Appliance):</strong> Es el OVF consolidado en un único mega-archivo.</li>
+<li>Permite configurar un ecosistema robusto en un PC local, mandarlo por red, e importarlo con doble click en otra infraestructura a miles de kilómetros.</li>
+</ul>
+</div>
+</div>
+<div class="ft"><span class="nt">Estándares Internacionales OVF</span><span class="ctr">23 / 25</span></div>
+</div>
+</section>
+
+
+<!-- Slide 24: Síntesis Técnica -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Síntesis Técnica Final</div>
+<div class="ct tc">
+<div>
+<h2>Lo más destacado de Virtualización</h2>
+<ul>
+<li>Virtualizar es abstraer y aislar.</li>
+<li><strong>Tipo 1:</strong> Profesional de Datacenter, enraizado al hardware (ESXi, Proxmox).</li>
+<li><strong>Tipo 2:</strong> Laboratorio / Desktop, vive encima de su OS Windows/Mac.</li>
+<li>Los límites de hardware virtualizado protegen el equipo Host de las negligencias probadas en la VM.</li>
+<li>Snapshots inician la base del versionamiento temporal indispensable en Ciberseguridad.</li>
+</ul>
+</div>
+<div class="crd">
+    <p><strong>Economía de Datacenter</strong></p>
+    <p>Habilitó que 1 servidor masivo corriendo al 5% de su capacidad pase a correr al 80% ejecutando 50 VMs, fundando la nube pública moderna.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Resumen Técnico</span><span class="ctr">24 / 25</span></div>
+</div>
+</section>
+
+<!-- Slide 25: Puente sesión siguiente -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Preparando el salto técnico</div>
+<div class="ct tc">
+<div>
+<h2>¿Es esto óptimo para todo?</h2>
+<ul>
+<li>Importar una VM pesa Gigabytes. Arrancar un Kernel toma preciosos segundos, y carga procesos del SO de fondo inútiles.</li>
+<li>En Microservicios y DevOps, no se toleran estas latencias ni ese consumo excesivo de disco.</li>
+<li>Virtualizar hardware entero quedó anticuado para desplegar aplicaciones web atómicas.</li>
+</ul>
+</div>
+<div class="caw">
+<p><strong>Hacia la Sesión 21: Aislamiento a nivel SO</strong></p>
+<p>Mañana abordaremos los "Contenedores" (ej: Docker). En lugar de emular disco, CPU y red con un Kernel invitado, compartiremos el Kernel Local pero enjaulando lógicamente cada servicio.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">S20 &rarr; S21</span><span class="ctr">25 / 25</span></div>
+</div>
+</section>
+
+<!-- Menú inferior base -->
+<div class="tnv">
+<button id="pb">&lt;</button>
+<button id="nb">&gt;</button>
+</div>
+
+</div></div>
+<script>
+const tg=document.getElementById("stage"),sl=document.querySelectorAll(".slide");
+let ci=0;
+function sw(n){
+sl[ci].classList.remove("active");
+ci=(n+sl.length)%sl.length;
+sl[ci].classList.add("active");
+const s=sl[ci].querySelectorAll(".sq");
+s.forEach(x=>x.classList.remove("vs"));
+let t=0; s.forEach(x=>{setTimeout(()=>x.classList.add("vs"),t); t+=200;});
+}
+document.getElementById("pb").onclick=(e)=>{e.stopPropagation();sw(ci-1);};
+document.getElementById("nb").onclick=(e)=>{e.stopPropagation();sw(ci+1);};
+document.addEventListener("keydown",e=>{
+if(e.key==="ArrowRight"||e.key==="Space"||e.key==="Enter") {e.preventDefault(); sw(ci+1);}
+else if(e.key==="ArrowLeft") {e.preventDefault(); sw(ci-1);}
+else if(e.key==="f") {
+if(!document.fullscreenElement) tg.requestFullscreen().catch(()=>{});
+else document.exitFullscreen();
+}
+});
+let ts=0;
+document.addEventListener("touchstart",e=>{ts=e.changedTouches[0].screenX;});
+document.addEventListener("touchend",e=>{
+let te=e.changedTouches[0].screenX;
+if(ts-te>40) sw(ci+1); else if(te-ts>40) sw(ci-1);
+});
+sw(0);
+</script>
+</body>
+</html>
