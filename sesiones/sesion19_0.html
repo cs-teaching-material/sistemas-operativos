@@ -908,28 +908,34 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 </ul>
 </div>
 <div class="crd">
-<p><strong>Dry-run en 30 segundos</strong></p>
-<div class="cod"><span class="cc">./script.sh</span> <span class="cs">--path</span> /var/www <span class="cs">--mode</span> audit
-<span class="cc">./script.sh</span> <span class="cs">--path</span> /var/www <span class="cs">--mode</span> fix <span class="cs">--dry-run</span>
+<p><strong>Script Completo: Implementando Dry-Run</strong></p>
+<div class="cod" style="max-height: 50vh; overflow-y: auto;"><span class="cm"># 1. Crear el archivo: nano script_seguro.sh</span>
+<span class="cc">#!/bin/bash</span>
 
-<span class="cm"># Implementacion minima del flag</span>
+<span class="cm"># Variable simulada para el ejemplo</span>
+<span class="cc">archivo</span>=<span class="cs">"/var/www/conf/app.conf"</span>
+
+<span class="cm"># Detectar si el usuario pasó el flag --dry-run</span>
 <span class="cc">DRY_RUN</span>=<span class="cn">0</span>
 [[ <span class="cs">"$*"</span> == *<span class="cs">"--dry-run"</span>* ]] &amp;&amp; <span class="cc">DRY_RUN</span>=<span class="cn">1</span>
 
+<span class="cm"># Función Envoltorio (Wrapper)</span>
 <span class="cc">run</span>() {
   <span class="cc">if</span> [[ <span class="cs">"$DRY_RUN"</span> <span class="cf">-eq</span> <span class="cn">1</span> ]]; <span class="cc">then</span>
-    <span class="cc">echo</span> <span class="cs">"[DRY-RUN] $*"</span>
+    <span class="cc">echo</span> <span class="cs">"[DRY-RUN] Ejecutaría: $*"</span>
   <span class="cc">else</span>
     <span class="cs">"$@"</span>
   <span class="cc">fi</span>
 }
 
-<span class="cm"># En vez de: chmod 640 "$archivo"</span>
+<span class="cc">echo</span> <span class="cs">"Iniciando reparación de permisos..."</span>
+<span class="cm"># En vez de usar chmod directo, llamamos a nuestra función</span>
 <span class="cc">run</span> <span class="cc">chmod</span> <span class="cn">640</span> <span class="cs">"$archivo"</span>
 
-<span class="cm"># Salida esperada en simulacion:</span>
-<span class="cm"># [DRY-RUN] chmod 640 /var/www/conf/app.conf</span></div>
-<p class="nt" style="margin-top:6px;">Regla de uso: primero <code>--dry-run</code> para validar impacto; luego ejecucion real sin ese flag.</p>
+<span class="cm"># 2. Dar permisos: chmod +x script_seguro.sh</span>
+<span class="cm"># 3. Probar simulacro: ./script_seguro.sh --dry-run</span>
+<span class="cm"># Salida esperada: [DRY-RUN] Ejecutaría: chmod 640 /var/www/conf/app.conf</span></div>
+<p class="nt" style="margin-top:6px;">Regla de oro: Jamás ejecutar un script como root en el servidor sin haber probado antes su <code>--dry-run</code>.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Bloque D · Practicas profesionales</span><span class="ctr">21 / 26</span></div>

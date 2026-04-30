@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 23: Hardening y Endurecimiento de Infraestructura</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --text-light: #f8fafc;
+            --accent: #10b981; /* Verde para seguridad defensiva */
+            --accent-glow: rgba(16, 185, 129, 0.5);
+            --code-bg: #1e293b;
+            --highlight: #22d3ee;
+            --warn: #fbbf24;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 56.25vw;
+            max-height: 100vh;
+            max-width: 177.78vh;
+            position: relative;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            padding: clamp(20px, 4vw, 60px);
+            box-sizing: border-box;
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: clamp(32px, 4.5vw, 70px);
+            color: var(--highlight);
+            margin-bottom: clamp(10px, 2vw, 30px);
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            font-size: clamp(24px, 3vw, 50px);
+            color: var(--text-light);
+            margin-bottom: clamp(10px, 1.5vw, 25px);
+        }
+
+        p, li {
+            font-size: clamp(16px, 2.2vw, 35px);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        ul { margin-left: clamp(20px, 3vw, 40px); }
+
+        .code-block {
+            background-color: var(--code-bg);
+            padding: clamp(15px, 2vw, 30px);
+            border-radius: 8px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: clamp(14px, 1.8vw, 28px);
+            color: #a78bfa;
+            border-left: 5px solid var(--accent);
+            white-space: pre-wrap;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: clamp(10px, 2vw, 30px);
+            right: clamp(10px, 2vw, 30px);
+            z-index: 100;
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: clamp(10px, 1.2vw, 20px) clamp(20px, 2.5vw, 40px);
+            font-size: clamp(14px, 1.8vw, 24px);
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        button:hover {
+            background-color: #059669;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: clamp(3px, 0.5vw, 6px);
+            background-color: var(--highlight);
+            transition: width 0.3s ease;
+            z-index: 99;
+        }
+
+        .diagram-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            margin-top: 20px;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: clamp(20px, 3vw, 50px);
+            height: 100%;
+        }
+
+        .pulse-shield { animation: pulsar-shield 2s infinite; }
+        @keyframes pulsar-shield { 0% { opacity: 0.8; transform: scale(0.98); box-shadow: 0 0 0px var(--accent); } 50% { opacity: 1; transform: scale(1.02); box-shadow: 0 0 25px var(--accent); } 100% { opacity: 0.8; transform: scale(0.98); box-shadow: 0 0 0px var(--accent); } }
+        
+        .box { background: rgba(16, 185, 129, 0.1); border: 2px solid var(--accent); padding: 20px; border-radius: 10px; text-align: center; }
+
+    </style>
+</head>
+<body>
+
+<div class="presentation-container">
+
+    <!-- Slide 1 -->
+    <div class="slide active">
+        <h1 style="text-align:center; font-size: 6vw; margin-top: 15%; border: none;">Sesión 23:<br>Hardening y Defensa en Profundidad</h1>
+        <p style="text-align:center; color: var(--highlight);">Transformando vulnerabilidades en fortalezas de infraestructura</p>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide">
+        <h1>Objetivos de la Sesión</h1>
+        <ul>
+            <li>Definir el concepto de *Hardening* (Endurecimiento) en Sistemas Operativos.</li>
+            <li>Comprender el modelo de Defensa en Profundidad (Defense in Depth).</li>
+            <li>Implementar el Principio de Menor Privilegio (PoLP).</li>
+            <li>Analizar los perfiles de seguridad del Kernel: SecComp, AppArmor y SELinux.</li>
+            <li>Aplicar mitigaciones prácticas para evitar el escape de contenedores (S22).</li>
+        </ul>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide">
+        <h1>Recapitulación S22: La Jaula Rota</h1>
+        <div class="grid-layout">
+            <div>
+                <p>En la Sesión 22 vimos que una mala configuración (ej: `--privileged` o montar `/var/run/docker.sock`) permite a un atacante con acceso a un contenedor escalar a <strong>Ring 0</strong>.</p>
+                <p>El Kernel subyacente es compartido; la debilidad de un proceso aislado compromete al hardware físico real.</p>
+            </div>
+            <div class="box pulse-shield">
+                <h3>El Reto Defensivo</h3>
+                <p>Cerrar explícitamente cada vector de ataque inyectando restricciones matemáticas ineludibles al Kernel y a las aplicaciones.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide">
+        <h1>¿Qué es el Hardening?</h1>
+        <p>Proceso de aseguramiento sistemático de un sistema operativo, reduciendo drásticamente su superficie de ataque (Attack Surface).</p>
+        <ul>
+            <li><strong>Por defecto:</strong> Los sistemas (como Ubuntu, Windows, Docker) vienen configurados para <i>funcionar con comodidad</i>, no con seguridad absoluta.</li>
+            <li><strong>Hardening:</strong> Desactiva servicios innecesarios, reescribe políticas estrictas y elimina la "comodidad" a favor de la supervivencia.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide">
+        <h1>Principio de Menor Privilegio (PoLP)</h1>
+        <p>Un usuario, programa o proceso solo debe tener los privilegios estrictamente necesarios para realizar su tarea legítima. Ni más, ni menos.</p>
+        <p><strong>Ejemplo clásico:</strong></p>
+        <ul>
+            <li>Un servidor web (Nginx) solo necesita leer archivos HTML y transmitirlos por el puerto 80 o 443.</li>
+            <li>No necesita privilegios para modificar contraseñas (`/etc/shadow`) ni para formatear discos duros (`fdisk`). Si lo tiene, viola el PoLP.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 6 -->
+    <div class="slide">
+        <h1>Defensa en Profundidad (El modelo "Cebolla")</h1>
+        <div class="diagram-container">
+            <svg width="100%" height="90%" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                <!-- Layers representing Defense in Depth -->
+                <circle cx="400" cy="200" r="160" fill="none" stroke="#3b82f6" stroke-width="4"/>
+                <text x="400" y="60" fill="#f8fafc" text-anchor="middle" font-size="18">Capa 1: Firewall de Perímetro (Network)</text>
+
+                <circle cx="400" cy="200" r="120" fill="none" stroke="#8b5cf6" stroke-width="4"/>
+                <text x="400" y="105" fill="#f8fafc" text-anchor="middle" font-size="18">Capa 2: OS Hardening (Kernel/Usuarios)</text>
+
+                <circle cx="400" cy="200" r="80" fill="none" stroke="#10b981" stroke-width="4"/>
+                <text x="400" y="145" fill="#f8fafc" text-anchor="middle" font-size="18">Capa 3: App Security</text>
+
+                <circle cx="400" cy="200" r="40" fill="#ef4444" stroke="#dc2626" stroke-width="4"/>
+                <text x="400" y="205" fill="#f8fafc" text-anchor="middle" font-size="16" font-weight="bold">DATO</text>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Slide 7 -->
+    <div class="slide">
+        <h1>El Estándar de la Industria: CIS Benchmarks</h1>
+        <p>Center for Internet Security (CIS) define reglas de hardening comprobadas universalmente. Si trabajas operando sistemas operativos, los leerás a diario.</p>
+        <p><strong>Ejemplos de directivas CIS para Linux:</strong></p>
+        <ul>
+            <li><em>1.1.1.1</em> - Deshabilitar el montaje del sistema de archivos cramfs (Inseguro).</li>
+            <li><em>5.2.1</em> - Asegurar que los permisos en `/etc/ssh/sshd_config` sean 600.</li>
+            <li><em>5.2.8</em> - Deshabilitar acceso root directo por SSH (PermitRootLogin no).</li>
+        </ul>
+    </div>
+
+    <!-- Slide 8 -->
+    <div class="slide">
+        <h1>Kernel Security Modules (LSM)</h1>
+        <p>El estándar NameSpaces/Cgroups aísla... pero no juzga la intención del programa (si un programa aislado hace cosas legales, se le permite).</p>
+        <p>Los <strong>Linux Security Modules (LSM)</strong> actúan como un vigilante paranoico interceptando TODA llamada antes de que toque el hardware real, evaluándola con un perfil predefinido.</p>
+        <h3 style="color:var(--highlight)">Dos titanes reinan hoy: SELinux y AppArmor.</h3>
+    </div>
+
+    <!-- Slide 9 -->
+    <div class="slide">
+        <h1>SELinux (Control de Acceso Obligatorio - MAC)</h1>
+        <p>Creado originalmente por la NSA (Agencia de Seguridad Nacional de EE.UU). Viene embebido típicamente en distribuciones derivadas de RedHat (RHEL, CentOS, Fedora).</p>
+        <ul>
+            <li>Incluso si el atacante consigue acceso `root`, si una política SELinux dice explícitamente "El servidor web Apache NO puede ejecutar comandos en la terminal externa", el Kernel denegará la petición a nivel Ring 0.</li>
+            <li><strong>Fama:</strong> Increíblemente poderoso, pero la sintaxis de sus perfiles es famosa por ser desesperantemente compleja.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 10 -->
+    <div class="slide">
+        <h1>AppArmor (Application Armor)</h1>
+        <p>La alternativa adoptada por distribuciones Debian/Ubuntu y Suse. Más legible y fácil de gestionar que SELinux.</p>
+        <ul>
+            <li>Asigna "Perfiles de comportamiento" por ruta de programa.</li>
+            <li>Docker en Ubuntu instala e inyecta un perfil genérico de AppArmor por defecto a cada contenedor que creas. (Por eso evitamos escapes inmediatos).</li>
+            <li>Modo <em>Enforce</em> (bloquea) vs <em>Complain</em> (solo registra la alerta pero permite).</li>
+        </ul>
+    </div>
+
+    <!-- Slide 11 -->
+    <div class="slide">
+        <h1>Seccomp (Secure Computing Mode)</h1>
+        <p>Una característica independiente dentro del Kernel enfocada solo en <strong>restricciones de llamadas al sistema (Syscalls)</strong>.</p>
+        <ul>
+            <li>Un Kernel Linux moderno tiene cerca de ~350 syscalls distintas (reboot, mount, chown, mkdir, chroot...).</li>
+            <li>Una aplicación promedio usa apenas 40 o 50 syscalls distintas en toda su vida.</li>
+            <li><strong>Seccomp permite filtrar o amputar</strong> las 300 syscalls restantes. Si el proceso invoca un comando vetado, el kernel asesina al proceso inmediatamente con un `SIGKILL`.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 12 -->
+    <div class="slide">
+        <h1>Arquitectura Syscall bajo Seccomp</h1>
+        <div class="grid-layout">
+            <div>
+                <h3>Contenedor "Confiable"</h3>
+                <p>Proceso Nginx intenta <code>read()</code> un HTML.<br><br>-> <strong>Perfil Seccomp:</strong> ¿Está <code>read</code> permitido en la whitelist? ¡Sí!<br><br>-> Kernel permite leer el disco.</p>
+            </div>
+            <div>
+                <h3 style="color:var(--warn)">Contenedor Vulnerado</h3>
+                <p>Nginx infectado intenta <code>reboot()</code> al sistema base.<br><br>-> <strong>Perfil Seccomp:</strong> ¿Está <code>reboot</code> en la whitelist? ¡No!<br><br>-> Kernel asesina implacablemente a Nginx. El OS Base se salva.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 13 -->
+    <div class="slide">
+        <h1>Práctica 1: Evaluando Capacidades Base</h1>
+        <p>Linux usa un concepto llamado "Capabilities" para dividir el poder total de Root en pedacitos (ej: `CAP_CHOWN`, `CAP_NET_ADMIN`).</p>
+        <p>Observaremos mediante comando qué "Poderes de root" reales le da Docker a un contenedor estándar por defecto usando `capsh`:</p>
+        <div class="code-block">
+# Desde tu terminal host corre un test aislado interactivo:
+$ docker run --rm -it alpine sh
+
+# Ya adentro del contenedor, instalar libreria util y revisar privilegios
+/ # apk add libcap
+/ # capsh --print
+        </div>
+    </div>
+
+    <!-- Slide 14 -->
+    <div class="slide">
+        <h1>Análisis de la Práctica (Qué retira Docker)</h1>
+        <p>El resultado del comando <code>capsh --print</code> evidenciará algo inaudito: Incluso operando como "root" dentro del contenedor, el Kernel te ha revocado la capacidad <code>cap_sys_time</code> y <code>cap_sys_module</code>.</p>
+        <ul>
+            <li>No puedes cambiarle la hora al reloj del anfitrión físico.</li>
+            <li>No puedes instalar drivers exóticos al hardware de red (Kernel modules).</li>
+            <li><strong>Mitigación instantánea:</strong> Muchos Zero-Days dependen del uso de estos poderes para invadir a nivel módulo.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 15 -->
+    <div class="slide">
+        <h1>Hardening Docker: Drop All Capabilities</h1>
+        <p>Si sabemos que nuestro script web solo procesa texto... ¿Para qué tener siquiera los poderes de red (`CAP_NET_RAW`)? Apliquemos PoLP absoluto:</p>
+        <div class="code-block">
+# Arrancando con 0 poderes mágicos, despojando TODOS los remanentes:
+$ docker run -d --cap-drop=ALL nginx
+        </div>
+        <p>Este contenedor será prácticamente inútil para cualquier atacante. Aunque logre ingresar bajo modo consola, toda invocación al anillo cero explotará (Ej: inhabilitado de efectuar el más mínimo `chown`).</p>
+    </div>
+
+    <!-- Slide 16 -->
+    <div class="slide">
+        <h1>Contenedores Rootless (Sin dockerd root)</h1>
+        <p>El daemon de Docker (`dockerd`) requiere usualmente ejecutarse como administrador en Linux. Si crashea dockerd, el host cae.</p>
+        <p><strong>Solución moderna: Rootless Mode o Podman.</strong></p>
+        <p>Ejecutar los contenedores y al propio motor detrás de un subsistema atado al usuario regular. Incluso si ocurre un Breakout (Escape - S22), el hacker aterrizará en el SO anfitrión como usuario "pepito" de clase baja, sin poder quebrar el Ring 0.</p>
+    </div>
+
+    <!-- Slide 17 -->
+    <div class="slide">
+        <h1>Sistemas de Archivos Inmutables (Read-Only Root)</h1>
+        <p>¿Por qué permitir a un atacante que descargue sus herramientas (`wget exploit.sh`) o modifique librerías infectadas (`/lib/...`) en el entorno de ejecución?</p>
+        <div class="code-block">
+# Hardening de inmutabilidad (Solo lectura):
+$ docker run -d --read-only nginx
+        </div>
+        <p>Todo el disco virtual se vuelve una roca. Solo se admiten escrituras en carpetas exentas temporales configuradas manualmente (Ej: `/tmp`). El malware moderno no puede anclarse ni sobrevivir a esto.</p>
+    </div>
+
+    <!-- Slide 18 -->
+    <div class="slide">
+        <h1>Hardening por Red (Network Limits)</h1>
+        <p>Si logran vulnerar tu interfaz, la fase 2 del atacante es conectarse de vuelta a su servidor para descargar instrucciones (Command and Control - C2).</p>
+        <ul>
+            <li>Si el contenedor ejecuta solo una Base de Datos local... ¿Por qué tiene permitido hacer <code>ping 8.8.8.8</code> o abrir túneles salientes al exterior por HTTP?</li>
+            <li><strong>Regla Defensiva:</strong> Aislar siempre mediante iptables, UFW, o redes puente Docker aisladas prohibiendo tráfico de salida (Outbound) ciego.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 19 -->
+    <div class="slide">
+        <h1>Práctica 2: El comando prohibido (Seccomp Personalizado)</h1>
+        <p>En lugar de delegar en el perfil estándar, podemos proveer un JSON donde bloqueamos las llamadas a crear nuevas carpetas (`mkdir`).</p>
+        <div class="code-block">
+# Imagina tener profile.json bloqueando mkdir. Al llamarlo:
+$ docker run --security-opt seccomp=profile.json -it alpine sh
+
+/ # mkdir carpeta_hack
+mkdir: can't create directory 'carpeta_hack': Operation not permitted
+        </div>
+        <p><strong>Conclusión:</strong> El código intenta ordenar a Ring 0 crear un directorio en Disco. El Ring 0 lo intercepta, cruza con la política JSON, y amputa el proceso. (Syscall capada).</p>
+    </div>
+
+    <!-- Slide 20 -->
+    <div class="slide">
+        <h1>Automatizando el Escaneo en Construcción</h1>
+        <p>Hardening no es solo "apagar cosas". Es auditar *antes* de desplegar.</p>
+        <p><strong>Escáner de Imágenes (Trivy, Clair):</strong> Herramientas que analizan tu plantilla contenedorizada offline en búsqueda de vulnerabilidades conocidas (CVE) obsoletas incrustadas, evaluando si las librerías `openssl` instaladas están marchitas y requieren actualización programada urgente.</p>
+    </div>
+
+    <!-- Slide 21 -->
+    <div class="slide">
+        <h1>Hardening en el Dockerfile (La fase del Desarrollador)</h1>
+        <p>El error más grande proviene de la imagen madre generada de mal modo (Sesión 21/22).</p>
+        <div class="code-block">
+FROM ubuntu:latest
+# ERROR 1: Ejecutar la app compilada siendo ROOT.
+COPY mi_app /app
+# SOLUCIÓN: Crear un usuario común sin permisos e instruir su uso:
+RUN useradd -ms /bin/bash usuario_debil
+USER usuario_debil
+CMD ["./app"]
+        </div>
+        <p>La simple orden `USER` previene la escalada del 90% del malware inyectado vía web.</p>
+    </div>
+
+    <!-- Slide 22 -->
+    <div class="slide">
+        <h1>Manejo de Parches y Ciclo de Vida Lifecycle</h1>
+        <p>El Hardening no es una pastilla mágica que se toma una vez y dejas al sistema tirado. Requiere higiene rutinaria.</p>
+        <div class="box">
+            <p><strong>Patch Management:</strong> Si tu política SELinux y Seccomp son geniales, pero no actualizaste el Kernel base en 4 años de producción (Uptime absurdo), un atacante descubrirá un CVE que permite atravesar mágicamente esas paredes (Dirty Pipe / Dirty COW).</p>
+        </div>
+        <p>Reiniciar es vital: Un Kernel solo se actualiza cuando el sistema operativo arranca la tabla de memoria física en el nuevo módulo base.</p>
+    </div>
+
+    <!-- Slide 23 -->
+    <div class="slide">
+        <h1>Resumen de Operaciones Defensivas</h1>
+        <ul>
+            <li>No delegues todo a contenedores: Modifica y endurece tu OS base instalando <strong>AppArmor</strong> y deshabilitando módulos USB no usados o redes obsoletas (IPX).</li>
+            <li>Inactiva el uso de permisos <strong>SUID</strong> sobre comandos ajenos.</li>
+            <li>Implementa bloqueos draconianos reduciendo al usuario solo a perfiles <strong>PoLP</strong>.</li>
+            <li>Al levantar contenedores, suma banderas defensivas: `--cap-drop=ALL` y `--read-only`. Obliga al atacante a pelear inútilmente por privilegios contra la muralla.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 24 -->
+    <div class="slide">
+        <h1>La Transición Inminente al CI/CD</h1>
+        <p>Realizar hardening a mano servidor por servidor, contenedor por contenedor es lento y sumamente propenso a falencias humanas (alguien olvida usar el comando DropCap).</p>
+        <p>¿Qué sigue? Estandarizar la seguridad en configuraciones automatizadas persistentes.</p>
+        <h2 style="color:var(--highlight); margin-top:20px;">Siguiente Sesión (S24): Configuración como Código y Ambientes de desarrollo robustos usando IA en escenarios "Infraestructura CI/CD".</h2>
+    </div>
+
+    <!-- Slide 25 -->
+    <div class="slide">
+        <h1>Cierre de la Sesión</h1>
+        <div class="box pulse-shield" style="margin-bottom: 20px;">
+            <h3>Seguridad Integrada</h3>
+            <p>El Hardening transforma el Sistema Operativo y sus Subsistemas Virtuales de blancos fáciles y pasivos, a defensores activos en Tiempo Real cruzando interrupciones por perfiles estrictos.</p>
+        </div>
+        <p>Temas centrales consolidados: LSM (SELinux/AppArmor), Seccomp Syscall Filtering, Modos Rootless y Minimum Privileges (PoLP).</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button id="prevBtn" onclick="prevSlide()">Anterior</button>
+        <button id="nextBtn" onclick="nextSlide()">Siguiente</button>
+    </div>
+    <div class="progress-bar" id="progressBar"></div>
+
+</div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const progressBar = document.getElementById('progressBar');
+
+    function updatePresentation() {
+        slides.forEach((slide, index) => {
+            if (index === currentSlide) {
+                slide.classList.add('active');
+            } else {
+                slide.classList.remove('active');
+            }
+        });
+        
+        const progress = ((currentSlide + 1) / slides.length) * 100;
+        progressBar.style.width = progress + '%';
+        
+        document.getElementById('prevBtn').style.opacity = currentSlide === 0 ? '0.5' : '1';
+        document.getElementById('nextBtn').style.opacity = currentSlide === slides.length - 1 ? '0.5' : '1';
+    }
+
+    function nextSlide() {
+        if (currentSlide < slides.length - 1) {
+            currentSlide++;
+            updatePresentation();
+        }
+    }
+
+    function prevSlide() {
+        if (currentSlide > 0) {
+            currentSlide--;
+            updatePresentation();
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    updatePresentation();
+</script>
+</body>
+</html>

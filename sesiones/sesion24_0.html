@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 24: Configuración como Código (IaC), DevOps e IA</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --text-light: #f8fafc;
+            --accent: #8b5cf6; /* Morado DevOps/IA */
+            --accent-glow: rgba(139, 92, 246, 0.5);
+            --code-bg: #1e293b;
+            --highlight: #38bdf8;
+            --success: #10b981;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 56.25vw;
+            max-height: 100vh;
+            max-width: 177.78vh;
+            position: relative;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            padding: clamp(20px, 4vw, 60px);
+            box-sizing: border-box;
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: clamp(32px, 4.5vw, 70px);
+            color: var(--highlight);
+            margin-bottom: clamp(10px, 2vw, 30px);
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            font-size: clamp(24px, 3vw, 50px);
+            color: var(--text-light);
+            margin-bottom: clamp(10px, 1.5vw, 25px);
+        }
+
+        p, li {
+            font-size: clamp(16px, 2.2vw, 35px);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        ul { margin-left: clamp(20px, 3vw, 40px); }
+
+        .code-block {
+            background-color: var(--code-bg);
+            padding: clamp(15px, 2vw, 30px);
+            border-radius: 8px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: clamp(14px, 1.8vw, 28px);
+            color: #c4b5fd;
+            border-left: 5px solid var(--accent);
+            white-space: pre-wrap;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: clamp(10px, 2vw, 30px);
+            right: clamp(10px, 2vw, 30px);
+            z-index: 100;
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: clamp(10px, 1.2vw, 20px) clamp(20px, 2.5vw, 40px);
+            font-size: clamp(14px, 1.8vw, 24px);
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        button:hover {
+            background-color: #6d28d9;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: clamp(3px, 0.5vw, 6px);
+            background-color: var(--highlight);
+            transition: width 0.3s ease;
+            z-index: 99;
+        }
+
+        .diagram-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            margin-top: 20px;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: clamp(20px, 3vw, 50px);
+            height: 100%;
+        }
+
+        .pulse-devops { animation: pulsar-devops 3s infinite linear; }
+        @keyframes pulsar-devops { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .box { background: rgba(139, 92, 246, 0.1); border: 2px solid var(--accent); padding: 20px; border-radius: 10px; text-align: center; }
+
+    </style>
+</head>
+<body>
+
+<div class="presentation-container">
+
+    <!-- Slide 1 -->
+    <div class="slide active">
+        <h1 style="text-align:center; font-size: 6vw; margin-top: 15%; border: none;">Sesión 24:<br>Infraestructura como Código e IA</h1>
+        <p style="text-align:center; color: var(--highlight);">Culminación: Automatizando el Kernel y los Contenedores</p>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide">
+        <h1>Objetivos de la Sesión</h1>
+        <ul>
+            <li>Transicionar de comandos imperativos a sintaxis declarativa YAML/JSON.</li>
+            <li>Entender el flujo DevOps y CI/CD en sistemas modernos.</li>
+            <li>Implementar Ambientes de Desarrollo Efímeros (DevContainers).</li>
+            <li>Explorar el impacto de la Inteligencia Artificial (AIOps y LLMs) en la gestión de infraestructura.</li>
+            <li>Concluir la ruta de aprendizaje: Del Silicon al Cloud asistido por IA.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide">
+        <h1>Recapitulación S23: El factor Humano</h1>
+        <div class="grid-layout">
+            <div>
+                <p>En S23 blindamos un sistema inyectando perfiles de Seccomp, Cap-Drops y banderas <code>--read-only</code>.</p>
+                <p><strong>El problema:</strong> Una infraestructura real tiene miles de contenedores, y los humanos olvidamos escribir una bandera de texto un viernes por la tarde, tirando por la borda todo el <i>Hardening</i>.</p>
+            </div>
+            <div class="box">
+                <h3 style="color:var(--highlight)">Solución: Inmutabilizar las Órdenes</h3>
+                <p>Los administradores no deberían escribir comandos en terminales en vivo (Pets). Todo lo debe desplegar un robot lector de código (Cattle).</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide">
+        <h1>Infraestructura como Código (IaC)</h1>
+        <p>Práctica de aprovisionar y gestionar infraestructura a través de código y archivos de definición legible por máquina, en lugar de configuraciones interactivas manuales (clicks en GUIs o comandos bash al vuelo).</p>
+        <ul>
+            <li><strong>Imperativo (El Pasado):</strong> <i>"Crea contenedor A. Luego bájale la capacidad B. Luego conéctale red C."</i></li>
+            <li><strong>Declarativo (El Futuro Mágico):</strong> <i>"Necesito un servidor seguro con estas 3 especificaciones. Haz la magia técnica por detrás para que suceda."</i></li>
+        </ul>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide">
+        <h1>De Bash a Compose (Docker-Compose)</h1>
+        <p>¿Recuerdan la pesadilla de alinear 15 banderas en un <code>docker run</code> larguísimo?</p>
+        <p><code>docker-compose</code> es el estándar declarativo local. Usamos archivos <strong>YAML</strong> para describir exactamente qué queremos, redificando aplicaciones multinivel en bloque y de forma atómica.</p>
+        <p style="text-align:center; font-style:italic;">Si un compañero baja el repositorio, el sistema levantará idéntico en 1 segundo.</p>
+    </div>
+
+    <!-- Slide 6 -->
+    <div class="slide">
+        <h1>Práctica 1: Refactorizando el Hardening</h1>
+        <p>Traduzcamos el comando doloroso de S23 (`--cap-drop=all --read-only`) a YAML limpio y documentado:</p>
+        <div class="code-block">
+# docker-compose.yml
+version: '3.8'
+services:
+  web_segura:
+    image: nginx:latest
+    read_only: true
+    cap_drop:
+      - ALL
+    ports:
+      - "8080:80"
+    tmpfs:
+      - /var/cache/nginx
+        </div>
+    </div>
+
+    <!-- Slide 7 -->
+    <div class="slide">
+        <h1>Análisis de la Práctica 1</h1>
+        <p>Ejecutar este archivo solo requiere: <code>docker-compose up -d</code></p>
+        <ul>
+            <li>El archivo se guarda en Git (Versionado).</li>
+            <li>Cualquiera en el equipo de Desarrollo y Operaciones sabe que este contenedor web carece de todos los poderes y es de solo-lectura total.</li>
+            <li>Si descubrimos un 0-Day, cambiamos el código, se guarda el commit, y el orquestador mata a la antigua red y sube la nueva versión sola.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 8 -->
+    <div class="slide">
+        <h1>Cultura DevOps y GitOps</h1>
+        <div class="diagram-container">
+            <svg width="400" height="400" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="pulse-devops">
+                <!-- Infinity symbol representing devops -->
+                <path d="M 50 100 C 0 30, 100 30, 100 100 C 100 170, 200 170, 150 100 C 200 30, 100 30, 100 100 C 100 170, 0 170, 50 100" fill="none" stroke="#8b5cf6" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <p style="text-align:center; margin-top:20px;">Ya no existe "Mi código anda, fallo del servidor".</p>
+        <p style="text-align:center;">El código ES el servidor. <strong>GitOps</strong> declara que Github (el repositorio) es la "Única Fuente de Verdad" de la infraestructura computacional.</p>
+    </div>
+
+    <!-- Slide 9 -->
+    <div class="slide">
+        <h1>El problema del IDE local: "Dependencias Fantasma"</h1>
+        <p>Aunque Docker estandariza producción, los programadores todavía redactan código en el SO anfitrión de sus laptops.</p>
+        <ul>
+            <li>El estudiante A usa Windows 11 con Python 3.12 y Node 18.</li>
+            <li>El estudiante B usa Ubuntu 22.04 con Python 3.9 y Node 20.</li>
+            <li>Problema: El código falla al entregarse por dependencias ocultas no registradas. Ambos destruyen sus equipos instalando versiones globales colisionando herramientas.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 10 -->
+    <div class="slide">
+        <h1>DevContainers (Ambientes Efímeros de Desarrollo)</h1>
+        <p>Una tecnología popularizada por VS Code y GitHub Codespaces. ¿Por qué usar contenedores solo para el servidor final?</p>
+        <p><strong>El Paradigma DevContainer:</strong> Encerrar tu Editor de Código completo y tus herramientas de compilación ADENTRO de un contenedor de Docker.</p>
+        <p>Cada proyecto tiene su propio mini-sistema operativo efímero. Sales del proyecto, el contenedor muere.</p>
+    </div>
+
+    <!-- Slide 11 -->
+    <div class="slide">
+        <h1>Diseño Lógico del DevContainer</h1>
+        <div class="grid-layout">
+            <div>
+                <h3>Anfitrión Local (Tu PC)</h3>
+                <p>Solo necesitas tener instalado Docker Engine y VS Code vacío. <strong>NADA MÁS</strong>. Ni Python, ni C++, ni Node.</p>
+            </div>
+            <div>
+                <h3 style="color:var(--success)">El Contenedor (Guest)</h3>
+                <p>El código fuente se inyecta por volumen de montaje. VS Code inyecta un servidor remoto ("VS Code Server") dentro del entorno aislado manipulando archivos allí.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 12 -->
+    <div class="slide">
+        <h1>El archivo `devcontainer.json`</h1>
+        <p>El "cerebro" orquestador del proyecto que metes a la raíz de tu repo Git.</p>
+        <div class="code-block">
+{
+    "name": "Laboratorio OS",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    },
+    "customizations": {
+        "vscode": { "extensions": ["ms-python.python"] }
+    }
+}
+        </div>
+    </div>
+
+    <!-- Slide 13 -->
+    <div class="slide">
+        <h1>Práctica 2: Arrancando el DevContainer</h1>
+        <ol>
+            <li>Se crea la sub-carpeta `.devcontainer` y se añade el JSON anterior.</li>
+            <li>Se abre el proyecto en VS Code. Sugerirá: <i>"Reopen in Container"</i>.</li>
+            <li><strong>La magia ocurre:</strong> Docker descarga la imagen aislada de Python, instala las extensiones de linter específicas del proyecto, y lanza el IDE conectado a esa terminal virtual.</li>
+        </ol>
+        <p>Si el estudiante formatea el contenedor instalando algo dañino (rm -rf /), su anfitrión jamás se enterará. Reconstruye el contenedor en 1 minuto.</p>
+    </div>
+
+    <!-- Slide 14 -->
+    <div class="slide">
+        <h1>Sistemas Cognitivos y AIOps (Inteligencia en Operaciones)</h1>
+        <p>Tenemos infraestructura declarada en texto (YAML) en lugar de botones. ¿Qué pasa ahora si texto = lógica estructurada y programable?</p>
+        <p>La IA Generativa moderna (LLMs) está devorando la escritura de IaC. En vez de buscar 2 semanas cómo escribir perfiles de Hardening Seccomp nativos... se lo pides a un agente.</p>
+    </div>
+
+    <!-- Slide 15 -->
+    <div class="slide">
+        <h1>GitHub Copilot y Herramientas Infraestructurales</h1>
+        <p>Si uso Terraform, Ansible, Kubernetes, o Compose, los asistentes de codificación se vuelven Co-pilotos de Arquitectura.</p>
+        <p>Al tipear <code>cap_drop:</code>, la IA infiere al instante las recomendaciones de mitigación sugeridas basándose en lecturas masivas de GitHub públicas sobre Hardening de bases de datos similares.</p>
+    </div>
+
+    <!-- Slide 16 -->
+    <div class="slide">
+        <h1>Práctica 3: Generación Asistida de Hardening (Prompting)</h1>
+        <p>Un ingeniero de sistemas moderno debe dominar el <i>Prompt Engineering</i> para acotar la alucinación IA.</p>
+        <div class="box">
+            <p><strong>Mal Prompt:</strong> "Haz un docker de MySQL seguro"</p>
+            <br>
+            <p><strong>Buen Prompt SysAdmin:</strong> "Genera un yaml de Docker Compose para Postgres 14. Excluye escalamiento root, aplica `--cap-drop=ALL` preservando solo `CHOWN`, desactiva el reinicio automático tras tres fallos y asegúrate de no ejecutar el demonio de entrada como PID 1."</p>
+        </div>
+    </div>
+
+    <!-- Slide 17 -->
+    <div class="slide">
+        <h1>El Peligro: Alucinación en IaC y CVEs Zombis</h1>
+        <p>Un modelo de lenguaje genera infraestructura "que luce" correcta, pero no evalúa factibilidad en tiempo real contra versiones de Hardware o parches recien descubiertos.</p>
+        <ul>
+            <li>La IA puede inyectar como dependencia una versión vieja de Nginx conocida por una vulnerabilidad CVE masiva.</li>
+            <li>Puede sugerir configuraciones de Seccomp que usaban sintaxis depreciada en el Kernel Linux 5.4 cuando tú compilas para la versión 6.5+.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 18 -->
+    <div class="slide">
+        <h1>La IA es un Co-Piloto, no un Piloto Automático</h1>
+        <p>Si un desarrollador delega el 100% ciegas confinando a un LLM el acceso de escritura directo a la infraestructura en la nube (AWS/Azure) vía API, el primer modelo que sugiera un `chmod 777` acabativo abrirá la base de datos entera al público en un bucle.</p>
+        <p style="color:var(--highlight); font-weight:bold;">Tú conoces los anillos (Ring 0), las ramificaciones (Namespaces) y el host. La IA no tiene comprensión situacional ética.</p>
+    </div>
+
+    <!-- Slide 19 -->
+    <div class="slide">
+        <h1>Revisión General del Curso (Trazando la Historia)</h1>
+        <ul>
+            <li><strong>Bare-Metal (Inicios):</strong> Trabajábamos con placas controlables por nosotros pero colapsables con un fallo en la memoria Swap (Kernels puros).</li>
+            <li><strong>Máquinas Virtuales (S20):</strong> Aislaron problemas, pero la emulación abarrotaba el disco y destruía eficiencia del Hypervisor.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 20 -->
+    <div class="slide">
+        <h1>Revisión General del Curso (Pt.2)</h1>
+        <ul>
+            <li><strong>Contenedores (S21):</strong> Destruimos a la VM completa, reutilizamos el kernel e independizamos las apps consumiendo MBs en milisegundos.</li>
+            <li><strong>Amenazas y Breakouts (S22):</strong> Esa cercanía al Kernel expuso Ring 0, forzándonos a temer "El escape" vía rootkits de procesos.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 21 -->
+    <div class="slide">
+        <h1>Revisión General del Curso (Pt.3)</h1>
+        <ul>
+            <li><strong>Hardening (S23):</strong> Recuperamos la defensa creando campos de fuerza con LSM (SELinux/AppArmor) y Syscalls (Seccomp), además de aislar permisos SUID.</li>
+            <li><strong>DevOps e IA (S24):</strong> Llevamos esos escudos a Código automatizado YAML. Metimos nuestra propia estación de trabajo allí (DevContainer) y logramos escalar ayudados por Inteligencia Artificial de forma declarativa.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 22 -->
+    <div class="slide">
+        <h1>El Rol del Ingeniero de SO en la era de LLMs</h1>
+        <p>No eres un redactor de código yaml. No necesitas memorizar 800 banderas de Linux o comandos arcanos.</p>
+        <p>Tu rol en una empresa es ser: <strong>El Arquitecto Auditor</strong>.</p>
+        <p>Eres quien mira la salida de la IA generativa, identifica el fallo en capa TCP o en los Namespaces y aplica conocimiento fundacional para asegurar que el sistema no implosione.</p>
+    </div>
+
+    <!-- Slide 23 -->
+    <div class="slide">
+        <h1>La Desaparición del Servidor Manual</h1>
+        <p>El futuro apunta fuertemente hacia "Serverless" y Sistemas Micro-Virtualizados.</p>
+        <p>Incluso el concepto de administrar un Linux subyacente comienza a diluirse al transferirlo a proveedores de nube. Entender que bajo ese mar de nube sigue existiendo un planificador de procesos en silicio te hace infinitamente superior a un programador de "Caja Negra".</p>
+    </div>
+
+    <!-- Slide 24 -->
+    <div class="slide">
+        <h1>Cierre y Entrega de Laboratorios Finales</h1>
+        <div class="box">
+            <h3>Preparación para el Entorno Real</h3>
+            <p>Destruyan el miedo a romper sistemas utilizando Contenedores. Usen copilot responsablemente. No desplieguen nada a la red global que no corra con el Principio de Menor Privilegio.</p>
+        </div>
+    </div>
+
+    <!-- Slide 25 -->
+    <div class="slide">
+        <h1 style="text-align: center; border:0; margin-top:20%">Fin del Curso de Sistemas Operativos</h1>
+        <p style="text-align: center; font-size:40px;">Ustedes son ahora Operadores Conscientes de la Infraestructura.</p>
+        <p style="text-align: center; color: var(--highlight); margin-top:50px;">Mucha suerte en su trayectoria profesional.</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button id="prevBtn" onclick="prevSlide()">Anterior</button>
+        <button id="nextBtn" onclick="nextSlide()">Siguiente</button>
+    </div>
+    <div class="progress-bar" id="progressBar"></div>
+
+</div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const progressBar = document.getElementById('progressBar');
+
+    function updatePresentation() {
+        slides.forEach((slide, index) => {
+            if (index === currentSlide) {
+                slide.classList.add('active');
+            } else {
+                slide.classList.remove('active');
+            }
+        });
+        
+        const progress = ((currentSlide + 1) / slides.length) * 100;
+        progressBar.style.width = progress + '%';
+        
+        document.getElementById('prevBtn').style.opacity = currentSlide === 0 ? '0.5' : '1';
+        document.getElementById('nextBtn').style.opacity = currentSlide === slides.length - 1 ? '0.5' : '1';
+    }
+
+    function nextSlide() {
+        if (currentSlide < slides.length - 1) {
+            currentSlide++;
+            updatePresentation();
+        }
+    }
+
+    function prevSlide() {
+        if (currentSlide > 0) {
+            currentSlide--;
+            updatePresentation();
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    updatePresentation();
+</script>
+</body>
+</html>

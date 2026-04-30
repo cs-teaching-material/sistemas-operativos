@@ -199,21 +199,20 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <div>
 <h2>La Virtualización de Grado Empresarial</h2>
 <ul>
-<li><strong>Ejecución Directa:</strong> El Hypervisor se instala <em>directamente</em> sobre el hardware desnudo, en lugar de instalar Windows o Linux primero.</li>
+<li><strong>Ejecución Directa:</strong> El Hypervisor se instala <em>directamente</em> sobre el hardware desnudo, no requiere instalar Windows o Linux primero.</li>
 <li><strong>Sin SO Intermediario:</strong> Elimina la latencia de pasar por un sistema operativo base. </li>
 <li>El Hypervisor Tipo 1 ES, en esencia, un kernel operativo altamente especializado y minimalista.</li>
 <li><strong>Casos de Uso:</strong> Datacenters, Cloud (AWS, Azure), Servidores corporativos de alta densidad.</li>
 </ul>
 </div>
 <div class="crd">
-<p><strong>Ejemplos Clásicos</strong></p>
+<p><strong>Ejemplos en la Industria</strong></p>
 <ul>
-    <li>VMware ESXi / vSphere.</li>
+    <li>VMware ESXi / vSphere (Líder corporativo).</li>
     <li>Microsoft Hyper-V Server.</li>
     <li>Proxmox VE (KVM basado en Debian).</li>
-    <li>Xen.</li>
 </ul>
-<p class="nt" style="margin-top: 10px;">Poseen máxima eficiencia; no desperdician RAM dibujando GUIs innecesarias localmente.</p>
+<p class="nt" style="margin-top: 10px;">Poseen máxima eficiencia; no desperdician RAM dibujando GUIs o escritorios localmente.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Hypervisor Tipo 1</span><span class="ctr">6 / 25</span></div>
@@ -263,20 +262,20 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <div>
 <h2>Virtualización Doméstica y Desarrollo</h2>
 <ul>
-<li><strong>Con SO Intermediario:</strong> Se instala como una aplicación normal encima de un Sistema Operativo existente (tu Windows, macOS o Linux).</li>
-<li><strong>Sobrecarga (Overhead):</strong> Las instrucciones del Guest pasan por el Hypervisor y luego al SO Host antes de tocar el hardware físico.</li>
-<li>Al depender del SO Host, hereda sus vulnerabilidades y latencias.</li>
-<li><strong>Casos de Uso:</strong> Aulas de clase, laboratorios locales de desarrollo, pruebas de software (Testing).</li>
+<li><strong>Con SO Intermediario:</strong> Se instala como un programa/aplicación normal encima de un Sistema Operativo existente (Windows, macOS o Linux).</li>
+<li><strong>Capa de software (Overhead):</strong> Las instrucciones de la VM deben ser traducidas por el Hypervisor y luego enviadas al Sistema Operativo Host antes de tocar el hardware físico real.</li>
+<li>Al depender del SO Host, se hereda su compatibilidad con drivers como micrófonos o tarjetas de red WiFi.</li>
+<li><strong>Casos de Uso:</strong> Aulas de clase, laboratorios locales de pruebas.</li>
 </ul>
 </div>
 <div class="crd">
-<p><strong>Ejemplos Clásicos</strong></p>
+<p><strong>Ejemplos en Entornos de Prueba</strong></p>
 <ul>
-    <li>Oracle VirtualBox.</li>
-    <li>VMware Workstation Player.</li>
-    <li>Parallels Desktop (macOS).</li>
+    <li>*Oracle VirtualBox* (Software gratuito multiplataforma).</li>
+    <li>*VMware Workstation Player* (Estaciones Windows).</li>
+    <li>*Parallels Desktop* (Habilitador de VMs en macOS).</li>
 </ul>
-<p class="nt" style="margin-top: 10px;">Su ventaja radical es la conveniencia: puedes probar Linux en una ventana mientras mantienes Spotify abierto en tu Windows Host.</p>
+<p class="nt" style="margin-top: 10px;">Su ventaja radical es la conveniencia: permite ejecutar y auditar un Linux encapsulado en una ventana mientras mantienes tu navegador abierto en Windows.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Hypervisor Tipo 2</span><span class="ctr">8 / 25</span></div>
@@ -448,15 +447,15 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <div>
 <h2>Construcción y Límite de Recursos en VM</h2>
 <div class="callout">
-<p><strong>Enunciado:</strong> Crear una configuración inicial segura para un laboratorio en VirtualBox / Hyper-V validando los límites de hardware del Host.</p>
+<p><strong>Enunciado:</strong> Diseñar la asignación de recursos seguros para crear un laboratorio en un Hypervisor local (ej. VirtualBox) partiendo de hardware prestado.</p>
 </div>
 <ol>
-<li>Abrir Task Manager local e inspeccionar (Cores Físicos y RAM total libre).</li>
-<li>Crear una nueva Máquina en Hypervisor (Tipo 2).</li>
-<li>Asignar un máximo del 50% de Cores físicos y 50% de RAM libre al Guest.</li>
-<li>Configurar red tipo NAT y provisionar un Disco Duro VDI de expansión dinámica.</li>
+<li><strong>Inspección de Origen:</strong> Usar el Administrador de Tareas para evaluar núcleos físicos y RAM libre (capacidad real, no teórica).</li>
+<li><strong>Separación Emulada:</strong> En la interfaz de "Nueva Máquina", el programa requerirá reservar estos recursos para el ente virtual a ser creado.</li>
+<li><strong>Regla de Límite (50%):</strong> Asignar estrictamente la mitad (o menos) de los núcleos y RAM.</li>
+<li><strong>Ajustes del Hipervisor:</strong> Fijar el Tipo de Red a NAT (Internet, pero blindado contra ingresos locales) y asignar Disco de Expansión Dinámica.</li>
 </ol>
-<p class="nt" style="margin-top:10px;">Actividad formativa. No evaluativa.</p>
+<p class="nt" style="margin-top:10px;">Ejercicio analítico y demostrativo según previlegios del usuario sobre la máquina de presentación física.</p>
 </div>
 <div class="card" style="display:flex; justify-content:center; align-items:center;">
     <div style="padding: 15px; border:1px solid #ccc; border-radius: 6px; background:#fafafa;">
@@ -564,17 +563,17 @@ Guest Ubuntu Server CLI:
 <div>
 <h2>Ejecución de cambios destructivos</h2>
 <div class="callout">
-<p><strong>Enunciado:</strong> Proteger la infraestructura tomando un punto de restauración, ejecutar un comando de riesgo que destruya la operatividad, y recuperar la funcionalidad con 0 impacto.</p>
+<p><strong>Enunciado:</strong> Proteger la infraestructura tomando un punto de restauración, ejecutar un comando de riesgo que evapore la operatividad, y recuperar la funcionalidad total.</p>
 </div>
 <ol>
-<li>En el entorno Linux, tomar "Snapshot 01 - Limpio".</li>
-<li>Dentro de la VM, como root, eliminar un directorio vital: `rm -rf /usr/bin`.</li>
-<li>Comprobar la incapacidad de la VM de responder, lanzar comandos o reiniciar.</li>
-<li>Apagar la VM y restaurar el "Snapshot 01".</li>
+<li><strong>Estado Seguro:</strong> Confirmar que el entorno Linux arrancó de forma limpia. Se congela su estado tomando el "Snapshot 01 - Limpio".</li>
+<li><strong>Operación de Riesgo:</strong> Como administrador, destruir elementos nativos esenciales: ejecutar recursivamente <code>rm -rf /usr/bin /sbin</code>.</li>
+<li><strong>Pérdida de Sistema:</strong> Comprobar la incapacidad de la VM de encontrar comandos y la muerte súbita (Kernel Panic) en el subsiguiente reinicio empujado.</li>
+<li><strong>Regresión Temporal:</strong> Forzar el apagado, seleccionar la restauración en la lista de gestión, prender y reaparecer vivo.</li>
 </ol>
 </div>
 <div class="cad">
-    <p>La virtualización nos entrega el poder de destruir software para entender su dependencia, garantizando recuperación instantánea.</p>
+    <p>Permite destruir software analíticamente para aprender su relevancia con una garantía total de retorno instantáneo, sin destruir un computador verdadero.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Prueba de resiliencia (Práctica 2)</span><span class="ctr">18 / 25</span></div>
@@ -631,21 +630,25 @@ Guest Ubuntu Server CLI:
 </div>
 </section>
 
-<!-- Slide 21: Multimedia recomendada -->
+<!-- Slide 21: Interfaz de Gestión (Snapshots) -->
 <section class="slide cnt">
 <div class="inn">
-<div class="hd">Recurso de Análisis Visual (External)</div>
-<div class="ct" style="align-items:center;">
-    <div style="width:100%; border-radius: 8px; overflow:hidden; border:1px solid #ccc; background:#fafafa; text-align:center; padding: 20px;">
-        <h2 style="font-size:22px; color:var(--tur); margin-bottom: 15px;">Video Sugerido: "What is Virtualization?"</h2>
-        <div style="width:100%; max-width: 600px; aspect-ratio: 16/9; background:#201F4B; margin: 0 auto; display:flex; align-items:center; justify-content:center; border-radius: 6px;">
-            <!-- Simulación de incrustación segura. -->
-            <p style="color:#fff; font-size:14px; padding: 20px;">[ Espacio para Embed de YouTube - IBM Technology / Red Hat ]<br><br>Recomendado para evidenciar el empaquetado y la revolución financiera que supuso VMware para el Cloud.</p>
-        </div>
-        <p class="nt" style="margin-top:15px;text-align:justify; max-width:800px; margin-left:auto; margin-right:auto;"><strong>Atribución:</strong> Enlazar material técnico avalado desde el aula virtual. Usar documentaciones visuales para exponer a nivel empresarial (Ej: IBM Cloud Education).</p>
-    </div>
+<div class="hd">Operativa de la Interfaz</div>
+<div class="ct tc">
+<div>
+<h2>Dónde y Cómo gestionar Snapshots</h2>
+<ul>
+<li><strong>En VirtualBox:</strong> Se selecciona la máquina virtual en el panel izquierdo. En el gestor de herramientas principal (esquina superior derecha) se cambia de "Detalles" a "Instantáneas" (Snapshots).</li>
+<li>Con el botón de una cámara fotográfica ("Tomar" / "Take"), detienes el tiempo para la virtualización y le das un nombre ("Linux Base Sin Romper").</li>
+<li>Para <strong>Regresar en el tiempo</strong>: Apagas la máquina, vuelves a este menú, la seleccionas y presionas "Restaurar".</li>
+</ul>
 </div>
-<div class="ft"><span class="nt">Complemento de clase</span><span class="ctr">21 / 25</span></div>
+<div class="crd">
+<p><strong>En Hyper-V (Windows) y VMware</strong></p>
+<p>Manejan un árbol genealógico (como ramas de tiempo alternativas). En Windows les llaman "Puntos de control" (Checkpoints). Solo requiere dar clic derecho sobre la máquina en curso y seleccionar la orden directamente en el menú de contexto del anfitrión, sin necesidad de apagar.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Interfaz de Gestión</span><span class="ctr">21 / 25</span></div>
 </div>
 </section>
 
@@ -730,7 +733,7 @@ Guest Ubuntu Server CLI:
 </div>
 <div class="caw">
 <p><strong>Hacia la Sesión 21: Aislamiento a nivel SO</strong></p>
-<p>Mañana abordaremos los "Contenedores" (ej: Docker). En lugar de emular disco, CPU y red con un Kernel invitado, compartiremos el Kernel Local pero enjaulando lógicamente cada servicio.</p>
+<p>En la próxima sesión abordaremos los "Contenedores" (ej: Docker). En lugar de emular disco, CPU y red con un Kernel invitado, compartiremos el Kernel Local pero enjaulando lógicamente cada servicio.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">S20 &rarr; S21</span><span class="ctr">25 / 25</span></div>
