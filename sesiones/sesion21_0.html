@@ -1,541 +1,718 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesión 21: Contenedores y Aislamiento de Procesos</title>
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --text-light: #f8fafc;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.5);
-            --code-bg: #1e293b;
-            --highlight: #22d3ee;
-        }
-
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .presentation-container {
-            width: 100vw;
-            height: 56.25vw;
-            max-height: 100vh;
-            max-width: 177.78vh;
-            position: relative;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-            overflow: hidden;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-        }
-
-        .slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            padding: clamp(20px, 4vw, 60px);
-            box-sizing: border-box;
-        }
-
-        .slide.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        h1 {
-            font-size: clamp(32px, 4.5vw, 70px);
-            color: var(--highlight);
-            margin-bottom: clamp(10px, 2vw, 30px);
-            border-bottom: 2px solid var(--accent);
-            padding-bottom: 15px;
-        }
-
-        h2 {
-            font-size: clamp(24px, 3vw, 50px);
-            color: var(--text-light);
-            margin-bottom: clamp(10px, 1.5vw, 25px);
-        }
-
-        p, li {
-            font-size: clamp(16px, 2.2vw, 35px);
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        ul { margin-left: clamp(20px, 3vw, 40px); }
-
-        .code-block {
-            background-color: var(--code-bg);
-            padding: clamp(15px, 2vw, 30px);
-            border-radius: 8px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: clamp(14px, 1.8vw, 28px);
-            color: #a78bfa;
-            border-left: 5px solid var(--accent);
-            white-space: pre-wrap;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: clamp(10px, 2vw, 30px);
-            right: clamp(10px, 2vw, 30px);
-            z-index: 100;
-        }
-
-        button {
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            padding: clamp(10px, 1.2vw, 20px) clamp(20px, 2.5vw, 40px);
-            font-size: clamp(14px, 1.8vw, 24px);
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
-
-        button:hover {
-            background-color: #2563eb;
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        .progress-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: clamp(3px, 0.5vw, 6px);
-            background-color: var(--highlight);
-            transition: width 0.3s ease;
-            z-index: 99;
-        }
-
-        .diagram-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-grow: 1;
-            margin-top: 20px;
-        }
-
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: clamp(20px, 3vw, 50px);
-            height: 100%;
-        }
-
-        .pulse { animation: pulsar 2s infinite; }
-        @keyframes pulsar { 0% { opacity: 0.7; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0.7; transform: scale(0.98); } }
-        
-        .box { background: rgba(59, 130, 246, 0.1); border: 2px solid var(--accent); padding: 20px; border-radius: 10px; text-align: center; }
-
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SO · S21 · Contenedores y Aislamiento de Procesos</title>
+<style>
+:root{
+--az:#015583;--tur:#05ADBC;--txt:#201F4B;--mu:#6b7280;
+--safe-top-cover:clamp(208px,9vh,128px);
+--safe-left-cover:clamp(585px,5.5vw,110px);
+--safe-right-cover:clamp(28px,3vw,72px);
+--safe-bottom-cover:clamp(54px,6vh,92px);
+--safe-top:clamp(100px,9vh,132px);
+--safe-side:clamp(66px,5.5vw,108px);
+--safe-bottom:clamp(52px,6vh,90px);
+}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+.deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,20px);box-sizing:border-box;}
+.stage{width:min(96vw,calc(90vh*(16/9)));aspect-ratio:16/9;position:relative;}
+.slide{position:absolute;inset:0;display:none;box-shadow:0 12px 36px rgba(0,0,0,.3);overflow:hidden;}
+.slide.active{display:block;}
+.cov{background:url("../img/Portada.png") center/cover no-repeat, #015583;color:#fff;}
+.cnt{background:url("../img/Contenido.png") top left/contain no-repeat,#fff;color:var(--txt);}
+.inn{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom);display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);}
+.cov .inn{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover); justify-content:center;}
+.ct{flex:1;display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);min-height:0;overflow:auto;overflow-x:hidden;}
+.hd{color:var(--tur);font-size:clamp(12px,1.1vw,15px);font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-bottom:2px solid var(--tur);padding-bottom:3px;}
+h1{margin:0;font-size:clamp(26px,3.2vw,44px);line-height:1.08;color:#fff;}
+h2{margin:0;font-size:clamp(18px,2vw,28px);line-height:1.15;color:var(--az);}
+p{margin:0;font-size:clamp(13px,1.2vw,17px);line-height:1.4;}
+li{font-size:clamp(13px,1.2vw,17px);line-height:1.4; margin-bottom: 0.5em;}
+ul,ol{margin:0;padding-left:1.2em;}
+.sub{color:#f7df00;font-weight:800;font-size:clamp(16px,1.7vw,22px);margin-top:8px;}
+.nt{color:var(--mu);font-size:clamp(10px,.95vw,13px);line-height:1.35;}
+.cal{background:#f0f9ff;border-left:5px solid var(--tur);padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.caw{background:#fffbe6;border-left:5px solid #e6a817;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cad{background:#fef2f2;border-left:5px solid #dc2626;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.tc{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(10px,1.4vw,20px);align-items:start;min-height:0;}
+.tce{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.4vw,20px);align-items:start;}
+.crd{background:#f8faff;border:1px solid #dde2f1;border-radius:8px;padding:clamp(8px,.9vw,12px);}
+.cod{font-family:ui-monospace,monospace;font-size:clamp(10px,.9vw,12.5px);line-height:1.5;background:#0b1020;color:#e5e7eb;border-radius:7px;padding:clamp(7px,.9vw,11px);white-space:pre-wrap;border:1px solid #1f2937;max-height:min(36vh,320px);overflow:auto;scrollbar-gutter:stable both-edges;}
+.cm{color:#6b7280;}.cc{color:#7dd3fc;font-weight:bold;}.cs{color:#86efac;}
+.cn{color:#fde68a;}.cf{color:#c4b5fd;}
+.iw{width:100%;border-radius:7px;border:1px solid #dde2f1;background:#fff;display:flex;align-items:center;justify-content:center; overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:clamp(10px,.95vw,13px);}
+th,td{border:1px solid #dde2f1;padding:clamp(4px,.7vw,8px);color:var(--txt);vertical-align:top;}
+th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);letter-spacing:.05em;color:var(--az);}
+.ft{display:flex;justify-content:space-between;align-items:center;padding-top:3px;border-top:1px solid #dde2f1;}
+.cov .ft{border-top:1px solid rgba(255,255,255,.15); margin-top: auto;}
+.ctr{font-weight:800;color:var(--az);font-size:clamp(11px,.95vw,13px);}
+.cov .ctr{color:#e5edf8;}
+.tnv{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;z-index:10;}
+.tnv button{pointer-events:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(221,226,241,.9);background:rgba(255,255,255,.9);color:var(--txt);font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.1);}
+#tnv{opacity:0;transition:.15s;}
+.stage:hover #tnv{opacity:1;}
+@media(hover:none){#tnv{opacity:1;}}
+.sq{opacity:0;transform:translateY(9px);transition:opacity .32s,transform .32s;}
+.sq.vs{opacity:1;transform:translateY(0);}
+</style>
 </head>
 <body>
+<div class="deck"><div class="stage" id="stage">
 
-<div class="presentation-container">
+<section class="slide cov active">
+<div class="inn"><div class="ct" style="justify-content:center;">
+<span class="hd">Sistemas Operativos · Unidad 3</span>
+<h1>Sesión 21</h1>
+<h1>Contenedores y Aislamiento<br>de Procesos</h1>
+<div class="sub">Namespaces · Cgroups · Docker · Inmutabilidad</div>
+<div class="cal" style="max-width:78%;margin-top:clamp(10px,1.4vw,18px);">
+<p style="color:var(--txt);">Transición del overhead (sobrecarga extra de CPU/RAM/disco) de la Máquina Virtual al proceso aislado liviano: cómo el Kernel Linux hace posible la virtualización de software con Namespaces y Cgroups, y por qué Docker convirtió esta tecnología en el estándar industrial.</p>
+</div>
+<p class="nt" style="margin-top:auto;color:#201F4B; font-weight:bold;">&larr; &rarr; navegación · F pantalla completa</p>
+</div>
+<div class="ft"><span class="nt" style="color:#e5edf8;">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">1 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 1 -->
-    <div class="slide active">
-        <h1 style="text-align:center; font-size: 6vw; margin-top: 15%; border: none;">Sesión 21:<br>Contenedores y Aislamiento Logístico</h1>
-        <p style="text-align:center; color: var(--highlight);">De la emulación de hardware a la abstracción de procesos</p>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Propósito técnico de la sesión</div>
+<div class="ct tc">
+<div>
+<h2>Qué dominaremos hoy</h2>
+<ul>
+<li>Distinguir arquitectónicamente una <strong>Máquina Virtual</strong> de un <strong>Contenedor</strong> de software.</li>
+<li>Identificar los dos habilitadores del Kernel Linux: <strong>Namespaces</strong> y <strong>Cgroups</strong>.</li>
+<li>Comprender el modelo <strong>Copy-on-Write</strong> con UnionFS y cómo comparte capas de disco.</li>
+<li>Operar <strong>Docker Engine</strong> con ciclo de vida completo: pull, create, start, stop, rm.</li>
+<li>Construir una imagen propia con <strong>Dockerfile</strong> y correrla localmente de forma reproducible.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Resultado observable</strong></p>
+<p>Al finalizar, el estudiante podrá lanzar contenedores aislados, inspeccionar sus procesos desde el host y explicar con exactitud por qué el PID 1 del contenedor es en realidad el PID 28919 del host real.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Propósito · Sesión 21</span><span class="ctr">2 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 2 -->
-    <div class="slide">
-        <h1>Objetivos de la Sesión</h1>
-        <ul>
-            <li>Comprender el concepto de contenedor como proceso aislado.</li>
-            <li>Diferenciar arquitectónicamente una Máquina Virtual de un Contenedor.</li>
-            <li>Identificar los habilitadores del kernel Linux: <code>Namespaces</code> y <code>Cgroups</code>.</li>
-            <li>Ejecutar entornos aislados utilizando Docker Engine.</li>
-            <li>Fundamentar la transición entre desarrollo e infraestructura inmutable.</li>
-        </ul>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Activación de conocimiento base</div>
+<div class="ct tc">
+<div>
+<h2>El costo heredado de la Virtualización</h2>
+<ul>
+<li>En S20 vimos que una VM virtualiza <strong>hardware completo</strong>: placa, BIOS, CPU, interfaces de red.</li>
+<li>Cada VM carga su propio Kernel, librerías y demonios de fondo, con <strong>gigabytes de overhead</strong>.</li>
+<li>Arrancar una VM toma <strong>minutos</strong>. La RAM asignada es estática e irrecuperable.</li>
+<li>El Hypervisor (software que crea y administra máquinas virtuales) introduce una capa de traducción que puede penalizar hasta un 15% del rendimiento nativo.</li>
+</ul>
+</div>
+<div class="caw">
+<p><strong>La gran pregunta industrial</strong></p>
+<p>Tiene sentido cargar un SO completo con kernel, escritorio y demonios de red solo para ejecutar un servicio MySQL de fondo que ocupa 2 MB de código?</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Puente S20 → S21</span><span class="ctr">3 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 3 -->
-    <div class="slide">
-        <h1>Recapitulación S20: El costo del Hypervisor</h1>
-        <div class="grid-layout">
-            <div>
-                <p>En la sesión anterior, vimos cómo las <strong>Máquinas Virtuales</strong> emulan por completo hardware (placa, BIOS, CPU, red).</p>
-                <p><strong>Limitantes:</strong></p>
-                <ul>
-                    <li>Arranque lento (minutos).</li>
-                    <li>GigaBytes de peso (SO Invitado completo).</li>
-                    <li>Asignación de RAM estática e ineficiente.</li>
-                </ul>
-            </div>
-            <div class="box pulse">
-                <h3>Sobrecarga (Overhead)</h3>
-                <p>Correr un script de 2MB requería arrancar un Windows/Linux virtual de 20GB. ¿Es esto eficiente?</p>
-            </div>
-        </div>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque A · El problema de portabilidad</div>
+<div class="ct tc">
+<div>
+<h2>"En mi máquina sí funciona"</h2>
+<ul>
+<li>El desarrollador compila con GCC 11. El servidor del cliente tiene GCC 8.</li>
+<li>Python 3.12 en local vs Python 3.9 en producción.</li>
+<li>Variables de entorno, rutas absolutas y versiones de dependencias difieren por máquina.</li>
+<li>Resultado: falla crítica al llevar a producción, o al calificar un proyecto universitario.</li>
+</ul>
+</div>
+<div class="cal">
+<p><strong>La solución conceptual</strong></p>
+<p>Empacar <em>la aplicación junto con sus dependencias exactas</em> en una unidad portátil e independiente del ambiente donde se ejecuta.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Portabilidad de ambientes</span><span class="ctr">4 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 4 -->
-    <div class="slide">
-        <h1>El famoso: "En mi máquina sí funciona"</h1>
-        <p>Un problema recurrente en el desarrollo de sistemas operativos, scripts o aplicaciones:</p>
-        <ul>
-            <li>El desarrollador compila con GCC 11.</li>
-            <li>El administrador de TI del servidor usa GCC 8.</li>
-            <li>Las dependencias, variables de entorno y versiones difieren (ej: Python 3.9 vs 3.12).</li>
-            <li>**Resultado:** Falla crítica al llevar a producción (o al calificar un proyecto universitario).</li>
-        </ul>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual A · VM vs Contenedor — Arquitectura comparada</div>
+<div class="ct" style="align-items:stretch;">
+<div class="iw" style="flex:1;padding:20px;flex-direction:row;gap:28px;align-items:stretch;">
+<div style="flex:1;display:flex;flex-direction:column;gap:0;border:2px dashed #6b7280;padding:12px;border-radius:8px;">
+<p style="text-align:center;font-size:clamp(11px,1.1vw,15px);font-weight:800;color:var(--txt);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Máquina Virtual</p>
+<div style="display:flex;gap:8px;margin-bottom:8px;" class="sq">
+<div style="flex:1;border:1px solid #fecaca;border-radius:6px;overflow:hidden;text-align:center;">
+<div style="background:#fef2f2;padding:6px;font-size:clamp(10px,.9vw,12px);">App A</div>
+<div style="background:#fee2e2;padding:5px;font-size:clamp(9px,.8vw,11px);">Libs/Bins</div>
+<div style="background:#dc2626;color:#fff;padding:7px;font-size:clamp(10px,.9vw,12px);font-weight:700;">SO Invitado</div>
+</div>
+<div style="flex:1;border:1px solid #fecaca;border-radius:6px;overflow:hidden;text-align:center;">
+<div style="background:#fef2f2;padding:6px;font-size:clamp(10px,.9vw,12px);">App B</div>
+<div style="background:#fee2e2;padding:5px;font-size:clamp(9px,.8vw,11px);">Libs/Bins</div>
+<div style="background:#dc2626;color:#fff;padding:7px;font-size:clamp(10px,.9vw,12px);font-weight:700;">SO Invitado</div>
+</div>
+</div>
+<div style="background:var(--tur);color:#fff;padding:8px;border-radius:6px;font-weight:700;font-size:clamp(10px,.9vw,13px);text-align:center;margin-bottom:6px;" class="sq">Hypervisor</div>
+<div style="background:#6b7280;color:#fff;padding:10px;border-radius:6px;font-weight:700;font-size:clamp(10px,.9vw,13px);text-align:center;margin-top:auto;" class="sq">Hardware Físico</div>
+</div>
+<div style="display:flex;align-items:center;color:var(--tur);font-size:28px;font-weight:900;">→</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:0;border:2px solid var(--tur);padding:12px;border-radius:8px;background:#f0fdfa;">
+<p style="text-align:center;font-size:clamp(11px,1.1vw,15px);font-weight:800;color:var(--az);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Contenedor</p>
+<div style="display:flex;gap:8px;margin-bottom:8px;" class="sq">
+<div style="flex:1;border:2px solid var(--tur);border-radius:6px;overflow:hidden;text-align:center;">
+<div style="background:#e0f2fe;padding:6px;font-size:clamp(10px,.9vw,12px);">App A</div>
+<div style="background:#bae6fd;padding:5px;font-size:clamp(9px,.8vw,11px);">Libs/Bins</div>
+</div>
+<div style="flex:1;border:2px solid var(--tur);border-radius:6px;overflow:hidden;text-align:center;">
+<div style="background:#e0f2fe;padding:6px;font-size:clamp(10px,.9vw,12px);">App B</div>
+<div style="background:#bae6fd;padding:5px;font-size:clamp(9px,.8vw,11px);">Libs/Bins</div>
+</div>
+</div>
+<div style="background:var(--tur);color:#fff;padding:8px;border-radius:6px;font-weight:700;font-size:clamp(10px,.9vw,13px);text-align:center;margin-bottom:6px;" class="sq">Motor de Contenedores (Docker)</div>
+<div style="background:var(--az);color:#fff;padding:8px;border-radius:6px;font-weight:700;font-size:clamp(10px,.9vw,13px);text-align:center;margin-bottom:6px;" class="sq">Kernel Linux (compartido)</div>
+<div style="background:#6b7280;color:#fff;padding:10px;border-radius:6px;font-weight:700;font-size:clamp(10px,.9vw,13px);text-align:center;margin-top:auto;" class="sq">Hardware Físico</div>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">El SO invitado desaparece: menor overhead y arranque en milisegundos</span><span class="ctr">5 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 5 -->
-    <div class="slide">
-        <h1>La Metáfora del Puerto Marítimo</h1>
-        <p>Antes de 1956, los barcos cargaban café en sacos, autos sueltos, y muebles expuestos. Descargar un puerto tardaba semanas.</p>
-        <p><strong>Solución intermodal: El Contenedor de Acero.</strong></p>
-        <ul>
-            <li>No importa qué hay dentro (café, servidores, o peluches).</li>
-            <li>Todos tienen dimensiones exactas.</li>
-            <li>Las grúas (Docker) y los barcos (Sistemas Operativos) sólo saben levantar contenedores estandarizados.</li>
-        </ul>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque B · Namespaces — Aislamiento visual del Kernel</div>
+<div class="ct tc">
+<div>
+<h2>Los engaños estructurados del Kernel</h2>
+<ul>
+<li><strong>Namespaces</strong> (Linux): particionan recursos del kernel en universos aislados por proceso.</li>
+<li><strong>PID Namespace:</strong> El contenedor cree tener PID 1. En el host real puede ser PID 28919.</li>
+<li><strong>NET Namespace:</strong> Aisla interfaces y puertos; el proceso cree poseer su propia red.</li>
+<li><strong>UTS Namespace:</strong> Permite hostname propio dentro del contenedor.</li>
+<li><strong>MNT Namespace:</strong> Solo ve su propio árbol de montajes.</li>
+<li><strong>IPC Namespace:</strong> Aisla semáforos, memoria compartida y colas de mensajes.</li>
+<li><strong>USER Namespace:</strong> El root interno se mapea a un UID no privilegiado en el host.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Precursor: <code>chroot</code> (Unix 1979)</strong></p>
+<p>Encerraba un proceso en una raíz de filesystem falsa. Solo aislaba archivos; no aislaba procesos, red ni recursos del kernel.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Namespaces</span><span class="ctr">6 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 6 -->
-    <div class="slide">
-        <h1>Máquina Virtual vs Contenedor</h1>
-        <div class="diagram-container">
-            <svg width="100%" height="90%" viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
-                <!-- VM Side -->
-                <rect x="50" y="320" width="400" height="60" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
-                <text x="250" y="355" fill="#f8fafc" text-anchor="middle" font-size="24">Servidor Físico (Hardware)</text>
-                
-                <rect x="50" y="240" width="400" height="60" fill="#3b82f6" fill-opacity="0.3" stroke="#3b82f6"/>
-                <text x="250" y="275" fill="#f8fafc" text-anchor="middle" font-size="24">Hypervisor (Tipo 1 / 2)</text>
-                
-                <rect x="50" y="100" width="180" height="120" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444"/>
-                <text x="140" y="140" fill="#f8fafc" text-anchor="middle" font-size="20">SO Invitado (Guest)</text>
-                <text x="140" y="170" fill="#f8fafc" text-anchor="middle" font-size="16">Librerías (Bins/Libs)</text>
-                <text x="140" y="200" fill="#22d3ee" text-anchor="middle" font-size="20">App A</text>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual B · PID Namespace en acción</div>
+<div class="ct" style="align-items:stretch;">
+<div class="iw" style="flex:1;padding:20px;flex-direction:row;gap:24px;align-items:center;">
+<div style="flex:1;" class="sq">
+<p style="font-size:clamp(11px,1.1vw,14px);font-weight:800;color:var(--az);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Host Linux (realidad)</p>
+<div style="display:flex;flex-direction:column;gap:5px;">
+<div style="background:#f3f6fb;border:1px solid #dde2f1;border-radius:5px;padding:8px;font-size:clamp(11px,1vw,14px);">PID 1 → systemd</div>
+<div style="background:#f3f6fb;border:1px solid #dde2f1;border-radius:5px;padding:8px;font-size:clamp(11px,1vw,14px);">PID 512 → sshd</div>
+<div style="background:#f3f6fb;border:1px solid #dde2f1;border-radius:5px;padding:8px;font-size:clamp(11px,1vw,14px);">PID 1200 → nginx</div>
+<div style="background:#dbeafe;border:2px solid var(--tur);border-radius:5px;padding:8px;font-size:clamp(11px,1vw,14px);font-weight:700;">PID 28919 → bash</div>
+<div style="background:#dbeafe;border:1px solid var(--tur);border-radius:5px;padding:8px;font-size:clamp(11px,1vw,14px);">PID 28920 → ps</div>
+</div>
+</div>
+<div style="font-size:28px;color:var(--tur);font-weight:900;">↔</div>
+<div style="flex:1;background:#f0fdfa;border:2px solid var(--tur);border-radius:8px;padding:14px;" class="sq">
+<p style="font-size:clamp(11px,1.1vw,14px);font-weight:800;color:var(--tur);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Dentro del contenedor (ilusión)</p>
+<div style="display:flex;flex-direction:column;gap:5px;">
+<div style="background:#ccfbf1;border:2px solid var(--tur);border-radius:5px;padding:8px;font-size:clamp(11px,1vw,14px);font-weight:700;">PID 1 → bash</div>
+<div style="background:#f0fdfa;border:1px solid var(--tur);border-radius:5px;padding:8px;font-size:clamp(11px,1vw,14px);">PID 2 → ps</div>
+</div>
+<p class="nt" style="margin-top:10px;">Solo 2 procesos visibles. Los miles del host son invisibles.</p>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">El kernel mantiene un mapa interno PID local ↔ PID global</span><span class="ctr">7 / 25</span></div>
+</div>
+</section>
 
-                <rect x="270" y="100" width="180" height="120" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444"/>
-                <text x="360" y="140" fill="#f8fafc" text-anchor="middle" font-size="20">SO Invitado (Guest)</text>
-                <text x="360" y="170" fill="#f8fafc" text-anchor="middle" font-size="16">Librerías (Bins/Libs)</text>
-                <text x="360" y="200" fill="#22d3ee" text-anchor="middle" font-size="20">App B</text>
-                
-                <text x="250" y="70" fill="#f8fafc" text-anchor="middle" font-size="28" font-weight="bold">Arquitectura Máquina Virtual</text>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque C · Cgroups — Control de recursos</div>
+<div class="ct tc">
+<div>
+<h2>Cuánto puede gastar el proceso</h2>
+<ul>
+<li><strong>Cgroups</strong> (Google 2006): mientras Namespaces dictan qué puede ver, Cgroups dictan <strong>cuánto puede consumir</strong>.</li>
+<li>Restricción de <strong>CPU</strong>: máximo 15% de 1 core.</li>
+<li>Restricción de <strong>RAM</strong>: kill automático si supera 256 MB.</li>
+<li>Restricción de <strong>I/O de disco</strong>: límite de IOPS.</li>
+<li>Restricción de <strong>ancho de banda de red</strong> por contenedor.</li>
+</ul>
+</div>
+<div class="cad">
+<p><strong>Sin Cgroups</strong></p>
+<p>Un contenedor con fuga de memoria podría consumir toda la RAM del host y provocar crash de servicios vecinos en el mismo servidor.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Cgroups</span><span class="ctr">8 / 25</span></div>
+</div>
+</section>
 
-                <!-- Containers Side -->
-                <rect x="550" y="320" width="400" height="60" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
-                <text x="750" y="355" fill="#f8fafc" text-anchor="middle" font-size="24">Servidor Físico (Hardware)</text>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Visual C · Sistema de archivos en capas (UnionFS)</div>
+<div class="ct" style="align-items:stretch;">
+<div class="iw" style="flex:1;padding:20px;flex-direction:row;gap:28px;align-items:center;">
+<div style="width:44%;display:flex;flex-direction:column;gap:6px;text-align:center;" class="sq">
+<div style="background:#fef3c7;border:2px dashed #fcd34d;border-radius:6px;padding:9px;font-size:clamp(10px,.9vw,13px);font-weight:700;">Escritura Contenedor A (CoW)</div>
+<div style="background:#fef3c7;border:2px dashed #fcd34d;border-radius:6px;padding:9px;font-size:clamp(10px,.9vw,13px);font-weight:700;">Escritura Contenedor B (CoW)</div>
+<div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:6px;padding:9px;font-size:clamp(10px,.9vw,13px);font-weight:700;">App + Libs (solo lectura)</div>
+<div style="background:#bfdbfe;border:1px solid var(--az);border-radius:6px;padding:9px;font-size:clamp(10px,.9vw,13px);font-weight:700;">Python 3.12 (solo lectura)</div>
+<div style="background:var(--az);color:#fff;border-radius:6px;padding:11px;font-size:clamp(10px,.9vw,13px);font-weight:700;">Ubuntu 22.04 base compartida</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+<div class="cal sq">
+<p style="font-weight:700;color:var(--az);">Copy-on-Write (CoW)</p>
+<p>10 contenedores con la misma imagen Ubuntu de 70 MB no ocupan 700 MB. Comparten la capa base inmutable.</p>
+</div>
+<div class="crd sq">
+<p style="font-weight:700;">¿Qué es UnionFS?</p>
+<p>Union File System (UnionFS) superpone capas de solo lectura y una capa superior de escritura para cada contenedor. Así se evita duplicar archivos base.</p>
+</div>
+<div class="crd sq">
+<p style="font-weight:700;">Solo cuando escribe</p>
+<p>Si el contenedor modifica un archivo, se copia solo ese archivo a su capa de escritura exclusiva.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">UnionFS · Copy-on-Write · eficiencia de almacenamiento</span><span class="ctr">9 / 25</span></div>
+</div>
+</section>
 
-                <rect x="550" y="240" width="400" height="60" fill="#10b981" fill-opacity="0.3" stroke="#10b981"/>
-                <text x="750" y="275" fill="#f8fafc" text-anchor="middle" font-size="24">Sistema Operativo (Linux OS)</text>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Paradigma · Inmutabilidad (Cattle, not Pets)</div>
+<div class="ct tc">
+<div>
+<h2>Los contenedores están hechos para morir</h2>
+<ul>
+<li><strong>Pets</strong> ("mascotas"): servidores tratados como únicos, con nombre propio y mantenimiento manual durante años.</li>
+<li><strong>Cattle</strong> ("ganado"): instancias intercambiables; si una falla, se reemplaza por otra idéntica desde imagen base.</li>
+<li>El almacenamiento interno del contenedor es <strong>efímero</strong>.</li>
+<li>La persistencia se mueve a <strong>Volumes</strong> externos.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>¿De dónde salen "Pets" y "Cattle"?</strong></p>
+<p>Es una metáfora popularizada en prácticas DevOps y Cloud alrededor de 2012 para cambiar la operación de infraestructura: de servidores "especiales" (pets) a nodos reemplazables (cattle).</p>
+<p class="nt" style="margin-top:6px;">Regla práctica: en modelo <strong>pets</strong> reparas; en modelo <strong>cattle</strong> reemplazas.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Inmutabilidad y descartabilidad</span><span class="ctr">10 / 25</span></div>
+</div>
+</section>
 
-                <rect x="550" y="160" width="400" height="60" fill="#3b82f6" fill-opacity="0.8" stroke="#3b82f6"/>
-                <text x="750" y="195" fill="#f8fafc" text-anchor="middle" font-size="24">Motor de Contenedores (Docker)</text>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Docker Engine (2013)</div>
+<div class="ct tc">
+<div>
+<h2>La unificación industrial</h2>
+<ul>
+<li>Docker no inventó contenedores; unificó Namespaces, Cgroups y <strong>UnionFS</strong> (sistema de capas con CoW visto en la diapositiva 9) bajo una interfaz simple.</li>
+<li><strong>dockerd</strong> es el daemon (proceso en segundo plano) que habla con el Kernel Linux.</li>
+<li>El cliente <strong>docker CLI</strong> envía instrucciones por socket local (canal IPC local, normalmente un socket Unix en <code>/var/run/docker.sock</code>).</li>
+<li>En lugar de decenas de syscalls manuales (llamadas directas al Kernel), un solo comando:</li>
+</ul>
+<div class="cod">$ docker run -d ubuntu</div>
+</div>
+<div class="crd">
+<div class="cod">docker CLI → dockerd → containerd → runc
+                    ↓
+               Kernel Linux
+         (Namespaces + Cgroups)</div>
+<p class="nt" style="margin-top:8px;"><strong>containerd:</strong> gestiona ciclo de vida de contenedores e imágenes. <strong>runc:</strong> runtime de bajo nivel que crea el contenedor usando primitivas del Kernel.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Arquitectura Docker Engine</span><span class="ctr">11 / 25</span></div>
+</div>
+</section>
 
-                <rect x="550" y="50" width="180" height="90" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="2"/>
-                <text x="640" y="80" fill="#f8fafc" text-anchor="middle" font-size="16">Bins/Libs (A)</text>
-                <text x="640" y="115" fill="#22d3ee" text-anchor="middle" font-size="22">App A</text>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Definiciones clave · Imagen vs Contenedor</div>
+<div class="ct tce">
+<div class="crd sq">
+<h2>Imagen (la receta)</h2>
+<ul>
+<li>Archivo <strong>inerte e inmutable</strong>.</li>
+<li>Snapshot comprimido de filesystem en capas.</li>
+<li>Ocupa disco; no consume CPU ni RAM.</li>
+<li>Equivale a una <strong>clase</strong> en POO.</li>
+</ul>
+</div>
+<div class="crd sq">
+<h2>Contenedor (el objeto)</h2>
+<ul>
+<li><strong>Instancia activa</strong> de una imagen.</li>
+<li>Tiene PID real, consume CPU y RAM reales.</li>
+<li>Pueden coexistir muchos desde la misma imagen.</li>
+<li>Muere cuando finaliza su proceso raíz.</li>
+</ul>
+</div>
+</div>
+<div class="ft"><span class="nt">Imagen vs Contenedor</span><span class="ctr">12 / 25</span></div>
+</div>
+</section>
 
-                <rect x="770" y="50" width="180" height="90" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="2"/>
-                <text x="860" y="80" fill="#f8fafc" text-anchor="middle" font-size="16">Bins/Libs (B)</text>
-                <text x="860" y="115" fill="#22d3ee" text-anchor="middle" font-size="22">App B</text>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Dockerfile · Construcción de imagen</div>
+<div class="ct tc">
+<div>
+<h2>Archivo declarativo de build</h2>
+<ul>
+<li>Define sistema base, dependencias, código y comando de arranque.</li>
+<li>Permite builds reproducibles en cualquier host con Docker.</li>
+</ul>
+</div>
+<div>
+<div class="cod"># Dockerfile (completo para demo)
+FROM python:3.12-slim
+WORKDIR /app
+COPY mi_script.py /app/mi_script.py
+RUN useradd -m appuser &amp;&amp; chown -R appuser:appuser /app
+USER appuser
+CMD ["python", "/app/mi_script.py"]
 
-                <text x="750" y="30" fill="#f8fafc" text-anchor="middle" font-size="28" font-weight="bold">Arquitectura Contenedores</text>
-            </svg>
-        </div>
-    </div>
+# mi_script.py
+import platform
+print("Hola desde contenedor")
+print("Python:", platform.python_version())
+print("SO del contenedor:", platform.system())
 
-    <!-- Slide 7 -->
-    <div class="slide">
-        <h1>Anatomía Explicada: Menos peso, más velocidad</h1>
-        <ul>
-            <li><strong>Virtualización de Hardware (VM):</strong> Virtualiza la infraestructura. Cada VM necesita su propio Kernel inútilmente replicado.</li>
-            <li><strong>Virtualización de Software (Contenedor):</strong> Comparten exactamente el mismo Kernel del host.</li>
-            <li><strong>Beneficio:</strong> Arrancar un contenedor tarda milisegundos (lo que tarda ejecutar un proceso común en el SO), consumiendo apenas MegaBytes de almacenamiento.</li>
-        </ul>
-    </div>
+# Ejecución end-to-end
+$ docker build -t demo_s13:1.0 .
+$ docker run --rm demo_s13:1.0</div>
+<p class="nt" style="margin-top:8px;">Resultado esperado: imprime tres líneas (saludo, versión de Python y sistema operativo dentro del contenedor), luego termina y el contenedor se elimina por <code>--rm</code>.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Dockerfile</span><span class="ctr">13 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 8 -->
-    <div class="slide">
-        <h1>Magia Negra del Kernel Linux</h1>
-        <p>Un contenedor NO es un nuevo tipo de tecnología alienígena, ni un emulador escondido. Docker "no crea" el aislamiento por arte de magia.</p>
-        <p>Un contenedor es solamente un proceso nativo del sistema que está <strong>encapsulado y mentido</strong> valiamente por el Kernel utilizando dos características geniales de Linux:</p>
-        <div class="box">
-            <h2 style="color:var(--highlight)">1. Namespaces</h2>
-            <h2 style="color:var(--highlight)">2. Cgroups</h2>
-        </div>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Docker Hub · Registro global</div>
+<div class="ct tc">
+<div>
+<h2>Repositorio de imágenes</h2>
+<ul>
+<li>Análogo a apt, pip o npm, pero para imágenes completas.</li>
+<li>Incluye imágenes oficiales de Ubuntu, Python, MySQL, Nginx y más.</li>
+<li>Si la imagen no existe localmente, Docker la descarga automáticamente.</li>
+</ul>
+</div>
+<div class="cal">
+<div class="cod">$ docker pull python:3.12-slim
+$ docker images</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Docker Hub</span><span class="ctr">14 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 9 -->
-    <div class="slide">
-        <h1>El precursor: chroot() Jails</h1>
-        <p>Mucho antes de Docker (1979 - Unix V7), existía <code>chroot</code> (Change Root).</p>
-        <ul>
-            <li>Permite decirle a un proceso que un directorio (ej. <code>/home/usuario/carcel/</code>) es su verdadero espacio <code>/</code> (Raíz temporal).</li>
-            <li>El proceso atrapado buscará <code>/bin/bash</code> pero en realidad estará leyendo <code>/home/usuario/carcel/bin/bash</code>.</li>
-            <li><strong>Fallo de chroot:</strong> Solo encapsulaba el sistema de archivos (Filesystem). El proceso atrapado aún veía todos los procesos usando el comando <code>ps</code>.</li>
-        </ul>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase · 1</div>
+<div class="ct tc">
+<div>
+<h2>Hola Mundo contenedorizado</h2>
+<div class="cal" style="margin-bottom:10px;">
+<p><strong>Enunciado:</strong> ejecutar <code>hello-world</code> y analizar PULL, CREATE, START y EXIT.</p>
+</div>
+<div class="cod">$ docker run hello-world</div>
+</div>
+<div class="crd">
+<p><strong>Verificación previa del daemon</strong></p>
+<div class="cod">$ docker info</div>
+<p class="nt" style="margin-top:8px;"><strong>Resultado esperado:</strong> aparecen datos de Server (versión, storage driver, runtime). Si muestra error de conexión, el daemon no está activo.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Práctica 1</span><span class="ctr">15 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 10 -->
-    <div class="slide">
-        <h1>1. Namespaces (Aislamiento visual lógico)</h1>
-        <p>Incorporados a Linux en 2002. Son engaños estructurados que limitan lo que un proceso PUEDE VER:</p>
-        <ul>
-            <li><strong>PID:</strong> Espacios de nombres de procesos. El contenedor cree tener el PID 1, pero en el host real es el PID 14932.</li>
-            <li><strong>NET:</strong> Subsistema de red. Tarjetas y puertos empaquetados. (El contenedor cree ser el único dueño del puerto 80).</li>
-            <li><strong>UTS:</strong> Permite que el proceso "crea" que el sistema tiene otro <i>Hostname</i> paralelo.</li>
-            <li><strong>MNT y USER:</strong> Aísla montajes y Mapea al usuario Root local a un usuario común en el Host real.</li>
-        </ul>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Solución guiada · Práctica 1</div>
+<div class="ct tc">
+<div>
+<h2>Las 4 fases del ciclo</h2>
+<ol>
+<li><strong>PULL:</strong> descarga si no existe localmente.</li>
+<li><strong>CREATE:</strong> crea cgroups y namespaces.</li>
+<li><strong>START:</strong> ejecuta el proceso raíz.</li>
+<li><strong>EXIT:</strong> muere al terminar el proceso raíz.</li>
+</ol>
+</div>
+<div class="crd">
+<p><strong>Observación clave</strong></p>
+<p>Un contenedor vive solo mientras su proceso raíz esté vivo.</p>
+<p class="nt" style="margin-top:8px;"><strong>Resultado esperado del ejemplo:</strong> en la salida de <code>hello-world</code> se observan mensajes equivalentes a pull, create, run y salida final del proceso. Luego <code>docker ps</code> no lo lista activo y <code>docker ps -a</code> sí lo muestra como terminado.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Ciclo de vida</span><span class="ctr">16 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 11 -->
-    <div class="slide">
-        <h1>2. Cgroups (Control Groups)</h1>
-        <p>Desarrollados por Google (2006). Mientras los Namespaces dictan <i>qué puede ver</i> el proceso, los Cgroups dictan <strong>cuánto puede gastar</strong>.</p>
-        <ul>
-            <li>Limitan recursos estrictos físicos.</li>
-            <li>Restricción de CPU (ej: máximo el 15% de 1 solo Core).</li>
-            <li>Restricción de RAM (ej: kill-o-matic automático si supera 256MB).</li>
-            <li>Restringir I/O en disco.</li>
-        </ul>
-        <p>Sin Cgroups, un contenedor infinito con fallo podría devorar el CPU del anfitrión. (Problema visto en Sesión 20).</p>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase · 2</div>
+<div class="ct tc">
+<div>
+<h2>Aislamiento PID</h2>
+<div class="cod">$ docker run -it --rm --name demo_pid ubuntu:22.04 bash
+root@abc123:/# apt-get update &amp;&amp; apt-get install -y procps
+root@abc123:/# ps -eo pid,comm
+root@abc123:/# echo $$</div>
+<p class="nt" style="margin-top:8px;"><strong>Salida esperada mínima:</strong> en <code>ps -eo pid,comm</code> verás pocos procesos (normalmente PID 1 bash). <code>echo $$</code> devuelve el PID del shell dentro del contenedor.</p>
+</div>
+<div class="crd">
+<p><strong>Resultado esperado</strong></p>
+<p>Se ven pocos procesos (bash y ps); el valor de <code>echo $$</code> en bash suele ser 1 dentro del namespace del contenedor.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Práctica 2 · PID namespace</span><span class="ctr">17 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 12 -->
-    <div class="slide">
-        <h1>Sistema de Archivos en Capas (UnionFS)</h1>
-        <p>¿Qué pasa si 10 contenedores están corriendo la imagen de Ubuntu que pesa 70MB? ¿Ocupan 700MB de disco?</p>
-        <p><strong>NO. Ocupan ~70MB totales en conjunto.</strong></p>
-        <ul>
-            <li>Mecanismo <strong>Copy-on-Write (CoW)</strong>.</li>
-            <li>Todos leen la misma capa base inmutable "Ubuntu".</li>
-            <li>Solo si un contenedor desea escribir un archivo <i>nuevo</i>, se le otorga una capita fina temporal solo para él.</li>
-        </ul>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Solución guiada · Práctica 2</div>
+<div class="ct tc">
+<div>
+<h2>Verificación desde el host</h2>
+<div class="cod"># En una segunda terminal del host (sin cerrar demo_pid)
+$ docker inspect -f '{{.State.Pid}}' demo_pid
+28919
 
-    <!-- Slide 13 -->
-    <div class="slide">
-        <h1>Inmutabilidad</h1>
-        <p>Los contenedores están hechos para <strong>morir</strong>.</p>
-        <p>En el paradigma de Servidores (Pets/Mascotas): Cuidadamente mantenemos el servidor web configurándolo con amor año tras año.</p>
-        <p>En el paradigma Contenedores (Cattle/Ganado): Si algo falla, el contenedor se elimina, muere en medio segundo y se orquesta uno idéntico e impecable. El almacenamiento interno era efímero, se borra.</p>
-    </div>
+$ ps -fp 28919
 
-    <!-- Slide 14 -->
-    <div class="slide">
-        <h1>Docker Engine</h1>
-        <p>Lanzado en 2013, Docker no inventó los contenedores, pero creó el ecosistema que lo hizo usable para programadores, uniendo Namespaces, Cgroups y UnionFS bajo comandos muy simples.</p>
-        <div class="code-block">
-# En vez de 47 líneas de código en C para separar namespaces:
-$ docker run -d ubuntu
-        </div>
-        <p>El "Docker Daemon" (dockerd) es el servicio de fondo que habla directamente con el Kernel de su sistema operativo.</p>
-    </div>
+$ docker top demo_pid</div>
+<p class="nt" style="margin-top:8px;"><strong>Salida esperada mínima:</strong> <code>docker inspect</code> retorna un PID numérico; <code>ps -fp PID</code> muestra el proceso real en host; <code>docker top</code> lista procesos del contenedor.</p>
+</div>
+<div class="crd">
+<p><strong>Confirmación</strong></p>
+<p>El PID 1 visto dentro del contenedor corresponde a un PID alto en el host real (por ejemplo 28919). El aislamiento es de visibilidad, no de existencia física de procesos.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Mapa PID local ↔ global</span><span class="ctr">18 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 15 -->
-    <div class="slide">
-        <h1>Imágenes y Contenedores (Clase vs Objeto)</h1>
-        <div class="grid-layout">
-            <div>
-                <h3>La Imagen (La Receta / Clase)</h3>
-                <p>Archivo inerte inmutable, código preconfigurado y empaquetado (Ej. "Imagen de MySQL"). Solo ocupa espacio.</p>
-            </div>
-            <div>
-                <h3>El Contenedor (El Pastel / Objeto)</h3>
-                <p>Una <i>instancia</i> en ejecución de la Imagen. Tiene un PID, consume CPU y hace magia. Puedes lanzar N contenedores basándonos en la misma Imagen.</p>
-            </div>
-        </div>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase · 3</div>
+<div class="ct tc">
+<div>
+<h2>Construir y ejecutar imagen propia</h2>
+<ol>
+<li>Crear carpeta de proyecto.</li>
+<li>Crear <code>mi_script.py</code>.</li>
+<li>Crear <code>Dockerfile</code>.</li>
+<li>Construir: <code>docker build -t mi_app .</code></li>
+<li>Ejecutar: <code>docker run --rm mi_app</code></li>
+</ol>
+</div>
+<div class="crd">
+<p><strong>Entregable</strong></p>
+<p>Salida visible del script dentro del contenedor.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Práctica 3 · Dockerfile</span><span class="ctr">19 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 15.5 (New) -->
-    <div class="slide">
-        <h1>Construyendo la Imagen: El Dockerfile</h1>
-        <p>¿Cómo creamos nuestra propia "Receta"? A través de un archivo declarativo llamado <code>Dockerfile</code> que automatiza la instalación del SO base y nuestras dependencias:</p>
-        <div class="code-block">
-# 1. Definir el SO base (Imagen oficial)
-FROM ubuntu:22.04
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Comandos esenciales</div>
+<div class="ct">
+<table>
+<thead>
+<tr><th>Comando</th><th>Acción</th><th>Observación</th></tr>
+</thead>
+<tbody>
+<tr><td><code>docker ps</code></td><td>Contenedores en ejecución</td><td>Solo activos</td></tr>
+<tr><td><code>docker ps -a</code></td><td>Todos</td><td>Incluye detenidos</td></tr>
+<tr><td><code>docker images</code></td><td>Imágenes locales</td><td>Consumo en disco</td></tr>
+<tr><td><code>docker stop [ID]</code></td><td>Detener contenedor</td><td>SIGTERM</td></tr>
+<tr><td><code>docker rm [ID]</code></td><td>Eliminar contenedor</td><td>No borra imagen</td></tr>
+<tr><td><code>docker logs [ID]</code></td><td>Ver salida</td><td>Diagnóstico base</td></tr>
+<tr><td><code>docker exec -it [ID] bash</code></td><td>Entrar al contenedor</td><td>Sin reiniciar</td></tr>
+</tbody>
+</table>
+</div>
+<div class="ft"><span class="nt">Ciclo de vida operativo</span><span class="ctr">20 / 25</span></div>
+</div>
+</section>
 
-# 2. Instalar dependencias dentro de la imagen
-RUN apt-get update && apt-get install -y python3
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Errores comunes y troubleshooting</div>
+<div class="ct tc">
+<div>
+<h2>Fallas frecuentes</h2>
+<ul>
+<li>Arranca y muere: el proceso raíz falló.</li>
+<li>Puerto ocupado: remapear con <code>-p 8080:80</code>.</li>
+<li>Permission denied en volumen: revisar permisos o SELinux (módulo de seguridad obligatoria de Linux).</li>
+<li>No conecta al daemon: iniciar servicio docker (daemon = proceso de fondo).</li>
+</ul>
+</div>
+<div class="cal">
+<p><strong>Regla</strong></p>
+<p>Siempre revisar primero <code>docker logs [ID]</code>.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Diagnóstico operativo</span><span class="ctr">21 / 25</span></div>
+</div>
+</section>
 
-# 3. Copiar nuestro código al interior
-COPY mi_script.py /app/
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Docker en Windows y macOS</div>
+<div class="ct tc">
+<div>
+<h2>Docker requiere Kernel Linux</h2>
+<ul>
+<li>En Windows: <strong>WSL2</strong> provee un Kernel Linux real sobre Hyper-V (hipervisor de Microsoft).</li>
+<li>En macOS: <strong>HyperKit</strong> o Virtualization.framework (motor de virtualización de Apple) proveen una VM Linux mínima.</li>
+<li>El usuario usa Docker CLI igual; la VM interna queda transparente.</li>
+<li>Implicación técnica: el aislamiento del contenedor sigue dependiendo del Kernel Linux, aunque tu host sea Windows o macOS.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Hibridación</strong></p>
+<p>VM liviana para proveer kernel + contenedores para aislar apps. Se conserva la velocidad de arranque del contenedor, pero con una capa mínima de virtualización de soporte.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Cross-platform</span><span class="ctr">22 / 25</span></div>
+</div>
+</section>
 
-# 4. Decirle al contenedor qué ejecutar al nacer
-CMD ["python3", "/app/mi_script.py"]
-        </div>
-        <p style="margin-top: 15px; font-size: clamp(14px, 1.8vw, 24px);">Compilarla: <code>docker build -t mi_app_python .</code></p>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Síntesis técnica final</div>
+<div class="ct tc">
+<div>
+<h2>Ecuación del contenedor</h2>
+<ul>
+<li>Contenedor = proceso nativo aislado que comparte Kernel con el host.</li>
+<li><strong>Namespaces</strong>: controlan visibilidad (PID, red, montajes, hostname, IPC, usuarios).</li>
+<li><strong>Cgroups</strong>: controlan consumo (CPU, memoria, disco y red).</li>
+<li><strong>UnionFS + CoW</strong>: capas compartidas y escritura diferencial eficiente.</li>
+<li><strong>Inmutabilidad</strong>: reemplazar en vez de reparar instancias dañadas.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Fórmula</strong></p>
+<p>Contenedor = chroot + Namespaces + Cgroups + UnionFS</p>
+<p class="nt" style="margin-top:6px;">chroot fue el punto de partida histórico, pero Docker depende principalmente de Namespaces, Cgroups y el sistema de capas.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Resumen</span><span class="ctr">23 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 16 -->
-    <div class="slide">
-        <h1>Docker Hub (El registro global)</h1>
-        <p>Sistemas como `apt`, `yum` o incluso `pip` dependen de un repositorio centralizado.</p>
-        <p><strong>Docker Hub:</strong> Un registro global público. Uno solo necesita escribir un comando, y Docker buscará allí el paquete estandarizado. Contiene imágenes oficiales mantenidas por Python, Ubuntu, RedHat, etc.</p>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Puente a la Sesión 22</div>
+<div class="ct tc">
+<div>
+<h2>La ilusión de invulnerabilidad</h2>
+<ul>
+<li>El contenedor comparte kernel con el host.</li>
+<li>Un 0-day de kernel (vulnerabilidad sin parche disponible) puede romper el aislamiento.</li>
+<li>Correr como root aumenta el riesgo de escape.</li>
+<li>Montajes sensibles (<code>/var/run/docker.sock</code>: control total del daemon; <code>/proc</code>: vista profunda del sistema; <code>--privileged</code>: concede casi todas las capacidades) amplían la superficie de ataque.</li>
+</ul>
+</div>
+<div class="caw">
+<p><strong>S22:</strong> amenazas, escape de contenedores y hardening con seccomp/AppArmor.</p>
+<p class="nt" style="margin-top:6px;color:#92400e;"><strong>seccomp</strong> filtra syscalls permitidas; <strong>AppArmor</strong> restringe accesos del proceso por perfil. También veremos mínimo privilegio, <strong>rootless containers</strong> (sin root real en host) y capacidades Linux (<code>--cap-drop</code> elimina privilegios específicos).</p>
+</div>
+</div>
+<div class="ft"><span class="nt">S21 → S22</span><span class="ctr">24 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 17 -->
-    <div class="slide">
-        <h1>Práctica 1: Hola Mundo Intercelular</h1>
-        <p>Vamos a generar el proceso aislado más rápido e históricamente usado en la ingeniería.</p>
-        <div class="code-block">
-# Levantar una terminal local. Ejecutar:
-$ docker run hello-world
-        </div>
-        <p><strong>Si el motor funciona, este comando desencadena 4 fases que analizaremos.</strong></p>
-    </div>
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Cierre de la sesión</div>
+<div class="ct tc">
+<div>
+<h2>Repaso clave</h2>
+<ul>
+<li>Diferencia VM vs Contenedor.</li>
+<li>Qué hace PID Namespace y qué hace Cgroup.</li>
+<li>Por qué CoW ahorra almacenamiento.</li>
+<li>Por qué Docker en Windows necesita WSL2.</li>
+</ul>
+</div>
+<div class="cal">
+<p><strong>Evidencia sugerida</strong></p>
+<p>Capturas de <code>docker run hello-world</code> y <code>ps aux</code> dentro de contenedor.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">25 / 25</span></div>
+</div>
+</section>
 
-    <!-- Slide 18 -->
-    <div class="slide">
-        <h1>¿Qué ocurrió realmente? (Análisis)</h1>
-        <ol>
-            <li><strong>PULL:</strong> Como el host local no tenía <code>hello-world</code>, el daemon lo descargó mágicamente desde Docker Hub.</li>
-            <li><strong>CREATE:</strong> Crea un nuevo contenedor (cáscara de cgroups/namespaces) preparándolo.</li>
-            <li><strong>START:</strong> El demonio activa el contenedor. Ejecuta el código preestablecido local (Imprimir un gran hola en texto).</li>
-            <li><strong>EXIT:</strong> Como el programa terminó su trabajo de impresión, el proceso muere. <strong>Un contenedor solo vive mientras su proceso raíz esté vivo.</strong></li>
-        </ol>
-    </div>
-
-    <!-- Slide 19 -->
-    <div class="slide">
-        <h1>Práctica 2: Aislamiento Demotrado (PID namespace)</h1>
-        <p>Ejecutemos un contenedor Ubuntu de modo iteractivo que se auto-destruya al salir:</p>
-        <div class="code-block">
-$ docker run -it --rm ubuntu bash
-# Entrarás a un prompt root@<hash>:/#
-# Observa sus procesos adentro:
-$ su -c 'apt update && apt install procps -y && ps aux'
-        </div>
-        <p><strong>Resultado:</strong> Solo verá 2 procesos adentro (bash y ps). El PID 1 es "bash". Su aislamiento visual funciona implacablemente.</p>
-    </div>
-
-    <!-- Slide 20 -->
-    <div class="slide">
-        <h1>Práctica 3: Inspección desde el Anfitrión (Host)</h1>
-        <p>No cierres la terminal del <i>Slide anterior</i>. Abre OTRA terminal paralela (en el host físico real).</p>
-        <div class="code-block">
-# Desde tu equipo principal:
-$ ps aux | grep bash
-        </div>
-        <p>Notarás que el proceso de "bash" del contenedor sí aparece listado en tu HOST bajo un número PID enorme (ej: 28919). <strong>El contendor le está mintiendo al proceso asilado dándole el número 1.</strong></p>
-    </div>
-
-    <!-- Slide 21 -->
-    <div class="slide">
-        <h1>Ciclo de Vida y Comandos Esenciales</h1>
-        <ul>
-            <li><code>docker ps</code> : Muestra los contenedores en ejecución.</li>
-            <li><code>docker ps -a</code> : Muestra contenedores dormidos o muertos.</li>
-            <li><code>docker images</code> : Listar moldes/plantillas inmutables (Pesan en disco!).</li>
-            <li><code>docker stop [ID]</code> : Detenemos amablemente el proceso aislado principal.</li>
-            <li><code>docker rm [ID]</code> : Desechamos el contendor para siempre.</li>
-        </ul>
-    </div>
-
-    <!-- Slide 22 -->
-    <div class="slide">
-        <h1>Mito: ¿"Docker es solo para Desarrollo Web"?</h1>
-        <p>Falso. Creado en GO, es una de las herramientas top para Sistemas Operativos:</p>
-        <ul>
-            <li><strong>Pruebas de scripts Bash/Kernel:</strong> Creas contenedores efímeros Alpine-Linux sin dañar el host.</li>
-            <li><strong>Compilación Múltiple:</strong> Puedes compilar un binario C++ en arquitectura CentOS antigua solo ejecutando un container CentOS.</li>
-            <li><strong>Networking virtual hiper-escalable.</strong> (Los vSwitches Docker manejan rutas BGP).</li>
-        </ul>
-    </div>
-
-    <!-- Slide 23 -->
-    <div class="slide">
-        <h1>Sistemas Windows vs Mac vs Linux</h1>
-        <p>Docker requiere el Kernel LINUX. ¿Cómo funciona en Windows o macOS de forma local?</p>
-        <p>Respuesta: <strong>WSL2 (Windows Subsystem for Linux) o HyperKit (Mac).</strong></p>
-        <p>Actúan como mini-Hypervisors invisibles con virtualización de disco profundo, dándote un kernel falso para que dockerd opere detrás. (La hibridación definitiva entre VM y Container).</p>
-    </div>
-
-    <!-- Slide 24 -->
-    <div class="slide">
-        <h1>La Ilusión de la Invulnerabilidad (El Puente a S22)</h1>
-        <p>El contenedor es una jaula dorada... hasta que el tigre encuentra que la reja cede.</p>
-        <p>Ya que el contendor comparte de forma real el Kernel raíz del sistema Host, si un binario comprometido tiene los privilegios adecuados y halla una vulnerabilidad 0-DAY en Linux, puede reventar el Namespace y ejecutar malware en la base real.</p>
-        <h2 style="color:var(--highlight); margin-top:20px;">Próxima parada: Amenazas al Sistema y Pruebas de Escape.</h2>
-    </div>
-
-    <!-- Slide 25 -->
-    <div class="slide">
-        <h1>Cierre de la Sesión</h1>
-        <div class="box pulse" style="margin-bottom: 20px;">
-            <h3>La estandarización</h3>
-            <p>El empacado atómico de procesos nos previene el colapso ambiental que generan las VM y empujan la inmutabilidad de la estructura actual tecnológica (Nube).</p>
-        </div>
-        <p>Repaso pendiente para examen: Entender Namespaces, Cgroups, diferencia con Virtualización base tipo-2, y el ciclo de vida local.</p>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls">
-        <button id="prevBtn" onclick="prevSlide()">Anterior</button>
-        <button id="nextBtn" onclick="nextSlide()">Siguiente</button>
-    </div>
-    <div class="progress-bar" id="progressBar"></div>
-
+<div id="tnv" class="tnv">
+<button id="pb">&lt;</button>
+<button id="nb">&gt;</button>
 </div>
 
+</div></div>
 <script>
-    let currentSlide = 0;
-    const slides = document.querySelectorAll('.slide');
-    const progressBar = document.getElementById('progressBar');
-
-    function updatePresentation() {
-        slides.forEach((slide, index) => {
-            if (index === currentSlide) {
-                slide.classList.add('active');
-            } else {
-                slide.classList.remove('active');
-            }
-        });
-        
-        const progress = ((currentSlide + 1) / slides.length) * 100;
-        progressBar.style.width = progress + '%';
-        
-        document.getElementById('prevBtn').style.opacity = currentSlide === 0 ? '0.5' : '1';
-        document.getElementById('nextBtn').style.opacity = currentSlide === slides.length - 1 ? '0.5' : '1';
-    }
-
-    function nextSlide() {
-        if (currentSlide < slides.length - 1) {
-            currentSlide++;
-            updatePresentation();
-        }
-    }
-
-    function prevSlide() {
-        if (currentSlide > 0) {
-            currentSlide--;
-            updatePresentation();
-        }
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
-        if (e.key === 'ArrowLeft') prevSlide();
-    });
-
-    updatePresentation();
+const tg=document.getElementById("stage"),sl=document.querySelectorAll(".slide");
+let ci=0;
+function sw(n){
+sl[ci].classList.remove("active");
+ci=(n+sl.length)%sl.length;
+sl[ci].classList.add("active");
+const s=sl[ci].querySelectorAll(".sq");
+s.forEach(x=>x.classList.remove("vs"));
+let t=0; s.forEach(x=>{setTimeout(()=>x.classList.add("vs"),t); t+=200;});
+}
+document.getElementById("pb").onclick=(e)=>{e.stopPropagation();sw(ci-1);};
+document.getElementById("nb").onclick=(e)=>{e.stopPropagation();sw(ci+1);};
+document.addEventListener("keydown",e=>{
+if(e.key==="ArrowRight"||e.key==="Space"||e.key==="Enter") {e.preventDefault(); sw(ci+1);}
+else if(e.key==="ArrowLeft") {e.preventDefault(); sw(ci-1);}
+else if(e.key==="f") {
+if(!document.fullscreenElement) tg.requestFullscreen().catch(()=>{});
+else document.exitFullscreen();
+}
+});
+let ts=0;
+document.addEventListener("touchstart",e=>{ts=e.changedTouches[0].screenX;});
+document.addEventListener("touchend",e=>{
+let te=e.changedTouches[0].screenX;
+if(ts-te>40) sw(ci+1); else if(te-ts>40) sw(ci-1);
+});
+sw(0);
 </script>
 </body>
 </html>
