@@ -270,29 +270,30 @@ th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);l
 <section class="slide cnt">
 <div class="inn">
 <div class="hd">Visual C · Sistema de archivos en capas (UnionFS)</div>
-<div class="ct" style="align-items:stretch;">
-<div class="iw" style="flex:1;padding:20px;flex-direction:row;gap:28px;align-items:center;">
-<div style="width:44%;display:flex;flex-direction:column;gap:6px;text-align:center;" class="sq">
-<div style="background:#fef3c7;border:2px dashed #fcd34d;border-radius:6px;padding:9px;font-size:clamp(10px,.9vw,13px);font-weight:700;">Escritura Contenedor A (CoW)</div>
-<div style="background:#fef3c7;border:2px dashed #fcd34d;border-radius:6px;padding:9px;font-size:clamp(10px,.9vw,13px);font-weight:700;">Escritura Contenedor B (CoW)</div>
-<div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:6px;padding:9px;font-size:clamp(10px,.9vw,13px);font-weight:700;">App + Libs (solo lectura)</div>
-<div style="background:#bfdbfe;border:1px solid var(--az);border-radius:6px;padding:9px;font-size:clamp(10px,.9vw,13px);font-weight:700;">Python 3.12 (solo lectura)</div>
-<div style="background:var(--az);color:#fff;border-radius:6px;padding:11px;font-size:clamp(10px,.9vw,13px);font-weight:700;">Ubuntu 22.04 base compartida</div>
-</div>
-<div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+<div class="ct tc">
+<div style="display:flex;flex-direction:column;gap:clamp(8px,.9vw,12px);">
 <div class="cal sq">
 <p style="font-weight:700;color:var(--az);">Copy-on-Write (CoW)</p>
 <p>10 contenedores con la misma imagen Ubuntu de 70 MB no ocupan 700 MB. Comparten la capa base inmutable.</p>
 </div>
 <div class="crd sq">
 <p style="font-weight:700;">¿Qué es UnionFS?</p>
-<p>Union File System (UnionFS) superpone capas de solo lectura y una capa superior de escritura para cada contenedor. Así se evita duplicar archivos base.</p>
+<p>Superpone capas de solo lectura y una capa de escritura exclusiva por contenedor. No se duplican archivos base.</p>
 </div>
 <div class="crd sq">
 <p style="font-weight:700;">Solo cuando escribe</p>
-<p>Si el contenedor modifica un archivo, se copia solo ese archivo a su capa de escritura exclusiva.</p>
+<p>Si el contenedor modifica un archivo, se copia <em>solo ese archivo</em> a su capa privada.</p>
 </div>
 </div>
+<div style="display:flex;flex-direction:column;gap:8px;">
+<video id="unionfs-video"
+  src="../videos/s21_unionfs/renders/s21_unionfs_2026-05-07_22-13-56.mp4"
+  controls
+  loop
+  style="width:100%;border-radius:8px;border:2px solid var(--tur);background:#000;display:block;"
+  onloadedmetadata="this.playbackRate=0.25;"
+></video>
+<p class="nt" style="text-align:center;">▶ Video explicativo · UnionFS &amp; Copy-on-Write (~15s)</p>
 </div>
 </div>
 <div class="ft"><span class="nt">UnionFS · Copy-on-Write · eficiencia de almacenamiento</span><span class="ctr">9 / 25</span></div>
@@ -442,24 +443,24 @@ $ docker run --rm demo_s13:1.0</div>
 
 <section class="slide cnt">
 <div class="inn">
-<div class="hd">Docker Hub · Registro y Anatomía de Imágenes</div>
+<div class="hd">Docker Hub · El Repositorio Global</div>
 <div class="ct tc">
 <div>
-<h2>Distribución de artefactos inmutables</h2>
+<h2>Compartiendo nuestras imágenes</h2>
 <ul>
-<li>Docker Hub no solo almacena archivos, actúa como un <strong>Container Registry</strong>: gestiona manifiestos JSON que apuntan a blobs (capas o <em>layers</em>), verificados por hashes SHA256 (<em>digests</em>) para prevenir manipulación.</li>
-<li>Una <strong>imagen</strong> como tal no viaja entera; lo que viaja es su lista de capas. Si otras entidades requieren capas (ej. un OS rootfs común), solo se transmiten las capas diferenciales (deduplicación por red y disco).</li>
-<li><strong>Anatomía del Naming (Naming Scheme):</strong><br> Formato: <code>[registro:puerto/][usuario/proyecto:]repositorio[:tag][@digest]</code><br>
-Ej: <code>docker.io/library/python:3.12-slim@sha256:abc...</code></li>
-<li>Imágenes base recomendadas: <code>-alpine</code> (extremadamente reducidas basadas en Alpine Linux), <code>-slim</code> (versión mínima de Debian/Ubuntu). Nunca usar <code>latest</code> en producción por impredecibilidad mutante.</li>
+<li>Docker Hub funciona igual que GitHub, pero en lugar de código fuente puro, almacena <strong>entornos completos</strong> (imágenes).</li>
+<li>Cuando decimos <code>python:3.12-slim</code>, Docker entiende: <em>"Descarga la imagen oficial de Python, versión 3.12, reducida (slim)"</em>.</li>
+<li>Gracias a <strong>UnionFS</strong>, si descargas varias imágenes que usan la misma base (ejemplo, Ubuntu), la capa base <strong>no se duplica</strong> en tu disco.</li>
+<li>El sistema compara las capas que ya tienes y solo descarga las diferencias.</li>
 </ul>
 </div>
 <div class="cal">
-<div class="cod"># Observa las capas involucradas en una imagen
-$ docker image inspect python:3.12-slim --format='{{.RootFS.Layers}}'
-# Buscar imágenes desde terminal
-$ docker search mysql --filter "is-official=true"</div>
-<p class="nt" style="margin-top:8px;">Al realizar <code>pull</code> notarás que descarga múltiples IDs (Hashes). Esas son las capas. Si ya tienes esa versión base de Debian descargada en tu PC en ese momento, Docker omitirá esa capa y solo descargará las relativas a Python.</p>
+<div class="cod"># Ver las imágenes locales y su tamaño
+$ docker images
+
+# Descargar una imagen sin arrancar un contenedor
+$ docker pull ubuntu:22.04</div>
+<p class="nt" style="margin-top:8px;">Siempre intenta usar bases oficiales (como <code>python</code> o <code>node</code>) en lugar de instalar los lenguajes manualmente sobre distribuciones genéricas. Esto ahorra tiempo, mejora la seguridad y reduce fallas.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Docker Hub</span><span class="ctr">15 / 26</span></div>
@@ -471,18 +472,20 @@ $ docker search mysql --filter "is-official=true"</div>
 <div class="hd">Práctica en clase · 1</div>
 <div class="ct tc">
 <div>
-<h2>Hola Mundo y la magia del STDOut</h2>
+<h2>El clásico "Hola Mundo"</h2>
 <div class="cal" style="margin-bottom:10px;">
-<p><strong>Enunciado:</strong> Ejecutar <code>hello-world</code>, pero comprendiendo qué ocurre con la E/S (Input/Output). Las aplicaciones contenerizadas deben emitir logs al STDOUT/STDERR en lugar de a archivos físicos (Patrón de <em>Twelve-Factor App</em>).</p>
+<p><strong>Enunciado:</strong> Ejecutar la imagen de prueba oficial de Docker y observar el comportamiento de descarga y ejecución automática.</p>
 </div>
-<div class="cod">$ docker run hello-world
-$ docker logs $(docker ps -lq)</div>
+<div class="cod">$ docker run hello-world</div>
 </div>
 <div class="crd">
-<p><strong>Verificación bajo el capó</strong></p>
-<div class="cod">$ docker info --format '{{.LoggingDriver}}'
-$ docker system df</div>
-<p class="nt" style="margin-top:8px;"><strong>¿Hacia dónde va el output?</strong> El motor de Docker intercepta la salida estándar del contenedor usando un <em>Logging Driver</em> (por defecto <code>json-file</code>), lo que permite que <code>docker logs</code> reconstruya lo que pasó incluso después de que el proceso raíz haya terminado y destruido al contenedor. <code>system df</code> te mostrará qué espacio usan las imágenes cacheadas vs los contenedores detenidos.</p>
+<p><strong>¿Qué ocurre cuando presionas ENTER?</strong></p>
+<div class="cod">1. Docker no encuentra la imagen en tu PC.
+2. La descarga (PULL) desde Docker Hub.
+3. Crea un contenedor nuevo (CREATE).
+4. Ejecuta el programa para saludar (START).
+5. El programa termina y el contenedor "muere" (EXIT).</div>
+<p class="nt" style="margin-top:8px;">Este mismo flujo ocurre ya sea para imprimir un "Hola Mundo" o para encender una Base de Datos SQL completa.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Práctica 1</span><span class="ctr">16 / 26</span></div>
@@ -491,24 +494,27 @@ $ docker system df</div>
 
 <section class="slide cnt">
 <div class="inn">
-<div class="hd">Solución guiada · Estado en Práctica 1</div>
+<div class="hd">Solución guiada · Entendiendo Práctica 1</div>
 <div class="ct tc">
 <div>
-<h2>El ciclo de vida desmontado</h2>
+<h2>La regla de oro del ciclo de vida</h2>
 <ol>
-<li><strong>PULL:</strong> Resolución de tag a Digest, verificación criptográfica y descarga de Layers (capas faltantes en local cache).</li>
-<li><strong>CREATE:</strong> Asignación de ID único (UUID), aprovisionamiento de interfaces de red virtuales (veth), unión de capas base y capa volátil superior (UnionFS).</li>
-<li><strong>START:</strong> Configuración exhaustiva de Namespace y Cgroups para limitar al proceso raíz. Llamada a syscalls exec/clone.</li>
-<li><strong>EXIT:</strong> Propagación de señales. El proceso emite un <strong>código de salida</strong> (ej. 0: OK, 137: SIGKILL). El contenedor es marcado finalizado y sus IPC/Networking se destruyen, pero su disco volátil se mantiene si no hubo <code>--rm</code>.</li>
+<li>El contenedor arranca ejecutando <strong>un único comando principal</strong> (el proceso raíz).</li>
+<li>Mientras ese proceso funciona (ej: un servidor web), el contenedor vive.</li>
+<li>En el momento que ese proceso termina, falla o se cierra, el contenedor <strong>se detiene inmediatamente</strong>.</li>
 </ol>
 </div>
 <div class="crd">
-<p><strong>Dato crítico forense</strong></p>
-<div class="cod">$ docker inspect $(docker ps -lq) --format='{{.State.ExitCode}}'</div>
-<p class="nt" style="margin-top:8px;">Incluso detenido, el contenedor retiene estadísticas pre-muerte. Este modelo donde el contenedor "es el proceso" elimina el overhead de gestionar Init/SystemD de las máquinas virtuales completas.</p>
+<p><strong>Revisando el historial</strong></p>
+<div class="cod"># Ver contenedores vivos (estará vacío)
+$ docker ps
+
+# Ver contenedores vivos Y detenidos
+$ docker ps -a</div>
+<p class="nt" style="margin-top:8px;"><code>hello-world</code> solo imprime un texto y termina su trabajo al instante. Por eso, al usar <code>docker ps</code> inmediatamente después, no veremos nada en ejecución. <strong>El contenedor cumplió su propósito y murió.</strong></p>
 </div>
 </div>
-<div class="ft"><span class="nt">Ciclo de vida profundo</span><span class="ctr">17 / 26</span></div>
+<div class="ft"><span class="nt">Ciclo de vida</span><span class="ctr">17 / 26</span></div>
 </div>
 </section>
 
@@ -517,42 +523,43 @@ $ docker system df</div>
 <div class="hd">Práctica en clase · 2</div>
 <div class="ct tc">
 <div>
-<h2>Mapeo de Namespaces (PID)</h2>
-<div class="cod">$ docker run -it --rm --name demo_pid ubuntu:22.04 bash
-root@abc123:/# apt-get update &amp;&amp; apt-get install -y procps
-root@abc123:/# ps -eo pid,comm
-root@abc123:/# echo $$</div>
-<p class="nt" style="margin-top:8px;"><strong>Salida esperada mínima:</strong> <code>ps -eo pid,comm</code> listará <code>bash</code> y <code>ps</code>. El valor de <code>echo $$</code> (su PID) afirmará ser <code>1</code>. ¡Esto es matemáticamente imposible en el Host sin Namespaces activados!</p>
+<h2>Demostrando el Aislamiento (Namespaces)</h2>
+<div class="cod"># Abrir una terminal interactiva (-it) dentro de Ubuntu
+$ docker run -it --rm --name mi_ubuntu ubuntu:22.04 bash
+
+# Una vez dentro del contenedor (el texto dirá root@...):
+root@abc:/# apt update &amp;&amp; apt install -y procps
+root@abc:/# ps aux</div>
+<p class="nt" style="margin-top:8px;"><strong>Salida esperada:</strong> Al ejecutar <code>ps aux</code> dentro del contenedor, solo verás dos procesos (bash y ps). ¡La máquina virtual anfitriona tiene cientos de procesos, pero el contenedor cree estar solo!</p>
 </div>
 <div class="crd">
-<p><strong>El Árbol de la Ilusión</strong></p>
-<p>Para Linux <code>PID namespace</code> provee una numeración paralela e independiente de identificadores para que un sub-árbol de procesos crea hallarse solo. Además, <code>mount namespace</code> evita que <code>ps</code> (que lee <code>/proc</code>) vea los de otros.</p>
+<p><strong>La ilusión perfecta</strong></p>
+<p>Aquí evidenciamos de manera real cómo funcionan los <code>Namespaces</code>. Le hemos puesto unas "gafas" al proceso de bash para aislar su visión. Para él, es el "Proceso 1" de toda la computadora.</p>
 </div>
 </div>
-<div class="ft"><span class="nt">Práctica 2 · PID namespace</span><span class="ctr">18 / 26</span></div>
+<div class="ft"><span class="nt">Práctica 2 · Aislamiento</span><span class="ctr">18 / 26</span></div>
 </div>
 </section>
 
 <section class="slide cnt">
 <div class="inn">
-<div class="hd">Solución guiada · Práctica 2</div>
+<div class="hd">Solución guiada · La Vista del Host</div>
 <div class="ct tc">
 <div>
-<h2>Evidencia Criminológica (Vista Host)</h2>
-<div class="cod"># En una segunda terminal del host (sin cerrar demo_pid)
-$ docker inspect -f '{{.State.Pid}}' demo_pid
-28919
+<h2>Desenmascarando la ilusión</h2>
+<div class="cod"># Abre OTRA consola en tu máquina sin cerrar el contenedor original.
+$ docker inspect -f '{{.State.Pid}}' mi_ubuntu
+54321
 
-$ ps -fp 28919
-$ cat /proc/28919/status | grep NSpid</div>
-<p class="nt" style="margin-top:8px;"><strong>Salida esperada:</strong> <code>docker inspect</code> retorna su PID numérico global. Al hacer <code>ps -fp</code> verás exactamente el mismo proceso de <code>bash</code>, pero consumiendo CPU en el host.</p>
+$ ps -fp 54321</div>
+<p class="nt" style="margin-top:8px;"><strong>Salida esperada:</strong> El comando mostrará el verdadero <code>bash</code> ejecutándose directamente sobre el hardware del profesor/estudiante.</p>
 </div>
 <div class="crd">
-<p><strong>Confirmación del Aislamiento Horizontal</strong></p>
-<p>El PID 1 visto dentro del contenedor mapea a un proceso regular en el host (ej. 28919). Si el host interviene y mata 28919 (<code>kill 28919</code>), la ilusión colapsa y el contenedor se extingue. Muestran que <strong>los contenedores NO son cajas cerradas opacas</strong> para el kernel físico.</p>
+<p><strong>Confirmación Visual</strong></p>
+<p>Aquel "Proceso número 1" que vimos con orgullo dentro de Ubuntu no era más que el proceso 54321 engañado por el Kernel de Linux mediante <strong>Namespaces</strong>. Esta es la diferencia radical contra las Máquinas Virtuales tradicionales.</p>
 </div>
 </div>
-<div class="ft"><span class="nt">Mapa PID local ↔ global</span><span class="ctr">19 / 26</span></div>
+<div class="ft"><span class="nt">Mapa PID local vs Host</span><span class="ctr">19 / 26</span></div>
 </div>
 </section>
 
@@ -561,42 +568,44 @@ $ cat /proc/28919/status | grep NSpid</div>
 <div class="hd">Práctica en clase · 3</div>
 <div class="ct tc">
 <div>
-<h2>Empaquetamiento reproducible</h2>
+<h2>Programar, Construir, Ejecutar</h2>
 <ol>
-<li>El código suele venir de repositorios (Git). El artefacto inmutable que contiene OS dependencias y App es la <code>Imagen</code>.</li>
-<li>Crear proyecto con <code>Dockerfile</code> y <code>mi_script.py</code>. Definir dependencias.</li>
-<li>Bajar instrucciones del Dockerfile (Compilación/Build): <code>docker build -t mi_app:v1 .</code></li>
-<li>Ejecutar contenedor interactivo de inspección temporal: <code>docker run --rm -it mi_app:v1 sh</code> (o bash).</li>
+<li>Crea una carpeta nueva e ingresa a ella.</li>
+<li>Crea un archivo <code>script.py</code> con un <code>print("¡Logrado!")</code>.</li>
+<li>Crea tu <code>Dockerfile</code> que use <code>FROM python:3.12-slim</code> y copie tu script.</li>
+<li>Construye: <code>docker build -t mi_programa:1.0 .</code></li>
+<li>Arranca: <code>docker run --rm mi_programa:1.0</code></li>
 </ol>
 </div>
 <div class="crd">
-<p><strong>Dato Técnico Avanzado</strong></p>
-<p>Durante el <code>build</code>, Docker crea un contenedor temporal intermedio oculto por cada instrucción (<code>RUN</code>, <code>COPY</code>, <code>USER</code>). Así, cada modificación conforma una sub-capa Hasheada inmutable y reutilizable, hasta compilar la Imagen Base final.</p>
+<p><strong>El Súper-Poder de Docker</strong></p>
+<p>Acabas de empaquetar todo un entorno de desarrollo. Ahora, si pasas esa imagen <code>mi_programa:1.0</code> a cualquier compañero, le va a imprimir "¡Logrado!" garantizado, sin importar qué sistema operativo tenga o qué versión de dependencias use localmente.</p>
 </div>
 </div>
-<div class="ft"><span class="nt">Práctica 3 · Dockerfile profundo</span><span class="ctr">20 / 26</span></div>
+<div class="ft"><span class="nt">Práctica 3 · Construyendo imágenes</span><span class="ctr">20 / 26</span></div>
 </div>
 </section>
 
 <section class="slide cnt">
 <div class="inn">
-<div class="hd">Comandos esenciales · Operación diaria</div>
+<div class="hd">Comandos esenciales · Día a día</div>
 <div class="ct">
-<table style="font-size: 0.9em;">
+<table>
 <thead>
-<tr><th>Comando</th><th>Acción</th><th>Efecto de bajo nivel</th></tr>
+<tr><th>Comando</th><th>¿Para qué sirve?</th></tr>
 </thead>
 <tbody>
-<tr><td><code>docker ps -a</code></td><td>Lista todos contenedores</td><td>Consulta DB local (containerd) sobre todos los UUID creados.</td></tr>
-<tr><td><code>docker images</code></td><td>Lista imágenes locales</td><td>Punteros locales a digeridos en sub-directorio <code>/var/lib/docker/overlay2</code>.</td></tr>
-<tr><td><code>docker stop</code></td><td>Detiene amigablemente</td><td>Envía señal SIGTERM al PID1 contenedor; si no cierra en 10s lanza SIGKILL.</td></tr>
-<tr><td><code>docker logs -f</code></td><td>Sigue stdout/stderr vivo</td><td>Se acopla y hace stream continuo de descriptor TTY virtual activo.</td></tr>
-<tr><td><code>docker exec -it</code></td><td>Consola en vivo</td><td><strong>Importante:</strong> inyecta un proceso SECUNDARIO (ej. <code>bash</code>) al mismo conjunto de Namespaces de un cont. activo.</td></tr>
+<tr><td><code>docker ps</code></td><td>Muestra los contenedores que están <strong>actualmente encendidos</strong>.</td></tr>
+<tr><td><code>docker ps -a</code></td><td>Muestra todos los recipientes creados, incluso si fallaron y se detuvieron.</td></tr>
+<tr><td><code>docker images</code></td><td>Muestra la lista de las diferentes "plantillas inmutables" bajadas de internet y su peso en disco.</td></tr>
+<tr><td><code>docker stop &lt;ID&gt;</code></td><td>Apaga gentilmente un contenedor funcionando.</td></tr>
+<tr><td><code>docker rm &lt;ID&gt;</code></td><td>Borra la instancia detenida (no borra la imagen base).</td></tr>
+<tr><td><code>docker logs &lt;ID&gt;</code></td><td>La herramienta #1 cuando algo falla. Te muestra el "stdout" (texto que escupió) el código.</td></tr>
+<tr><td><code>docker exec -it &lt;ID&gt; sh</code></td><td>Sirve para abrir una terminal "dentro" de un contenedor que ya está vivo (útil para revisar archivos sobre la marcha).</td></tr>
 </tbody>
 </table>
-<div class="caw" style="margin-top:15px;">
-<p><strong>Diferenciar Ejecución e Intervención</strong></p>
-<p><code>run</code> inicializa Namespace completo con el proceso principal; <code>exec</code> entra intrusivamente sin disparar capa adicional a un sistema orgánicamente vivo.</p>
+<div class="cal" style="margin-top:10px;">
+<p class="nt"><strong>Tip de examen:</strong> No confundir <code>run</code> con <code>exec</code>. Run crea un contenedor nuevo de cero. Exec entra por la fuerza a uno que ya estaba vivo.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">Ciclo de vida operativo</span><span class="ctr">21 / 26</span></div>
@@ -605,107 +614,105 @@ $ cat /proc/28919/status | grep NSpid</div>
 
 <section class="slide cnt">
 <div class="inn">
-<div class="hd">Troubleshooting · "Mi contenedor muere solo"</div>
+<div class="hd">Errores Comunes y Troubleshooting</div>
 <div class="ct tc">
 <div>
-<h2>Patrones de Diagnóstico Avanzado</h2>
+<h2>Respuestas directas cuando las cosas fallan</h2>
 <ul>
-<li><strong>Comportamiento Crashloop:</strong> <code>OOMKilled</code> - Kernel lo eliminó porque superó <code>Cgroup memory limit</code>. Revisar flags como <code>-m 512m</code>.</li>
-<li><strong>Exit Code 137 (SIGKILL):</strong> Docker fue obligado a masacrar la instancia (Forzado, sin gracia).</li>
-<li><strong>Bloqueo de socket:</strong> <code>dial unix /var/run/docker.sock: connect: permission denied</code>. Falta ser <code>root</code> o añadir tu usuario al grupo UNIX <code>docker</code> local.</li>
-<li><strong>Conflicto Red Binding:</strong> <code>Bind for 0.0.0.0:80 failed: port is already allocated</code>. Una instancia host (Apache, Nginx, otro cont.) robó el Bind físico de Iptables.</li>
+<li><strong>Fallo inmediato:</strong> Arrancas el contenedor pero nunca está en <code>docker ps</code>. Usa inmediatamente <code>docker logs &lt;ID&gt;</code>; allí verás un Syntax Error o archivo faltante.</li>
+<li><strong>"Port already allocated":</strong> Significa que indicaste (por ejemplo) el puerto <code>-p 80:80</code>, pero tu computadora física <em>ya tiene</em> algo (como Apache) ocupando el puerto 80 en Windows o Mac.</li>
+<li><strong>Archivo no encontrado en Volumen:</strong> Sucede cuando montas una carpeta (ej: <code>-v ./mi_app:/app</code>) pero estabas ubicado en el directorio equivocado en la terminal hospedadora.</li>
+<li><strong>Error de permisos con <code>docker.sock</code>:</strong> Tu usuario no pertenece al grupo seguro de UNIX, requieres reiniciar sesión o poner <code>sudo</code> (solo en Linux).</li>
 </ul>
 </div>
 <div class="cal">
-<div class="cod">$ docker inspect mi_backend --format='{{.State.OOMKilled}}'
-$ dmesg -T | grep -i oom</div>
-<p class="nt" style="margin-top:8px;"><strong>Flujo Crítico Diagnóstico:</strong> Ante una muerte silenciosa del microservicio: Revisa primero <code>docker logs</code>, luego <code>docker inspect</code> (para metadata final ExitCode) y por si acaso chequea Kernel Logs <code>dmesg</code> (OOM killer del host general).</p>
+<p><strong>El algoritmo para reparar:</strong></p>
+<p class="nt" style="margin-top:8px;">1. Usar <code>ps -a</code> para hallar el ID.<br>2. Ejecutar <code>logs</code> para averiguar la queja del sistema.<br>3. Googlear exactamente ese mensaje.</p>
 </div>
 </div>
-<div class="ft"><span class="nt">Diagnóstico de nivel 2</span><span class="ctr">22 / 26</span></div>
+<div class="ft"><span class="nt">Diagnóstico común</span><span class="ctr">22 / 26</span></div>
 </div>
 </section>
 
 <section class="slide cnt">
 <div class="inn">
-<div class="hd">Cross-Platform · Windows, macOS y WSL2</div>
+<div class="hd">Docker en Windows y macOS</div>
 <div class="ct tc">
 <div>
-<h2>La verdad incómoda</h2>
+<h2>La capa oculta necesaria</h2>
 <ul>
-<li>Solo existe Linux Containers (con syscalls POSIX puras) y Windows Containers (usado minoritariamente).</li>
-<li>En Windows moderno: Docker se apoya en <strong>WSL2</strong> (Windows Subsystem for Linux), un hipervisor Type-1 integrado que bootea un Kernel monolítico completo oculto.</li>
-<li>En macOS: Históricamente usaba HyperKit, hoy usa <strong>Virtualization.framework</strong> (un envoltorio sobre micro-VMs nativas del M1/M2 con Rosetta 2 para traducir amd64/arm64).</li>
-<li><strong>Penalizaciones Críticas:</strong> I/O cruzado (Volumes compartidos entre Host Windows/Mac NTFS/APFS al Linux ext4 interno sufren caídas de IOPS). Usa siempre el rootFS (ext4) para bases de datos masivas locales, no el host mount.</li>
+<li>Docker nace y muere dependiente del <strong>Kernel de Linux</strong> (nativos de Linux Namespaces y Linux Cgroups).</li>
+<li>¿Por qué funciona en Windows y Mac si no son Linux?</li>
+<li><strong>En Windows:</strong> Docker Desktop se encarga de instalar <code>WSL2</code>, que arranca inteligentemente un mini-núcleo Linux de fondo totalmente sin interfaz.</li>
+<li><strong>En Mac:</strong> Usa una VM (Máquina Virtual) altamente ligera creada por Apple.</li>
+<li>El usuario sigue interactuando con <code>docker run</code> sin percatarse de esto, todo este puente es invisible pero vital.</li>
 </ul>
 </div>
 <div class="crd">
-<p><strong>Conclusión Híbrida</strong></p>
-<p>Todo el mercado local de desarrollo Desktop <strong>falsea</strong> un Linux en modo transparente (Type 2 / Hardware Virtualization invisible), inyectando allí el Daemon de Docker. Pero Producción (Cloud, K8s, VPS) siempre correrá en Linux crudo en bare-metal (con 100% de performance nativo).</p>
+<p><strong>El costo de la emulación</strong></p>
+<p>Aunque funciona de maravilla, es vital saber que el proceso tiene una milésima de demora extra compartiendo archivos a través de estas VMs en Windows y Mac, comparado contra instalar Docker de manera pura en un Ubuntu nativo de Servidor.</p>
 </div>
 </div>
-<div class="ft"><span class="nt">Aislamiento vs Emulación</span><span class="ctr">23 / 26</span></div>
+<div class="ft"><span class="nt">Aclarando Windows y Mac</span><span class="ctr">23 / 26</span></div>
 </div>
 </section>
 
 <section class="slide cnt">
 <div class="inn">
-<div class="hd">Arquitectura y Síntesis</div>
+<div class="hd">Síntesis Técnica Final</div>
 <div class="ct tc">
 <div>
-<h2>Desmintiendo el Hype</h2>
+<h2>Diferencias absolutas que debes recordar</h2>
 <ul>
-<li><strong>Un contenedor "NO es una VM lite"</strong>: Es un proceso restringido (Namespace) ahogado (Cgroup) que tiene la ilusión (Chroot) de ser único. Comparte el único Kernel de la máquina con 5000 compañeros más. Cero boot-time extra.</li>
-<li><strong>Las imágenes NO son ISOs</strong>: Son Tarballs inmutables comprimidos montados sobre UnionFS apilados que minimizan escritura (Copy-On-Write).</li>
-<li><strong>Orquestación (El Siguiente Paso)</strong>: Docker está genial para instanciar UNA Base de datos y UN Backend. Pero gestionar 50 máquinas con 10.000 contenedores y rutear red entre ellos es un problema de alta jerarquía. Ahí entró <em>Kubernetes</em> y expulsó en su momento a dockerd-shim (hoy usa containerd nativo).</li>
+<li><strong>No es una Máquina Virtual en miniatura:</strong> En docker, no hay simulación de hardware ni instalación de otro núcleo entero; un contenedor es software engañado compartiendo los recursos ya existentes de forma nativa.</li>
+<li><strong>Imágenes inmutables:</strong> La plantilla oficial que descargas es como un CD-ROM grabado. No se altera internamente (UnionFS).</li>
+<li><strong>Pet vs Cattle (Avanzado):</strong> Nunca te encariñes de los contenedores. Acostúmbrate a crear, borrar y volver a crear tus proyectos en un abrir y cerrar de pestañas (Desechables). Si quieres guardar datos como una base de MongoDB, hay que adjuntar "Volúmenes".</li>
 </ul>
 </div>
 <div class="cal">
-<p><strong>Fórmula Definitiva OCI (Open Container Initiative)</strong></p>
-<div class="cod">Container = chroot + Namespaces + Cgroups + OverlayFS + r/w layer</div>
+<p><strong>Resumen para entrevistas de trabajo</strong></p>
+<p class="nt" style="margin-top:6px;">Un contenedor te aísla con Namespaces, limita tu consumo usando CGroups, previene corromper otros entornos con UnionFS, pero comparten la misma base del SO hospedador.</p>
 </div>
 </div>
-<div class="ft"><span class="nt">Síntesis Táctica</span><span class="ctr">24 / 26</span></div>
+<div class="ft"><span class="nt">Revisión Final</span><span class="ctr">24 / 26</span></div>
 </div>
 </section>
 
 <section class="slide cnt">
 <div class="inn">
-<div class="hd">Puente Temático a Sesión 22</div>
+<div class="hd">Puente a la Sesión 22</div>
 <div class="ct tc">
 <div>
-<h2>La Falsa Ilusión de Seguridad</h2>
+<h2>La fina muralla entre Aislado e Inseguro</h2>
 <ul>
-<li>Un hypervisor en anillos de CPU aisla por Virtualización Intruida de Ring -1. Un contenedor es puramente SOFTWARE.</li>
-<li>Si hay un <strong>Kernel Panic o Vulnerabilidad (Ej: Dirty Pipe)</strong>, afecta a un proceso. Ese proceso derriba la máquina del Host completa. Los 500 servicios explotan a la vez.</li>
-<li>Mapear <code>-v /var/run/docker.sock:/sock</code> a un contenedor inseguro es equivalente a regalar la llave Root física del datacenter al cibercrimen (Container Breakout).</li>
+<li>Como el contenedor <strong>comparte el Kernel activo del host principal</strong>, si alguien encuentra una vulnerabilidad directa al núcleo (0-day), vulneraría la seguridad de TODA la infraestructura.</li>
+<li>Por defecto Docker es muy dócil, pero existen escenarios que son una pesadilla administrativa, como ejecutar contenedores como <code>root</code>.</li>
 </ul>
 </div>
 <div class="caw">
-<p><strong>Próximamente...</strong></p>
-<p class="nt" style="margin-top:6px;">Auditoría Forense con <code>seccomp</code> (Cercenar Syscalls) y <code>AppArmor</code> (Someter perfiles de Red a Nginx). Aprenderemos qué son las <strong style="color:var(--tur)">Linux Capabilities</strong> (chown, kill, net_bind_service) y cómo evitar el <code>--privileged</code> maligno.</p>
+<p><strong>¿Qué veremos en la sesión 22?</strong></p>
+<p class="nt" style="margin-top:6px;">Aprenderemos a defender nuestro Docker. Estudiaremos métodos reales de ataque ("Escape de Contenedores"), y la utilización de bloqueos fuertes como AppArmor, seccomp y limitación de capacidades en nivel de kernel.</p>
 </div>
 </div>
-<div class="ft"><span class="nt">S22: Endurecimiento (Hardening)</span><span class="ctr">25 / 26</span></div>
+<div class="ft"><span class="nt">S22: Seguridad</span><span class="ctr">25 / 26</span></div>
 </div>
 </section>
 
 <section class="slide cnt">
 <div class="inn">
-<div class="hd">Micro Cuestionario de Cierre</div>
+<div class="hd">Cuestionario de Comprensión</div>
 <div class="ct tc">
 <div>
-<h2>Preguntas de Reflexión (Test Self-Check)</h2>
-<ul>
-<li>¿Cuál es la función exacta de <code>containerd</code> si Docker CLI te oculta todo?</li>
-<li>¿Por qué en macOS el rendimiento volumétrico (File I/O Sync) sufre drásticamente frente a Linux directo?</li>
-<li>Si <code>CMD ["sleep", "1d"]</code>, ¿Cuál será el Exit Code del contenedor si tiramos manualmente del Host <code>kill -9 &lt;PID&gt;</code> al proceso Sleep?</li>
-<li>¿Por qué decimos que los contenedores son "Cielos Ganaderos" (Cattle) y tu PC tradicional un Poodle (Pet)?</li>
-</ul>
+<h2>Evaluación de Cierre (Auto-evaluación)</h2>
+<ol>
+<li>Si descargas Ubuntu (100MB) y luego descargas Alpine (5MB). Y levantas de ellos 10 contenedores seguidos. ¿Cuánto espacio total te habrán consumido en el disco base esos 10 contenedores al arrancar?</li>
+<li>¿Cuál es el comando correcto que usarías si un contenedor de base de datos encendió, falló y ya desapareció de <code>docker ps</code> para ver su error?</li>
+<li>¿Por qué en tu Windows personal Docker necesita instalar algo adicional a sus meros binarios para funcionar correctamente?</li>
+</ol>
 </div>
 <div class="cal">
-<p><strong>Reto Final / Tarea Autodidacta</strong></p>
-<p>Encuentra el Path donde residen los Volumes físicamente en Ubuntu (normalmente var/lib/docker/volumes). Demuestra cómo, siendo Root en tu Host, puedes leer la "DB Privada" del Contenedor de Postgres "Inmune".</p>
+<p><strong>Preparativos</strong></p>
+<p>Para la siguiente clase asegúrate de haber ejecutado el proyecto Hello World e inspeccionado su error voluntariamente.</p>
 </div>
 </div>
 <div class="ft"><span class="nt">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">26 / 26</span></div>

