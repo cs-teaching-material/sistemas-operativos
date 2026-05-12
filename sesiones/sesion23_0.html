@@ -1,492 +1,824 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesión 23: Hardening y Endurecimiento de Infraestructura</title>
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --text-light: #f8fafc;
-            --accent: #10b981; /* Verde para seguridad defensiva */
-            --accent-glow: rgba(16, 185, 129, 0.5);
-            --code-bg: #1e293b;
-            --highlight: #22d3ee;
-            --warn: #fbbf24;
-        }
-
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .presentation-container {
-            width: 100vw;
-            height: 56.25vw;
-            max-height: 100vh;
-            max-width: 177.78vh;
-            position: relative;
-            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
-            overflow: hidden;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-        }
-
-        .slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            padding: clamp(20px, 4vw, 60px);
-            box-sizing: border-box;
-        }
-
-        .slide.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        h1 {
-            font-size: clamp(32px, 4.5vw, 70px);
-            color: var(--highlight);
-            margin-bottom: clamp(10px, 2vw, 30px);
-            border-bottom: 2px solid var(--accent);
-            padding-bottom: 15px;
-        }
-
-        h2 {
-            font-size: clamp(24px, 3vw, 50px);
-            color: var(--text-light);
-            margin-bottom: clamp(10px, 1.5vw, 25px);
-        }
-
-        p, li {
-            font-size: clamp(16px, 2.2vw, 35px);
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        ul { margin-left: clamp(20px, 3vw, 40px); }
-
-        .code-block {
-            background-color: var(--code-bg);
-            padding: clamp(15px, 2vw, 30px);
-            border-radius: 8px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: clamp(14px, 1.8vw, 28px);
-            color: #a78bfa;
-            border-left: 5px solid var(--accent);
-            white-space: pre-wrap;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: clamp(10px, 2vw, 30px);
-            right: clamp(10px, 2vw, 30px);
-            z-index: 100;
-        }
-
-        button {
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            padding: clamp(10px, 1.2vw, 20px) clamp(20px, 2.5vw, 40px);
-            font-size: clamp(14px, 1.8vw, 24px);
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
-
-        button:hover {
-            background-color: #059669;
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        .progress-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: clamp(3px, 0.5vw, 6px);
-            background-color: var(--highlight);
-            transition: width 0.3s ease;
-            z-index: 99;
-        }
-
-        .diagram-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-grow: 1;
-            margin-top: 20px;
-        }
-
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: clamp(20px, 3vw, 50px);
-            height: 100%;
-        }
-
-        .pulse-shield { animation: pulsar-shield 2s infinite; }
-        @keyframes pulsar-shield { 0% { opacity: 0.8; transform: scale(0.98); box-shadow: 0 0 0px var(--accent); } 50% { opacity: 1; transform: scale(1.02); box-shadow: 0 0 25px var(--accent); } 100% { opacity: 0.8; transform: scale(0.98); box-shadow: 0 0 0px var(--accent); } }
-        
-        .box { background: rgba(16, 185, 129, 0.1); border: 2px solid var(--accent); padding: 20px; border-radius: 10px; text-align: center; }
-
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SO · S23 · Hardening y Defensa en Profundidad</title>
+<style>
+:root{
+--az:#015583;--tur:#05ADBC;--txt:#201F4B;--mu:#6b7280;
+--safe-top-cover:clamp(208px,9vh,128px);
+--safe-left-cover:clamp(585px,5.5vw,110px);
+--safe-right-cover:clamp(28px,3vw,72px);
+--safe-bottom-cover:clamp(54px,6vh,92px);
+--safe-top:clamp(100px,9vh,132px);
+--safe-side:clamp(66px,5.5vw,108px);
+--safe-bottom:clamp(52px,6vh,90px);
+}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+.deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,20px);box-sizing:border-box;}
+.stage{width:min(96vw,calc(90vh*(16/9)));aspect-ratio:16/9;position:relative;}
+.slide{position:absolute;inset:0;display:none;box-shadow:0 12px 36px rgba(0,0,0,.3);overflow:hidden;}
+.slide.active{display:block;}
+.cov{background:url("../img/Portada.png") center/cover no-repeat,#015583;color:#fff;}
+.cnt{background:url("../img/Contenido.png") top left/contain no-repeat,#fff;color:var(--txt);}
+.inn{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom);display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);}
+.cov .inn{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);justify-content:center;}
+.ct{flex:1;display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);min-height:0;overflow:auto;overflow-x:hidden;}
+.hd{color:var(--tur);font-size:clamp(12px,1.1vw,15px);font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-bottom:2px solid var(--tur);padding-bottom:3px;}
+h1{margin:0;font-size:clamp(26px,3.2vw,44px);line-height:1.08;color:#fff;}
+h2{margin:0;font-size:clamp(18px,2vw,28px);line-height:1.15;color:var(--az);}
+h3{margin:0;font-size:clamp(14px,1.5vw,20px);color:var(--az);}
+p{margin:0;font-size:clamp(13px,1.2vw,17px);line-height:1.4;}
+li{font-size:clamp(13px,1.2vw,17px);line-height:1.4;margin-bottom:.5em;}
+ul,ol{margin:0;padding-left:1.2em;}
+.sub{color:#f7df00;font-weight:800;font-size:clamp(16px,1.7vw,22px);margin-top:8px;}
+.nt{color:var(--mu);font-size:clamp(10px,.95vw,13px);line-height:1.35;}
+.cal{background:#f0f9ff;border-left:5px solid var(--tur);padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.caw{background:#fffbe6;border-left:5px solid #e6a817;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cad{background:#fef2f2;border-left:5px solid #dc2626;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cag{background:#f0fdf4;border-left:5px solid #16a34a;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.tc{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(10px,1.4vw,20px);align-items:start;min-height:0;}
+.tce{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.4vw,20px);align-items:start;}
+.crd{background:#f8faff;border:1px solid #dde2f1;border-radius:8px;padding:clamp(8px,.9vw,12px);}
+.cod{font-family:ui-monospace,monospace;font-size:clamp(10px,.9vw,12.5px);line-height:1.5;background:#0b1020;color:#e5e7eb;border-radius:7px;padding:clamp(7px,.9vw,11px);white-space:pre-wrap;border:1px solid #1f2937;max-height:min(36vh,320px);overflow:auto;}
+.cm{color:#6b7280;}.cc{color:#7dd3fc;font-weight:bold;}.cs{color:#86efac;}
+.cn{color:#fde68a;}.cf{color:#c4b5fd;}
+.iw{width:100%;border-radius:7px;border:1px solid #dde2f1;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:clamp(10px,.95vw,13px);}
+th,td{border:1px solid #dde2f1;padding:clamp(4px,.7vw,8px);color:var(--txt);vertical-align:top;}
+th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);letter-spacing:.05em;color:var(--az);}
+.ft{display:flex;justify-content:space-between;align-items:center;padding-top:3px;border-top:1px solid #dde2f1;}
+.cov .ft{border-top:1px solid rgba(255,255,255,.15);margin-top:auto;}
+.ctr{font-weight:800;color:var(--az);font-size:clamp(11px,.95vw,13px);}
+.cov .ctr{color:#e5edf8;}
+.tnv{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;z-index:10;}
+.tnv button{pointer-events:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(221,226,241,.9);background:rgba(255,255,255,.9);color:var(--txt);font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.1);}
+#tnv{opacity:0;transition:.15s;}
+.stage:hover #tnv{opacity:1;}
+@media(hover:none){#tnv{opacity:1;}}
+.sq{opacity:0;transform:translateY(9px);transition:opacity .32s,transform .32s;}
+.sq.vs{opacity:1;transform:translateY(0);}
+</style>
 </head>
 <body>
+<div class="deck"><div class="stage" id="stage">
 
-<div class="presentation-container">
+<!-- Slide 1 · Portada -->
+<section class="slide cov active">
+<div class="inn"><div class="ct" style="justify-content:center;">
+<span class="hd">Sistemas Operativos · Unidad 3</span>
+<h1>Sesión 23</h1>
+<h1>Hardening y Defensa<br>en Profundidad</h1>
+<div class="sub">PoLP · Usuarios · OpenSSH · AppArmor · SecComp</div>
+<div class="cal" style="max-width:78%;margin-top:clamp(10px,1.4vw,18px);">
+<p style="color:var(--txt);">Endurecimiento sistemático del sistema operativo y sus contenedores: cerrar cada vector de ataque identificado en S22 aplicando gestión de usuarios, criptografía operativa, módulos de seguridad del Kernel y política de mínimo privilegio.</p>
+</div>
+<p class="nt" style="margin-top:auto;color:#201F4B;font-weight:bold;">&larr; &rarr; navegación · F pantalla completa</p>
+</div>
+<div class="ft"><span class="nt" style="color:#e5edf8;">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">1 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 1 -->
-    <div class="slide active">
-        <h1 style="text-align:center; font-size: 6vw; margin-top: 15%; border: none;">Sesión 23:<br>Hardening y Defensa en Profundidad</h1>
-        <p style="text-align:center; color: var(--highlight);">Transformando vulnerabilidades en fortalezas de infraestructura</p>
-    </div>
+<!-- Slide 2 · Propósito técnico -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Propósito técnico de la sesión</div>
+<div class="ct tc">
+<div>
+<h2>Qué dominaremos hoy</h2>
+<ul>
+<li>Definir <strong>Hardening</strong> y el modelo de Defensa en Profundidad.</li>
+<li>Gestionar usuarios, grupos y políticas de contraseñas en Linux.</li>
+<li>Endurecer <strong>OpenSSH</strong>: desactivar acceso root, requerir claves Ed25519.</li>
+<li>Aplicar el <strong>Principio de Menor Privilegio (PoLP)</strong> a nivel de SO y contenedores.</li>
+<li>Entender los módulos <strong>AppArmor</strong> y <strong>SecComp</strong> como filtros de llamadas al kernel.</li>
+<li>Configurar contenedores con <code>--cap-drop=ALL</code> y <code>--read-only</code>.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Resultado observable</strong></p>
+<p>Al finalizar, el estudiante podrá configurar un servidor Linux y sus contenedores aplicando las mitigaciones que cierran los vectores de Container Breakout vistos en S22, y explicar qué capa de defensa bloquea cada ataque.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Propósito · Sesión 23</span><span class="ctr">2 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 2 -->
-    <div class="slide">
-        <h1>Objetivos de la Sesión</h1>
-        <ul>
-            <li>Definir el concepto de *Hardening* (Endurecimiento) en Sistemas Operativos.</li>
-            <li>Comprender el modelo de Defensa en Profundidad (Defense in Depth).</li>
-            <li>Implementar el Principio de Menor Privilegio (PoLP).</li>
-            <li>Analizar los perfiles de seguridad del Kernel: SecComp, AppArmor y SELinux.</li>
-            <li>Aplicar mitigaciones prácticas para evitar el escape de contenedores (S22).</li>
-        </ul>
-    </div>
+<!-- Slide 3 · Activación base -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Activación de conocimiento base</div>
+<div class="ct tc">
+<div>
+<h2>La jaula rota de S22</h2>
+<ul>
+<li>En S22 vimos que <code>--privileged</code> y <code>docker.sock</code> montado permiten escalar a Ring 0 desde un contenedor.</li>
+<li>El Kernel subyacente es compartido — la debilidad de un proceso comprometido afecta al hardware físico real.</li>
+<li>Cada vector de ataque que identificamos tiene una contramedida técnica específica.</li>
+</ul>
+</div>
+<div class="cal sq">
+<p><strong>El reto defensivo</strong></p>
+<p>Cerrar explícitamente cada vector inyectando restricciones matemáticas e ineludibles al Kernel y a las aplicaciones, sin esperar a que el atacante las encuentre primero.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Activación · Sesión 23</span><span class="ctr">3 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 3 -->
-    <div class="slide">
-        <h1>Recapitulación S22: La Jaula Rota</h1>
-        <div class="grid-layout">
-            <div>
-                <p>En la Sesión 22 vimos que una mala configuración (ej: `--privileged` o montar `/var/run/docker.sock`) permite a un atacante con acceso a un contenedor escalar a <strong>Ring 0</strong>.</p>
-                <p>El Kernel subyacente es compartido; la debilidad de un proceso aislado compromete al hardware físico real.</p>
-            </div>
-            <div class="box pulse-shield">
-                <h3>El Reto Defensivo</h3>
-                <p>Cerrar explícitamente cada vector de ataque inyectando restricciones matemáticas ineludibles al Kernel y a las aplicaciones.</p>
-            </div>
-        </div>
-    </div>
+<!-- Slide 4 · Hardening y PoLP -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual A · Hardening y PoLP</div>
+<div class="ct">
+<h2>¿Qué es el Hardening?</h2>
+<p><strong>Hardening</strong> (endurecimiento) es el proceso de asegurar sistemáticamente un sistema operativo reduciendo su superficie de ataque: desactivar servicios innecesarios, reescribir políticas estrictas y eliminar configuraciones por defecto diseñadas para comodidad, no para seguridad.</p>
+<div class="tce" style="margin-top:.5em;">
+<div class="caw sq">
+<h3>Configuración por defecto</h3>
+<p style="margin-top:.4em;">Ubuntu, Windows y Docker vienen configurados para <em>funcionar con comodidad</em>. El SSH acepta contraseñas. Root puede conectarse remotamente. Los contenedores arrancan con decenas de capacidades activas.</p>
+</div>
+<div class="cag sq">
+<h3>Principio de Menor Privilegio (PoLP)</h3>
+<p style="margin-top:.4em;">Primer uso — <strong>PoLP:</strong> todo usuario, proceso o contenedor debe tener <em>solo los privilegios estrictamente necesarios</em> para su función, y ninguno más. Es el principio transversal que guía cada decisión de hardening.</p>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Hardening y PoLP · Sesión 23</span><span class="ctr">4 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 4 -->
-    <div class="slide">
-        <h1>¿Qué es el Hardening?</h1>
-        <p>Proceso de aseguramiento sistemático de un sistema operativo, reduciendo drásticamente su superficie de ataque (Attack Surface).</p>
-        <ul>
-            <li><strong>Por defecto:</strong> Los sistemas (como Ubuntu, Windows, Docker) vienen configurados para <i>funcionar con comodidad</i>, no con seguridad absoluta.</li>
-            <li><strong>Hardening:</strong> Desactiva servicios innecesarios, reescribe políticas estrictas y elimina la "comodidad" a favor de la supervivencia.</li>
-        </ul>
-    </div>
+<!-- Slide 5 · Usuarios y grupos -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual A · Gestión de usuarios y grupos</div>
+<div class="ct tc">
+<div style="display:flex;flex-direction:column;gap:clamp(6px,.8vw,10px);min-height:0;">
+<h2>Primera línea: controlar quién existe</h2>
+<ul style="font-size:clamp(12px,1.1vw,15px);">
+<li><strong>Cuenta de servicio (<code>-r</code>):</strong> UID bajo (&lt;1000), sin home, sin shell interactivo. Si el proceso es comprometido, el atacante no puede abrir sesión.</li>
+<li><strong><code>visudo</code>:</strong> editor seguro de <code>/etc/sudoers</code> — valida la sintaxis antes de guardar. Editar el archivo directamente puede romper sudo con un typo.</li>
+<li><strong><code>chage</code> (CHAnge AGE):</strong> fuerza renovación de contraseña pasado el plazo máximo.</li>
+<li><strong><code>passwd -l</code>:</strong> bloquea la cuenta sin eliminarla. Útil para offboarding.</li>
+</ul>
+</div>
+<div style="min-height:0;overflow:auto;">
+<div class="cod">
+<span class="cm"># -r = cuenta de sistema  -s = shell (nologin = sin sesión)</span>
+$ sudo useradd -r -s /usr/sbin/nologin nginx_svc
+$ sudo su - nginx_svc
+<span class="cf">This account is currently not available.</span>
 
-    <!-- Slide 5 -->
-    <div class="slide">
-        <h1>Principio de Menor Privilegio (PoLP)</h1>
-        <p>Un usuario, programa o proceso solo debe tener los privilegios estrictamente necesarios para realizar su tarea legítima. Ni más, ni menos.</p>
-        <p><strong>Ejemplo clásico:</strong></p>
-        <ul>
-            <li>Un servidor web (Nginx) solo necesita leer archivos HTML y transmitirlos por el puerto 80 o 443.</li>
-            <li>No necesita privilegios para modificar contraseñas (`/etc/shadow`) ni para formatear discos duros (`fdisk`). Si lo tiene, viola el PoLP.</li>
-        </ul>
-    </div>
+<span class="cm"># Crear grupo y agregar usuario (-aG = añadir sin quitar grupos):</span>
+$ sudo groupadd webadmins
+$ sudo usermod -aG webadmins juan
+$ groups juan
 
-    <!-- Slide 6 -->
-    <div class="slide">
-        <h1>Defensa en Profundidad (El modelo "Cebolla")</h1>
-        <div class="diagram-container">
-            <svg width="100%" height="90%" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
-                <!-- Layers representing Defense in Depth -->
-                <circle cx="400" cy="200" r="160" fill="none" stroke="#3b82f6" stroke-width="4"/>
-                <text x="400" y="60" fill="#f8fafc" text-anchor="middle" font-size="18">Capa 1: Firewall de Perímetro (Network)</text>
+<span class="cm"># sudo granular — visudo valida sintaxis, nunca editar a mano:</span>
+$ sudo visudo
+juan ALL=(ALL) NOPASSWD: /bin/systemctl restart nginx
 
-                <circle cx="400" cy="200" r="120" fill="none" stroke="#8b5cf6" stroke-width="4"/>
-                <text x="400" y="105" fill="#f8fafc" text-anchor="middle" font-size="18">Capa 2: OS Hardening (Kernel/Usuarios)</text>
+<span class="cm"># Expiración de contraseña a 90 días:</span>
+$ sudo chage -M 90 juan
+$ sudo chage -l juan    <span class="cm"># verificar</span>
 
-                <circle cx="400" cy="200" r="80" fill="none" stroke="#10b981" stroke-width="4"/>
-                <text x="400" y="145" fill="#f8fafc" text-anchor="middle" font-size="18">Capa 3: App Security</text>
+<span class="cm"># Bloquear cuenta (LK=locked, PS=activa):</span>
+$ sudo passwd -l nombre_usuario
+$ sudo passwd -S nombre_usuario</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Usuarios · Sesión 23</span><span class="ctr">5 / 22</span></div>
+</div>
+</section>
 
-                <circle cx="400" cy="200" r="40" fill="#ef4444" stroke="#dc2626" stroke-width="4"/>
-                <text x="400" y="205" fill="#f8fafc" text-anchor="middle" font-size="16" font-weight="bold">DATO</text>
-            </svg>
-        </div>
-    </div>
+<!-- Slide 6 · Visual A — Defensa en profundidad -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Recurso visual A · Defensa en profundidad</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="flex:1;max-height:78%;">
+<svg viewBox="0 0 640 340" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif">
+  <circle cx="320" cy="170" r="155" fill="#dbeafe" stroke="#015583" stroke-width="3"/>
+  <text x="320" y="28" text-anchor="middle" font-size="13" fill="#015583" font-weight="bold">Capa 1 · Firewall de perímetro (red)</text>
+  <circle cx="320" cy="170" r="115" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5"/>
+  <text x="320" y="72" text-anchor="middle" font-size="13" fill="#0284c7" font-weight="bold">Capa 2 · OS Hardening (kernel, usuarios, SSH)</text>
+  <circle cx="320" cy="170" r="78" fill="#f0fdf4" stroke="#16a34a" stroke-width="2.5"/>
+  <text x="320" y="112" text-anchor="middle" font-size="12" fill="#16a34a" font-weight="bold">Capa 3 · AppArmor / SecComp</text>
+  <circle cx="320" cy="170" r="44" fill="#fffbe6" stroke="#e6a817" stroke-width="2.5"/>
+  <text x="320" y="164" text-anchor="middle" font-size="12" fill="#92400e" font-weight="bold">Capa 4</text>
+  <text x="320" y="180" text-anchor="middle" font-size="11" fill="#92400e">App Security</text>
+  <circle cx="320" cy="170" r="18" fill="#dc2626"/>
+  <text x="320" y="174" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">DATO</text>
+</svg>
+</div>
+<p class="nt" style="text-align:center;">El modelo cebolla: cada capa asume que la anterior puede fallar. Un atacante que atraviese el firewall aún enfrenta el OS hardening, luego los módulos del kernel, luego los controles de la app.</p>
+</div>
+<div class="ft"><span class="nt">Defensa en profundidad · Sesión 23</span><span class="ctr">6 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 7 -->
-    <div class="slide">
-        <h1>El Estándar de la Industria: CIS Benchmarks</h1>
-        <p>Center for Internet Security (CIS) define reglas de hardening comprobadas universalmente. Si trabajas operando sistemas operativos, los leerás a diario.</p>
-        <p><strong>Ejemplos de directivas CIS para Linux:</strong></p>
-        <ul>
-            <li><em>1.1.1.1</em> - Deshabilitar el montaje del sistema de archivos cramfs (Inseguro).</li>
-            <li><em>5.2.1</em> - Asegurar que los permisos en `/etc/ssh/sshd_config` sean 600.</li>
-            <li><em>5.2.8</em> - Deshabilitar acceso root directo por SSH (PermitRootLogin no).</li>
-        </ul>
-    </div>
+<!-- Slide 7 · OpenSSH hardening -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual B · Hardening de OpenSSH</div>
+<div class="ct tc">
+<div>
+<h2>SSH es la puerta de entrada — endurecerlo es prioridad</h2>
+<p><strong>Ed25519</strong> es un algoritmo de clave pública basado en curvas elípticas. Es más corto, más rápido y más seguro que RSA-2048. Una clave privada Ed25519 no puede ser forzada con los recursos computacionales actuales.</p>
+<p style="margin-top:.5em;"><strong>Orden crítico:</strong> primero copiar la clave pública al servidor, <em>luego</em> deshabilitar autenticación por contraseña. Invertir el orden bloquea el acceso permanentemente.</p>
+<p style="margin-top:.5em;" class="nt"><strong>CIS Benchmark 5.2.8:</strong> <code>PermitRootLogin no</code> es requisito mínimo en cualquier auditoría de seguridad industrial.</p>
+</div>
+<div class="cod sq">
+<span class="cm"># PASO 1 — Generar clave Ed25519 (en la máquina cliente):</span>
+$ ssh-keygen -t ed25519 -C "juan@empresa" -f ~/.ssh/id_ed25519
+<span class="cm"># Crea dos archivos:</span>
+<span class="cm">#   id_ed25519     → clave PRIVADA (nunca sale de tu máquina)</span>
+<span class="cm">#   id_ed25519.pub → clave PÚBLICA (se copia al servidor)</span>
 
-    <!-- Slide 8 -->
-    <div class="slide">
-        <h1>Kernel Security Modules (LSM)</h1>
-        <p>El estándar NameSpaces/Cgroups aísla... pero no juzga la intención del programa (si un programa aislado hace cosas legales, se le permite).</p>
-        <p>Los <strong>Linux Security Modules (LSM)</strong> actúan como un vigilante paranoico interceptando TODA llamada antes de que toque el hardware real, evaluándola con un perfil predefinido.</p>
-        <h3 style="color:var(--highlight)">Dos titanes reinan hoy: SELinux y AppArmor.</h3>
-    </div>
+<span class="cm"># PASO 2 — Copiar clave pública al servidor:</span>
+$ ssh-copy-id -i ~/.ssh/id_ed25519.pub juan@servidor
+<span class="cm"># Agrega la clave a ~/.ssh/authorized_keys en el servidor</span>
 
-    <!-- Slide 9 -->
-    <div class="slide">
-        <h1>SELinux (Control de Acceso Obligatorio - MAC)</h1>
-        <p>Creado originalmente por la NSA (Agencia de Seguridad Nacional de EE.UU). Viene embebido típicamente en distribuciones derivadas de RedHat (RHEL, CentOS, Fedora).</p>
-        <ul>
-            <li>Incluso si el atacante consigue acceso `root`, si una política SELinux dice explícitamente "El servidor web Apache NO puede ejecutar comandos en la terminal externa", el Kernel denegará la petición a nivel Ring 0.</li>
-            <li><strong>Fama:</strong> Increíblemente poderoso, pero la sintaxis de sus perfiles es famosa por ser desesperantemente compleja.</li>
-        </ul>
-    </div>
+<span class="cm"># PASO 3 — Verificar login con clave ANTES de cambiar config:</span>
+$ ssh -i ~/.ssh/id_ed25519 juan@servidor
 
-    <!-- Slide 10 -->
-    <div class="slide">
-        <h1>AppArmor (Application Armor)</h1>
-        <p>La alternativa adoptada por distribuciones Debian/Ubuntu y Suse. Más legible y fácil de gestionar que SELinux.</p>
-        <ul>
-            <li>Asigna "Perfiles de comportamiento" por ruta de programa.</li>
-            <li>Docker en Ubuntu instala e inyecta un perfil genérico de AppArmor por defecto a cada contenedor que creas. (Por eso evitamos escapes inmediatos).</li>
-            <li>Modo <em>Enforce</em> (bloquea) vs <em>Complain</em> (solo registra la alerta pero permite).</li>
-        </ul>
-    </div>
+<span class="cm"># PASO 4 — Editar /etc/ssh/sshd_config en el servidor:</span>
+<span class="cs">PermitRootLogin</span>     <span class="cn">no</span>       <span class="cm"># root no puede conectarse por SSH</span>
+<span class="cs">PasswordAuthentication</span> <span class="cn">no</span>    <span class="cm"># solo claves, nunca contraseñas</span>
+<span class="cs">PubkeyAuthentication</span>   <span class="cn">yes</span>
+<span class="cs">Port</span>                <span class="cn">2222</span>     <span class="cm"># cambiar puerto reduce bots automáticos</span>
+<span class="cs">AllowUsers</span>          <span class="cn">juan maria deploy_bot</span>
 
-    <!-- Slide 11 -->
-    <div class="slide">
-        <h1>Seccomp (Secure Computing Mode)</h1>
-        <p>Una característica independiente dentro del Kernel enfocada solo en <strong>restricciones de llamadas al sistema (Syscalls)</strong>.</p>
-        <ul>
-            <li>Un Kernel Linux moderno tiene cerca de ~350 syscalls distintas (reboot, mount, chown, mkdir, chroot...).</li>
-            <li>Una aplicación promedio usa apenas 40 o 50 syscalls distintas en toda su vida.</li>
-            <li><strong>Seccomp permite filtrar o amputar</strong> las 300 syscalls restantes. Si el proceso invoca un comando vetado, el kernel asesina al proceso inmediatamente con un `SIGKILL`.</li>
-        </ul>
-    </div>
+<span class="cm"># PASO 5 — sshd -t valida la sintaxis sin reiniciar</span>
+<span class="cm"># (un error en sshd_config con el servicio ya reiniciado = acceso perdido)</span>
+$ sudo sshd -t
+$ sudo systemctl restart sshd
+$ ss -tlnp | grep sshd  <span class="cm"># confirmar que escucha en puerto 2222</span></div>
+</div>
+<div class="ft"><span class="nt">OpenSSH · Sesión 23</span><span class="ctr">7 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 12 -->
-    <div class="slide">
-        <h1>Arquitectura Syscall bajo Seccomp</h1>
-        <div class="grid-layout">
-            <div>
-                <h3>Contenedor "Confiable"</h3>
-                <p>Proceso Nginx intenta <code>read()</code> un HTML.<br><br>-> <strong>Perfil Seccomp:</strong> ¿Está <code>read</code> permitido en la whitelist? ¡Sí!<br><br>-> Kernel permite leer el disco.</p>
-            </div>
-            <div>
-                <h3 style="color:var(--warn)">Contenedor Vulnerado</h3>
-                <p>Nginx infectado intenta <code>reboot()</code> al sistema base.<br><br>-> <strong>Perfil Seccomp:</strong> ¿Está <code>reboot</code> en la whitelist? ¡No!<br><br>-> Kernel asesina implacablemente a Nginx. El OS Base se salva.</p>
-            </div>
-        </div>
-    </div>
+<!-- Slide 8 · AIDE e integridad -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual B · Integridad del sistema con AIDE</div>
+<div class="ct tc">
+<div>
+<h2>Detectar modificaciones de archivos del sistema</h2>
+<p>Un <strong>rootkit</strong> es malware que modifica binarios del sistema (<code>/usr/bin/ps</code>, <code>/usr/bin/ls</code>) para ocultarse — el propio sistema miente sobre lo que está corriendo.</p>
+<p style="margin-top:.4em;"><strong>AIDE</strong> (Advanced Intrusion Detection Environment) calcula un <strong>hash criptográfico</strong> (huella digital única) de cada archivo del sistema. Si el contenido de un binario cambia aunque sea un byte, su hash cambia. AIDE detecta esa diferencia comparando contra la base registrada antes del ataque.</p>
+<ul style="margin-top:.4em;">
+<li>La base de hashes se genera en un sistema limpio (<em>línea base</em>).</li>
+<li>Debe guardarse en un medio externo confiable — si el rootkit también controla AIDE, puede falsificar la comparación.</li>
+</ul>
+</div>
+<div class="cod sq">
+<span class="cm"># PASO 1 — Instalar AIDE:</span>
+$ sudo apt install aide aide-common
 
-    <!-- Slide 13 -->
-    <div class="slide">
-        <h1>Práctica 1: Evaluando Capacidades Base</h1>
-        <p>Linux usa un concepto llamado "Capabilities" para dividir el poder total de Root en pedacitos (ej: `CAP_CHOWN`, `CAP_NET_ADMIN`).</p>
-        <p>Observaremos mediante comando qué "Poderes de root" reales le da Docker a un contenedor estándar por defecto usando `capsh`:</p>
-        <div class="code-block">
-# Desde tu terminal host corre un test aislado interactivo:
-$ docker run --rm -it alpine sh
+<span class="cm"># PASO 2 — Generar base de datos inicial (tarda ~2 min):</span>
+$ sudo aideinit
+<span class="cm"># Crea /var/lib/aide/aide.db.new con hashes de todo el sistema</span>
 
-# Ya adentro del contenedor, instalar libreria util y revisar privilegios
-/ # apk add libcap
-/ # capsh --print
-        </div>
-    </div>
+<span class="cm"># PASO 3 — Activar la base (obligatorio, si no --check falla):</span>
+$ sudo cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
 
-    <!-- Slide 14 -->
-    <div class="slide">
-        <h1>Análisis de la Práctica (Qué retira Docker)</h1>
-        <p>El resultado del comando <code>capsh --print</code> evidenciará algo inaudito: Incluso operando como "root" dentro del contenedor, el Kernel te ha revocado la capacidad <code>cap_sys_time</code> y <code>cap_sys_module</code>.</p>
-        <ul>
-            <li>No puedes cambiarle la hora al reloj del anfitrión físico.</li>
-            <li>No puedes instalar drivers exóticos al hardware de red (Kernel modules).</li>
-            <li><strong>Mitigación instantánea:</strong> Muchos Zero-Days dependen del uso de estos poderes para invadir a nivel módulo.</li>
-        </ul>
-    </div>
+<span class="cm"># PASO 4 — Simular una modificación maliciosa:</span>
+$ sudo touch /usr/bin/aide_test_tamper
 
-    <!-- Slide 15 -->
-    <div class="slide">
-        <h1>Hardening Docker: Drop All Capabilities</h1>
-        <p>Si sabemos que nuestro script web solo procesa texto... ¿Para qué tener siquiera los poderes de red (`CAP_NET_RAW`)? Apliquemos PoLP absoluto:</p>
-        <div class="code-block">
-# Arrancando con 0 poderes mágicos, despojando TODOS los remanentes:
-$ docker run -d --cap-drop=ALL nginx
-        </div>
-        <p>Este contenedor será prácticamente inútil para cualquier atacante. Aunque logre ingresar bajo modo consola, toda invocación al anillo cero explotará (Ej: inhabilitado de efectuar el más mínimo `chown`).</p>
-    </div>
+<span class="cm"># PASO 5 — Detectar el cambio:</span>
+$ sudo aide --check
+<span class="cf">AIDE found differences between database and filesystem!
+Added entries: /usr/bin/aide_test_tamper</span>
 
-    <!-- Slide 16 -->
-    <div class="slide">
-        <h1>Contenedores Rootless (Sin dockerd root)</h1>
-        <p>El daemon de Docker (`dockerd`) requiere usualmente ejecutarse como administrador en Linux. Si crashea dockerd, el host cae.</p>
-        <p><strong>Solución moderna: Rootless Mode o Podman.</strong></p>
-        <p>Ejecutar los contenedores y al propio motor detrás de un subsistema atado al usuario regular. Incluso si ocurre un Breakout (Escape - S22), el hacker aterrizará en el SO anfitrión como usuario "pepito" de clase baja, sin poder quebrar el Ring 0.</p>
-    </div>
+<span class="cm"># Limpiar y actualizar la base tras cambios legítimos:</span>
+$ sudo rm /usr/bin/aide_test_tamper
+$ sudo aide --update
+$ sudo cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db</div>
+</div>
+<div class="ft"><span class="nt">AIDE · Sesión 23</span><span class="ctr">8 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 17 -->
-    <div class="slide">
-        <h1>Sistemas de Archivos Inmutables (Read-Only Root)</h1>
-        <p>¿Por qué permitir a un atacante que descargue sus herramientas (`wget exploit.sh`) o modifique librerías infectadas (`/lib/...`) en el entorno de ejecución?</p>
-        <div class="code-block">
-# Hardening de inmutabilidad (Solo lectura):
-$ docker run -d --read-only nginx
-        </div>
-        <p>Todo el disco virtual se vuelve una roca. Solo se admiten escrituras en carpetas exentas temporales configuradas manualmente (Ej: `/tmp`). El malware moderno no puede anclarse ni sobrevivir a esto.</p>
-    </div>
+<!-- Slide 9 · LSM AppArmor -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual C · Linux Security Modules</div>
+<div class="ct">
+<h2>AppArmor y SELinux: vigilantes del Kernel</h2>
+<p><strong>Linux Security Modules (LSM)</strong> interceptan <em>toda</em> llamada al sistema antes de que toque el hardware, evaluándola contra un perfil predefinido. Incluso si el proceso tiene uid=0 (root), el kernel puede denegar la operación.</p>
+<div class="tce" style="margin-top:.5em;">
+<div class="crd sq">
+<h3>AppArmor</h3>
+<p style="margin-top:.4em;">Adoptado por Ubuntu/Debian. Asigna perfiles de comportamiento por <strong>ruta del ejecutable</strong>. Más legible que SELinux. Docker en Ubuntu inyecta automáticamente un perfil AppArmor a cada contenedor creado.</p>
+<p style="margin-top:.4em;"><strong>Dos modos:</strong> <em>enforce</em> (bloquea la operación y la registra) vs <em>complain</em> (solo registra, no bloquea — útil para crear perfiles nuevos sin romper el sistema).</p>
+<div class="cod" style="margin-top:.4em;">
+<span class="cm"># Ver perfiles activos y su modo:</span>
+$ sudo aa-status
+<span class="cm"># Cambiar un perfil a modo complain (para pruebas):</span>
+$ sudo aa-complain /usr/sbin/nginx
+<span class="cm"># Volver a enforce (producción):</span>
+$ sudo aa-enforce /usr/sbin/nginx</div>
+</div>
+<div class="crd sq">
+<h3>SELinux</h3>
+<p style="margin-top:.4em;">Creado originalmente por la NSA. Estándar en RHEL/CentOS/Fedora. Control de acceso obligatorio (MAC): incluso root no puede hacer lo que la política prohíbe. Sintaxis compleja pero extremadamente potente.</p>
+<p style="margin-top:.4em;" class="nt"><strong>MAC (Mandatory Access Control):</strong> el kernel impone políticas que no pueden ser sobrescritas por ningún usuario, ni siquiera root. Contrasta con DAC (Discretionary), donde el dueño del archivo decide los permisos.</p>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">AppArmor · SELinux · Sesión 23</span><span class="ctr">9 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 18 -->
-    <div class="slide">
-        <h1>Hardening por Red (Network Limits)</h1>
-        <p>Si logran vulnerar tu interfaz, la fase 2 del atacante es conectarse de vuelta a su servidor para descargar instrucciones (Command and Control - C2).</p>
-        <ul>
-            <li>Si el contenedor ejecuta solo una Base de Datos local... ¿Por qué tiene permitido hacer <code>ping 8.8.8.8</code> o abrir túneles salientes al exterior por HTTP?</li>
-            <li><strong>Regla Defensiva:</strong> Aislar siempre mediante iptables, UFW, o redes puente Docker aisladas prohibiendo tráfico de salida (Outbound) ciego.</li>
-        </ul>
-    </div>
+<!-- Slide 10 · SecComp -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual C · SecComp — filtrado de syscalls</div>
+<div class="ct tc">
+<div>
+<h2>Amputar las syscalls que la app no necesita</h2>
+<p><strong>SecComp</strong> (Secure Computing Mode) restringe las llamadas al sistema disponibles para un proceso. Un Kernel moderno expone ~350 syscalls; una app promedio usa ~50. SecComp permite bloquear las 300 restantes.</p>
+<p style="margin-top:.5em;">Si el proceso invoca una syscall vetada, el kernel lo mata con <code>SIGKILL</code> — la señal de terminación inmediata que no puede ser ignorada ni capturada por el proceso.</p>
+<p style="margin-top:.5em;" class="nt">El perfil se define en JSON con dos acciones posibles: <code>SCMP_ACT_ALLOW</code> (permitir la syscall) y <code>SCMP_ACT_ERRNO</code> (rechazarla y devolver un error al proceso, sin matarlo — útil para pruebas).</p>
+</div>
+<div class="iw sq" style="max-height:55%;">
+<svg viewBox="0 0 460 220" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="11">
+  <rect x="10" y="10" width="200" height="95" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="110" y="30" text-anchor="middle" fill="#166534" font-weight="bold">Contenedor confiable</text>
+  <text x="110" y="50" text-anchor="middle" fill="#374151">Nginx intenta read()</text>
+  <text x="110" y="68" text-anchor="middle" fill="#374151">→ SecComp: ¿read en whitelist?</text>
+  <text x="110" y="85" text-anchor="middle" fill="#16a34a" font-weight="bold">¡Sí! → Kernel permite</text>
+  <rect x="250" y="10" width="200" height="95" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+  <text x="350" y="30" text-anchor="middle" fill="#991b1b" font-weight="bold">Contenedor comprometido</text>
+  <text x="350" y="50" text-anchor="middle" fill="#374151">Nginx infectado: reboot()</text>
+  <text x="350" y="68" text-anchor="middle" fill="#374151">→ SecComp: ¿reboot en whitelist?</text>
+  <text x="350" y="85" text-anchor="middle" fill="#dc2626" font-weight="bold">¡No! → SIGKILL. Host salvo.</text>
+  <rect x="130" y="130" width="200" height="36" rx="6" fill="#e8f4fb" stroke="#015583" stroke-width="2"/>
+  <text x="230" y="153" text-anchor="middle" fill="#015583" font-weight="bold">Kernel Linux (Ring 0)</text>
+  <path d="M110,105 L200,130" stroke="#16a34a" stroke-width="1.5" marker-end="url(#g)"/>
+  <path d="M350,105 L260,130" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <defs>
+    <marker id="g" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/></marker>
+  </defs>
+</svg>
+</div>
+</div>
+<div class="ft"><span class="nt">SecComp · Sesión 23</span><span class="ctr">10 / 22</span></div>
+</div>
+</section>
+<div class="iw sq" style="max-height:55%;">
+<svg viewBox="0 0 460 220" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="11">
+  <rect x="10" y="10" width="200" height="95" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="110" y="30" text-anchor="middle" fill="#166534" font-weight="bold">Contenedor confiable</text>
+  <text x="110" y="50" text-anchor="middle" fill="#374151">Nginx intenta read()</text>
+  <text x="110" y="68" text-anchor="middle" fill="#374151">→ SecComp: ¿read en whitelist?</text>
+  <text x="110" y="85" text-anchor="middle" fill="#16a34a" font-weight="bold">¡Sí! → Kernel permite</text>
+  <rect x="250" y="10" width="200" height="95" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+  <text x="350" y="30" text-anchor="middle" fill="#991b1b" font-weight="bold">Contenedor comprometido</text>
+  <text x="350" y="50" text-anchor="middle" fill="#374151">Nginx infectado: reboot()</text>
+  <text x="350" y="68" text-anchor="middle" fill="#374151">→ SecComp: ¿reboot en whitelist?</text>
+  <text x="350" y="85" text-anchor="middle" fill="#dc2626" font-weight="bold">¡No! → SIGKILL. Host salvo.</text>
+  <rect x="130" y="130" width="200" height="36" rx="6" fill="#e8f4fb" stroke="#015583" stroke-width="2"/>
+  <text x="230" y="153" text-anchor="middle" fill="#015583" font-weight="bold">Kernel Linux (Ring 0)</text>
+  <path d="M110,105 L200,130" stroke="#16a34a" stroke-width="1.5" marker-end="url(#g)"/>
+  <path d="M350,105 L260,130" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <defs>
+    <marker id="g" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/></marker>
+  </defs>
+</svg>
+</div>
+</div>
+<div class="ft"><span class="nt">SecComp · Sesión 23</span><span class="ctr">10 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 19 -->
-    <div class="slide">
-        <h1>Práctica 2: El comando prohibido (Seccomp Personalizado)</h1>
-        <p>En lugar de delegar en el perfil estándar, podemos proveer un JSON donde bloqueamos las llamadas a crear nuevas carpetas (`mkdir`).</p>
-        <div class="code-block">
-# Imagina tener profile.json bloqueando mkdir. Al llamarlo:
-$ docker run --security-opt seccomp=profile.json -it alpine sh
+<!-- Slide 11 · Linux Capabilities -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual D · Linux Capabilities</div>
+<div class="ct tc">
+<div>
+<h2>Dividir el poder de root en piezas</h2>
+<p><strong>Linux Capabilities</strong> descomponen el poder total de root (uid=0) en ~40 capacidades independientes. Cada proceso puede tener solo las que necesita.</p>
+<table style="margin-top:.5em;">
+<tr><th>Capability</th><th>Permite</th></tr>
+<tr class="sq"><td><code>CAP_NET_BIND_SERVICE</code></td><td>Abrir puertos &lt;1024 sin ser root</td></tr>
+<tr class="sq"><td><code>CAP_SYS_TIME</code></td><td>Modificar el reloj del sistema</td></tr>
+<tr class="sq"><td><code>CAP_SYS_MODULE</code></td><td>Cargar/descargar módulos del kernel</td></tr>
+<tr class="sq"><td><code>CAP_SYS_ADMIN</code></td><td>Operaciones administrativas generales — casi equivale a root total</td></tr>
+</table>
+</div>
+<div class="cag sq">
+<h3>Docker y capabilities</h3>
+<p style="margin-top:.4em;">Docker elimina por defecto <code>CAP_SYS_TIME</code> y <code>CAP_SYS_MODULE</code> de todos los contenedores. Muchos exploits de Zero-Day dependen exactamente de estas capabilities para operar.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Capabilities · Sesión 23</span><span class="ctr">11 / 22</span></div>
+</div>
+</section>
 
-/ # mkdir carpeta_hack
-mkdir: can't create directory 'carpeta_hack': Operation not permitted
-        </div>
-        <p><strong>Conclusión:</strong> El código intenta ordenar a Ring 0 crear un directorio en Disco. El Ring 0 lo intercepta, cruza con la política JSON, y amputa el proceso. (Syscall capada).</p>
-    </div>
+<!-- Slide 12 · Práctica 1 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase 1 · Inspeccionar capabilities de un contenedor</div>
+<div class="ct">
+<h2>Verificar qué poderes tiene un contenedor estándar</h2>
+<div class="caw" style="margin-bottom:.6em;">
+<p><strong>Enunciado:</strong> lanzar un contenedor Alpine estándar e inspeccionar sus capabilities activas. Comparar con el contenedor <code>--privileged</code>.</p>
+</div>
+<ol>
+<li class="sq">Descargar la imagen si no está en caché: <code>docker pull alpine:latest</code></li>
+<li class="sq">Lanzar el contenedor e instalar la herramienta:
+<div class="cod" style="margin-top:.3em;margin-bottom:.3em;">$ docker run --rm -it alpine sh
+/ # apk add --no-cache libcap2   <span class="cm"># paquete correcto en Alpine</span></div></li>
+<li class="sq">Ver capabilities actuales del proceso: <code>capsh --print</code> — observar la línea <code>Current:</code></li>
+<li class="sq">Salir (<code>exit</code>) y repetir con privileged:
+<div class="cod" style="margin-top:.3em;margin-bottom:.3em;">$ docker run --rm -it --privileged alpine sh
+/ # apk add --no-cache libcap2 &amp;&amp; capsh --print</div></li>
+<li class="sq"><strong>Pregunta de análisis:</strong> ¿Qué capacidades aparecen en <code>--privileged</code> que no estaban en el contenedor normal? Busca <code>cap_sys_admin</code>, <code>cap_sys_module</code>, <code>cap_sys_time</code>.</li>
+</ol>
+<p class="nt" style="margin-top:.5em;">Actividad de práctica formativa en clase. No evaluativa.</p>
+</div>
+<div class="ft"><span class="nt">Práctica 1 · Sesión 23</span><span class="ctr">12 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 20 -->
-    <div class="slide">
-        <h1>Automatizando el Escaneo en Construcción</h1>
-        <p>Hardening no es solo "apagar cosas". Es auditar *antes* de desplegar.</p>
-        <p><strong>Escáner de Imágenes (Trivy, Clair):</strong> Herramientas que analizan tu plantilla contenedorizada offline en búsqueda de vulnerabilidades conocidas (CVE) obsoletas incrustadas, evaluando si las librerías `openssl` instaladas están marchitas y requieren actualización programada urgente.</p>
-    </div>
+<!-- Slide 13 · Cap-drop y read-only -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual D · Hardening de contenedores</div>
+<div class="ct">
+<h2>Contenedores con privilegios mínimos</h2>
+<div class="tce">
+<div>
+<h3>cap-drop=ALL + cap-add selectivo</h3>
+<p style="margin-top:.4em;">Desactiva todas las capabilities y luego agrega solo la estrictamente necesaria. Si un atacante compromete el contenedor, no puede invocar ninguna operación privilegiada que no estuviese explícitamente habilitada.</p>
+<div class="cod" style="margin-top:.4em;">$ docker run -d \
+  --cap-drop=ALL \
+  --cap-add=NET_BIND_SERVICE \
+  nginx
+<span class="cm"># NET_BIND_SERVICE: único privilegio que nginx necesita</span>
+<span class="cm"># (abrir puerto 80, que es < 1024)</span></div>
+</div>
+<div>
+<h3>--read-only + --tmpfs</h3>
+<p style="margin-top:.4em;">Hace el sistema de archivos del contenedor inmutable. El malware no puede descargar herramientas ni modificar librerías. <code>--tmpfs</code> monta un sistema de archivos temporal en memoria solo para las rutas que realmente necesitan escritura — desaparece al detener el contenedor.</p>
+<div class="cod" style="margin-top:.4em;">$ docker run -d \
+  --read-only \
+  --tmpfs /tmp \
+  --tmpfs /var/cache/nginx \
+  nginx
+<span class="cm"># /tmp y el cache: escribibles en RAM, solo mientras corre</span>
+<span class="cm"># El resto del sistema de archivos: inmutable</span></div>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Cap-drop · Read-only · Sesión 23</span><span class="ctr">13 / 22</span></div>
+</div>
+</section>
 
-    <!-- Slide 21 -->
-    <div class="slide">
-        <h1>Hardening en el Dockerfile (La fase del Desarrollador)</h1>
-        <p>El error más grande proviene de la imagen madre generada de mal modo (Sesión 21/22).</p>
-        <div class="code-block">
-FROM ubuntu:latest
-# ERROR 1: Ejecutar la app compilada siendo ROOT.
-COPY mi_app /app
-# SOLUCIÓN: Crear un usuario común sin permisos e instruir su uso:
-RUN useradd -ms /bin/bash usuario_debil
-USER usuario_debil
-CMD ["./app"]
-        </div>
-        <p>La simple orden `USER` previene la escalada del 90% del malware inyectado vía web.</p>
-    </div>
+<!-- Slide 14 · Visual B — Dockerfile hardening -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Recurso visual B · Hardening en el Dockerfile</div>
+<div class="ct tce">
+<div>
+<h3 style="color:#dc2626;">Dockerfile inseguro</h3>
+<div class="cod" style="margin-top:.4em;">FROM ubuntu:latest
 
-    <!-- Slide 22 -->
-    <div class="slide">
-        <h1>Manejo de Parches y Ciclo de Vida Lifecycle</h1>
-        <p>El Hardening no es una pastilla mágica que se toma una vez y dejas al sistema tirado. Requiere higiene rutinaria.</p>
-        <div class="box">
-            <p><strong>Patch Management:</strong> Si tu política SELinux y Seccomp son geniales, pero no actualizaste el Kernel base en 4 años de producción (Uptime absurdo), un atacante descubrirá un CVE que permite atravesar mágicamente esas paredes (Dirty Pipe / Dirty COW).</p>
-        </div>
-        <p>Reiniciar es vital: Un Kernel solo se actualiza cuando el sistema operativo arranca la tabla de memoria física en el nuevo módulo base.</p>
-    </div>
+<span class="cm"># La app corre como root (uid=0)</span>
+COPY mi_app /app/mi_app
+CMD ["/app/mi_app"]
 
-    <!-- Slide 23 -->
-    <div class="slide">
-        <h1>Resumen de Operaciones Defensivas</h1>
-        <ul>
-            <li>No delegues todo a contenedores: Modifica y endurece tu OS base instalando <strong>AppArmor</strong> y deshabilitando módulos USB no usados o redes obsoletas (IPX).</li>
-            <li>Inactiva el uso de permisos <strong>SUID</strong> sobre comandos ajenos.</li>
-            <li>Implementa bloqueos draconianos reduciendo al usuario solo a perfiles <strong>PoLP</strong>.</li>
-            <li>Al levantar contenedores, suma banderas defensivas: `--cap-drop=ALL` y `--read-only`. Obliga al atacante a pelear inútilmente por privilegios contra la muralla.</li>
-        </ul>
-    </div>
+<span class="cm"># Si mi_app es comprometida,
+# el atacante tiene root inmediato.</span></div>
+</div>
+<div>
+<h3 style="color:#16a34a;">Dockerfile endurecido</h3>
+<div class="cod" style="margin-top:.4em;">FROM ubuntu:22.04
 
-    <!-- Slide 24 -->
-    <div class="slide">
-        <h1>La Transición Inminente al CI/CD</h1>
-        <p>Realizar hardening a mano servidor por servidor, contenedor por contenedor es lento y sumamente propenso a falencias humanas (alguien olvida usar el comando DropCap).</p>
-        <p>¿Qué sigue? Estandarizar la seguridad en configuraciones automatizadas persistentes.</p>
-        <h2 style="color:var(--highlight); margin-top:20px;">Siguiente Sesión (S24): Configuración como Código y Ambientes de desarrollo robustos usando IA en escenarios "Infraestructura CI/CD".</h2>
-    </div>
+<span class="cm"># Crear usuario sin privilegios:</span>
+RUN useradd -ms /bin/bash appuser
 
-    <!-- Slide 25 -->
-    <div class="slide">
-        <h1>Cierre de la Sesión</h1>
-        <div class="box pulse-shield" style="margin-bottom: 20px;">
-            <h3>Seguridad Integrada</h3>
-            <p>El Hardening transforma el Sistema Operativo y sus Subsistemas Virtuales de blancos fáciles y pasivos, a defensores activos en Tiempo Real cruzando interrupciones por perfiles estrictos.</p>
-        </div>
-        <p>Temas centrales consolidados: LSM (SELinux/AppArmor), Seccomp Syscall Filtering, Modos Rootless y Minimum Privileges (PoLP).</p>
-    </div>
+COPY mi_app /app/mi_app
+RUN chown appuser:appuser /app/mi_app
 
-    <!-- Controls -->
-    <div class="controls">
-        <button id="prevBtn" onclick="prevSlide()">Anterior</button>
-        <button id="nextBtn" onclick="nextSlide()">Siguiente</button>
-    </div>
-    <div class="progress-bar" id="progressBar"></div>
+<span class="cm"># Cambiar a usuario no-root:</span>
+USER appuser
 
+CMD ["/app/mi_app"]
+<span class="cm"># Si comprometida: uid=1001, sin shell útil.</span></div>
+</div>
+</div>
+<p class="cal sq" style="margin-top:.4em;"><strong>La directiva USER en el Dockerfile previene la escalada del 90% del malware inyectado vía vulnerabilidad web.</strong></p>
+<div class="ft"><span class="nt">Dockerfile hardening · Sesión 23</span><span class="ctr">14 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 15 · CIS Benchmarks -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual E · Estándares industriales</div>
+<div class="ct tc">
+<div>
+<h2>CIS Benchmarks — la referencia de la industria</h2>
+<p><strong>CIS</strong> (Center for Internet Security) publica listas de verificación de hardening comprobadas y reconocidas por la industria. Toda auditoría de seguridad seria las referencia.</p>
+<p style="margin-top:.5em;">Ejemplos de directivas CIS para Linux:</p>
+<ul style="margin-top:.3em;">
+<li><em>1.1.1.1</em> — Deshabilitar <code>cramfs</code> (sistema de archivos inseguro)</li>
+<li><em>5.2.1</em> — Permisos en <code>/etc/ssh/sshd_config</code> deben ser 600</li>
+<li><em>5.2.8</em> — <code>PermitRootLogin no</code> obligatorio</li>
+<li><em>5.4.1.1</em> — Máximo 90 días de vigencia para contraseñas</li>
+</ul>
+</div>
+<div class="crd sq">
+<h3>Trivy — escaneo de CVEs en imágenes</h3>
+<p style="margin-top:.4em;"><strong>CVE</strong> (Common Vulnerabilities and Exposures): identificador público de una vulnerabilidad conocida. <strong>Trivy</strong> analiza cada capa de una imagen Docker y reporta qué librerías tienen CVEs publicados.</p>
+<div class="cod" style="margin-top:.4em;font-size:clamp(9px,.8vw,11px);">
+<span class="cm"># Instalar Trivy en Ubuntu 22.04+ (método moderno sin apt-key):</span>
+$ sudo apt install wget
+$ wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+  | gpg --dearmor \
+  | sudo tee /usr/share/keyrings/trivy.gpg &gt; /dev/null
+$ echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] \
+  https://aquasecurity.github.io/trivy-repo/deb \
+  $(lsb_release -sc) main" \
+  | sudo tee /etc/apt/sources.list.d/trivy.list
+$ sudo apt update &amp;&amp; sudo apt install trivy
+
+<span class="cm"># Escanear — muestra todas las vulnerabilidades:</span>
+$ trivy image nginx:latest
+<span class="cf">Total: 23 (HIGH: 5, CRITICAL: 2)</span>
+
+<span class="cm"># Solo críticas y altas (lo que bloquearía un pipeline CI/CD):</span>
+$ trivy image --severity HIGH,CRITICAL nginx:latest</div>
+</div>
+</div>
+<div class="ft"><span class="nt">CIS Benchmarks · Sesión 23</span><span class="ctr">15 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 16 · Contenedores rootless -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual E · Contenedores rootless</div>
+<div class="ct tc">
+<div>
+<h2>¿Qué pasa si el daemon Docker es comprometido?</h2>
+<p><code>dockerd</code> normalmente corre como root. Si hay una vulnerabilidad en el daemon, el atacante obtiene root en el host directamente — sin necesitar un Container Breakout.</p>
+<p style="margin-top:.5em;"><strong>Rootless Mode:</strong> el daemon <code>dockerd</code> y todos sus contenedores corren bajo un usuario ordinario sin privilegios. Si ocurre un breakout, el atacante aterriza en el host como ese usuario, sin capacidad de escalar.</p>
+<p style="margin-top:.5em;"><strong>Podman</strong> es una alternativa a Docker que es rootless por diseño — no tiene daemon central corriendo como root. Cada contenedor es un proceso hijo directo del usuario que lo lanzó.</p>
+</div>
+<div class="cag sq">
+<h3>Activar Docker Rootless</h3>
+<div class="cod" style="margin-top:.4em;">
+<span class="cm"># Prerrequisito: instalar uidmap (mapeo de UIDs en namespaces):</span>
+$ sudo apt install uidmap
+
+<span class="cm"># Instalar el modo rootless para el usuario actual:</span>
+$ dockerd-rootless-setuptool.sh install
+
+<span class="cm"># Iniciar el daemon bajo el usuario actual (no root):</span>
+$ systemctl --user start docker
+$ systemctl --user enable docker  <span class="cm"># arrancar en cada login</span>
+
+<span class="cm"># Verificar: dockerd ya no corre como root</span>
+$ ps aux | grep dockerd
+<span class="cs">juan    1234  dockerd ...</span> <span class="cm"># uid=1000, no root</span>
+
+<span class="cm"># Configurar la variable de entorno para este usuario:</span>
+$ export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Rootless · Sesión 23</span><span class="ctr">16 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 17 · Práctica 2 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase 2 · SecComp personalizado</div>
+<div class="ct">
+<h2>Bloquear una syscall específica con un perfil JSON</h2>
+<div class="caw" style="margin-bottom:.5em;">
+<p><strong>Enunciado:</strong> crear un perfil SecComp que bloquee la syscall <code>mkdir</code> y verificar que el contenedor no puede crear directorios. El perfil usa <code>SCMP_ACT_ERRNO</code> (devuelve error al proceso) en lugar de <code>SCMP_ACT_KILL</code> (mataría el proceso), lo que permite observar el rechazo sin que el contenedor termine.</p>
+</div>
+<div class="tce">
+<div>
+<p style="margin-bottom:.3em;"><strong>PASO 1 — Crear el archivo del perfil en el host:</strong></p>
+<div class="cod">
+<span class="cm"># En la máquina host (no dentro del contenedor):</span>
+$ mkdir -p ~/seccomp-demo
+$ cat &gt; ~/seccomp-demo/deny-mkdir.json &lt;&lt;'EOF'
+{
+  "defaultAction": "SCMP_ACT_ALLOW",
+  "syscalls": [{
+    "names": ["mkdir", "mkdirat"],
+    "action": "SCMP_ACT_ERRNO"
+  }]
+}
+EOF
+<span class="cm"># defaultAction ALLOW = todo permitido por defecto</span>
+<span class="cm"># Solo mkdir y mkdirat quedan bloqueadas</span>
+$ cat ~/seccomp-demo/deny-mkdir.json  <span class="cm"># verificar</span></div>
+</div>
+<div>
+<p style="margin-bottom:.3em;"><strong>PASO 2 — Lanzar y probar:</strong></p>
+<div class="cod">
+<span class="cm"># --security-opt seccomp= aplica el perfil al contenedor</span>
+<span class="cm"># La ruta debe ser absoluta (no relativa):</span>
+$ docker run --rm -it \
+  --security-opt \
+  seccomp=$HOME/seccomp-demo/deny-mkdir.json \
+  alpine sh
+
+<span class="cm"># Intentar crear directorio — debe fallar:</span>
+/ # mkdir prueba
+<span class="cf">mkdir: can't create directory
+'prueba': Operation not permitted</span>
+
+<span class="cm"># Verificar que otras operaciones funcionan normalmente:</span>
+/ # touch archivo.txt   <span class="cm"># debe funcionar (usa syscall open/creat)</span>
+/ # ls                  <span class="cm"># debe funcionar</span></div>
+<p class="nt" style="margin-top:.4em;">El kernel interceptó <code>mkdir</code>, la cruzó con el perfil y la rechazó. El resto del contenedor sigue funcionando normalmente.</p>
+</div>
+</div>
+<p class="nt">Actividad de práctica formativa en clase. No evaluativa.</p>
+</div>
+<div class="ft"><span class="nt">Práctica 2 · Sesión 23</span><span class="ctr">17 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 18 · Aislamiento de red -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual F · Hardening de red</div>
+<div class="ct tc">
+<div>
+<h2>Limitar conectividad saliente del contenedor</h2>
+<p>Después de comprometer un contenedor, el atacante necesita conectarse a su servidor de Command &amp; Control (C2) para recibir instrucciones y exfiltrar datos.</p>
+<p style="margin-top:.5em;">Si la base de datos solo sirve consultas internas, ¿por qué tiene permitido hacer <code>ping 8.8.8.8</code> o abrir conexiones salientes al exterior?</p>
+</div>
+<div class="cod sq">
+<span class="cm"># PASO 1 — Crear red interna aislada (sin acceso a internet):</span>
+$ docker network create \
+  --internal \
+  --driver bridge \
+  red_interna
+
+<span class="cm"># PASO 2 — Lanzar la base de datos en esa red (con nombre):</span>
+$ docker run -d \
+  --name postgres_db \
+  --network red_interna \
+  -e POSTGRES_PASSWORD=secreto \
+  postgres:16
+
+<span class="cm"># PASO 3 — Verificar que el contenedor no puede alcanzar internet:</span>
+$ docker exec postgres_db ping -c2 8.8.8.8
+<span class="cf">ping: connect: Network is unreachable</span>
+
+<span class="cm"># PASO 4 — Verificar que otro contenedor en la misma red sí puede comunicarse:</span>
+$ docker run --rm --network red_interna alpine \
+  ping -c2 postgres_db   <span class="cm"># debe responder</span>
+
+<span class="cm"># Limpiar:</span>
+$ docker stop postgres_db &amp;&amp; docker rm postgres_db
+$ docker network rm red_interna</div>
+</div>
+<div class="ft"><span class="nt">Red · Sesión 23</span><span class="ctr">18 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 19 · Visual C — Errores comunes -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Recurso visual C · Errores comunes y correcciones</div>
+<div class="ct">
+<h2>Los 5 errores más frecuentes y su corrección</h2>
+<table>
+<tr><th>Error</th><th>Impacto</th><th>Corrección</th></tr>
+<tr class="sq"><td>Usar <code>--privileged</code> para resolver permisos</td><td>Desactiva todos los controles del kernel</td><td>Identificar la capability específica necesaria y agregarla con <code>--cap-add</code></td></tr>
+<tr class="sq"><td>Montar <code>docker.sock</code> en contenedores web</td><td>Acceso total al daemon host</td><td>Usar APIs específicas del orquestador; nunca exponer el socket</td></tr>
+<tr class="sq"><td>Correr la app como root en el contenedor</td><td>Compromiso de la app = root en el contenedor</td><td>Directiva <code>USER</code> en el Dockerfile</td></tr>
+<tr class="sq"><td>Imagen sin actualizar con CVEs conocidos</td><td>Exploit automatizado en minutos</td><td>Escanear con Trivy antes de desplegar; actualizar la imagen base</td></tr>
+<tr class="sq"><td>SSH con PasswordAuthentication yes</td><td>Vulnerable a fuerza bruta</td><td><code>PasswordAuthentication no</code> + claves Ed25519 obligatorias</td></tr>
+</table>
+</div>
+<div class="ft"><span class="nt">Errores comunes · Sesión 23</span><span class="ctr">19 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 20 · Patch management -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual F · Ciclo de vida y parches</div>
+<div class="ct tc">
+<div>
+<h2>Hardening no es un evento — es higiene rutinaria</h2>
+<p>Una política SecComp y AppArmor perfectas no protegen contra un CVE publicado ayer en el Kernel que todavía no fue parcheado.</p>
+<ul style="margin-top:.5em;">
+<li><strong>Dirty COW (CVE-2016-5195) y Dirty Pipe (CVE-2022-0847):</strong> dos vulnerabilidades del kernel de Linux que permitían a cualquier proceso sin privilegios sobrescribir archivos de solo lectura — incluyendo <code>/etc/passwd</code>. Un atacante dentro de un contenedor podía usarlas para escalar a root en el host, saltando AppArmor y SecComp porque el exploit operaba dentro del propio kernel.</li>
+<li><strong>El dilema del uptime:</strong> un servidor que lleva meses sin reiniciarse probablemente tiene un kernel con CVEs críticos sin aplicar en memoria.</li>
+</ul>
+</div>
+<div class="caw sq">
+<h3>Reiniciar es obligatorio</h3>
+<p style="margin-top:.4em;"><code>apt upgrade</code> descarga e instala el nuevo kernel en disco, pero el kernel viejo sigue corriendo en memoria hasta el próximo reinicio. Ubuntu crea el archivo <code>/var/run/reboot-required</code> automáticamente cuando hay un parche que requiere reinicio.</p>
+<div class="cod" style="margin-top:.4em;">
+<span class="cm"># Ver el kernel corriendo ahora mismo:</span>
+$ uname -r
+<span class="cs">6.8.0-51-generic</span>
+
+<span class="cm"># Ver kernels instalados en disco (puede haber uno más nuevo):</span>
+$ dpkg -l 'linux-image-*' | grep '^ii' | awk '{print $2}'
+
+<span class="cm"># Ubuntu indica automáticamente si hay reinicio pendiente:</span>
+$ [ -f /var/run/reboot-required ] &amp;&amp; \
+  cat /var/run/reboot-required.pkgs
+<span class="cm"># Si muestra linux-image-X.X.X = hay kernel nuevo sin activar</span>
+
+<span class="cm"># Aplicar parches y reiniciar en ventana de mantenimiento:</span>
+$ sudo apt update &amp;&amp; sudo apt upgrade -y
+$ sudo reboot</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Patch management · Sesión 23</span><span class="ctr">20 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 21 · Síntesis técnica -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Síntesis técnica</div>
+<div class="ct">
+<h2>Resumen de operaciones defensivas</h2>
+<div class="tce" style="margin-top:.3em;">
+<div class="cal sq"><p><strong>Usuarios y grupos:</strong> cuentas de servicio sin shell (<code>nologin</code>), sudo granular con <code>visudo</code>, contraseñas con expiración (<code>chage -M 90</code>).</p></div>
+<div class="cal sq"><p><strong>Criptografía operativa:</strong> SSH solo con claves Ed25519, <code>PasswordAuthentication no</code>. AIDE para monitoreo de integridad de binarios del sistema.</p></div>
+<div class="cag sq"><p><strong>Kernel LSM:</strong> AppArmor en modo enforce en Ubuntu. SecComp para filtrar syscalls no usadas por la app. Ningún perfil es mágico — debe ser específico para la app.</p></div>
+<div class="cag sq"><p><strong>Contenedores:</strong> <code>--cap-drop=ALL</code> + solo capabilities necesarias. <code>--read-only</code> con tmpfs para lo escribible. Directiva <code>USER</code> en el Dockerfile. Nunca <code>--privileged</code> en producción.</p></div>
+</div>
+</div>
+<div class="ft"><span class="nt">Síntesis · Sesión 23</span><span class="ctr">21 / 22</span></div>
+</div>
+</section>
+
+<!-- Slide 22 · Puente a S24 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Puente técnico a la siguiente sesión</div>
+<div class="ct tce">
+<div>
+<h2>El problema del hardening manual</h2>
+<p>Aplicar <code>--cap-drop=ALL</code> y <code>--read-only</code> a mano en cada <code>docker run</code> es lento y propenso al olvido humano. Una infraestructura con cientos de contenedores hace esto imposible de mantener de forma consistente.</p>
+<p style="margin-top:.5em;">¿Y si el hardening pudiera estar codificado, versionado en Git y aplicado automáticamente por un robot cada vez que se despliega?</p>
+</div>
+<div class="cal sq">
+<h3>Sesión 24: Infraestructura como Código</h3>
+<p style="margin-top:.5em;">De comandos imperativos a YAML declarativo. Docker Compose, DevContainers y el rol de la IA como co-piloto de arquitectura de seguridad. El hardening deja de ser un paso manual y se convierte en parte del código del sistema.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">22 / 22</span></div>
+</div>
+</section>
+
+<div id="tnv" class="tnv">
+<button id="pb">&lt;</button>
+<button id="nb">&gt;</button>
 </div>
 
+</div></div>
 <script>
-    let currentSlide = 0;
-    const slides = document.querySelectorAll('.slide');
-    const progressBar = document.getElementById('progressBar');
-
-    function updatePresentation() {
-        slides.forEach((slide, index) => {
-            if (index === currentSlide) {
-                slide.classList.add('active');
-            } else {
-                slide.classList.remove('active');
-            }
-        });
-        
-        const progress = ((currentSlide + 1) / slides.length) * 100;
-        progressBar.style.width = progress + '%';
-        
-        document.getElementById('prevBtn').style.opacity = currentSlide === 0 ? '0.5' : '1';
-        document.getElementById('nextBtn').style.opacity = currentSlide === slides.length - 1 ? '0.5' : '1';
-    }
-
-    function nextSlide() {
-        if (currentSlide < slides.length - 1) {
-            currentSlide++;
-            updatePresentation();
-        }
-    }
-
-    function prevSlide() {
-        if (currentSlide > 0) {
-            currentSlide--;
-            updatePresentation();
-        }
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
-        if (e.key === 'ArrowLeft') prevSlide();
-    });
-
-    updatePresentation();
+const tg=document.getElementById("stage"),sl=document.querySelectorAll(".slide");
+let ci=0;
+function sw(n){
+sl[ci].classList.remove("active");
+ci=(n+sl.length)%sl.length;
+sl[ci].classList.add("active");
+const s=sl[ci].querySelectorAll(".sq");
+s.forEach(x=>x.classList.remove("vs"));
+let t=0; s.forEach(x=>{setTimeout(()=>x.classList.add("vs"),t); t+=200;});
+}
+document.getElementById("pb").onclick=(e)=>{e.stopPropagation();sw(ci-1);};
+document.getElementById("nb").onclick=(e)=>{e.stopPropagation();sw(ci+1);};
+document.addEventListener("keydown",e=>{
+if(e.key==="ArrowRight"||e.key==="Space"||e.key==="Enter"){e.preventDefault();sw(ci+1);}
+else if(e.key==="ArrowLeft"){e.preventDefault();sw(ci-1);}
+else if(e.key==="f"){
+if(!document.fullscreenElement) tg.requestFullscreen().catch(()=>{});
+else document.exitFullscreen();
+}
+});
+let ts=0;
+document.addEventListener("touchstart",e=>{ts=e.changedTouches[0].screenX;});
+document.addEventListener("touchend",e=>{
+let te=e.changedTouches[0].screenX;
+if(ts-te>40) sw(ci+1); else if(te-ts>40) sw(ci-1);
+});
+sw(0);
 </script>
 </body>
 </html>
