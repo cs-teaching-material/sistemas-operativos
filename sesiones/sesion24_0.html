@@ -1,466 +1,827 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesión 24: Configuración como Código (IaC), DevOps e IA</title>
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --text-light: #f8fafc;
-            --accent: #8b5cf6; /* Morado DevOps/IA */
-            --accent-glow: rgba(139, 92, 246, 0.5);
-            --code-bg: #1e293b;
-            --highlight: #38bdf8;
-            --success: #10b981;
-        }
-
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .presentation-container {
-            width: 100vw;
-            height: 56.25vw;
-            max-height: 100vh;
-            max-width: 177.78vh;
-            position: relative;
-            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
-            overflow: hidden;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-        }
-
-        .slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            padding: clamp(20px, 4vw, 60px);
-            box-sizing: border-box;
-        }
-
-        .slide.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        h1 {
-            font-size: clamp(32px, 4.5vw, 70px);
-            color: var(--highlight);
-            margin-bottom: clamp(10px, 2vw, 30px);
-            border-bottom: 2px solid var(--accent);
-            padding-bottom: 15px;
-        }
-
-        h2 {
-            font-size: clamp(24px, 3vw, 50px);
-            color: var(--text-light);
-            margin-bottom: clamp(10px, 1.5vw, 25px);
-        }
-
-        p, li {
-            font-size: clamp(16px, 2.2vw, 35px);
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        ul { margin-left: clamp(20px, 3vw, 40px); }
-
-        .code-block {
-            background-color: var(--code-bg);
-            padding: clamp(15px, 2vw, 30px);
-            border-radius: 8px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: clamp(14px, 1.8vw, 28px);
-            color: #c4b5fd;
-            border-left: 5px solid var(--accent);
-            white-space: pre-wrap;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: clamp(10px, 2vw, 30px);
-            right: clamp(10px, 2vw, 30px);
-            z-index: 100;
-        }
-
-        button {
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            padding: clamp(10px, 1.2vw, 20px) clamp(20px, 2.5vw, 40px);
-            font-size: clamp(14px, 1.8vw, 24px);
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
-
-        button:hover {
-            background-color: #6d28d9;
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        .progress-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: clamp(3px, 0.5vw, 6px);
-            background-color: var(--highlight);
-            transition: width 0.3s ease;
-            z-index: 99;
-        }
-
-        .diagram-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-grow: 1;
-            margin-top: 20px;
-        }
-
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: clamp(20px, 3vw, 50px);
-            height: 100%;
-        }
-
-        .pulse-devops { animation: pulsar-devops 3s infinite linear; }
-        @keyframes pulsar-devops { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .box { background: rgba(139, 92, 246, 0.1); border: 2px solid var(--accent); padding: 20px; border-radius: 10px; text-align: center; }
-
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SO · S24 · Criptografía Aplicada y Seguridad en Comunicaciones</title>
+<style>
+:root{
+--az:#015583;--tur:#05ADBC;--txt:#201F4B;--mu:#6b7280;
+--safe-top-cover:clamp(208px,9vh,128px);
+--safe-left-cover:clamp(585px,5.5vw,110px);
+--safe-right-cover:clamp(28px,3vw,72px);
+--safe-bottom-cover:clamp(54px,6vh,92px);
+--safe-top:clamp(100px,9vh,132px);
+--safe-side:clamp(66px,5.5vw,108px);
+--safe-bottom:clamp(52px,6vh,90px);
+}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+.deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,20px);box-sizing:border-box;}
+.stage{width:min(96vw,calc(90vh*(16/9)));aspect-ratio:16/9;position:relative;}
+.slide{position:absolute;inset:0;display:none;box-shadow:0 12px 36px rgba(0,0,0,.3);overflow:hidden;}
+.slide.active{display:block;}
+.cov{background:url("../img/Portada.png") center/cover no-repeat,#015583;color:#fff;}
+.cnt{background:url("../img/Contenido.png") top left/contain no-repeat,#fff;color:var(--txt);}
+.inn{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom);display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);}
+.cov .inn{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);justify-content:center;}
+.ct{flex:1;display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);min-height:0;overflow:auto;overflow-x:hidden;}
+.hd{color:var(--tur);font-size:clamp(12px,1.1vw,15px);font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-bottom:2px solid var(--tur);padding-bottom:3px;}
+h1{margin:0;font-size:clamp(26px,3.2vw,44px);line-height:1.08;color:#fff;}
+h2{margin:0;font-size:clamp(18px,2vw,28px);line-height:1.15;color:var(--az);}
+h3{margin:0;font-size:clamp(14px,1.5vw,20px);color:var(--az);}
+p{margin:0;font-size:clamp(13px,1.2vw,17px);line-height:1.4;}
+li{font-size:clamp(13px,1.2vw,17px);line-height:1.4;margin-bottom:.5em;}
+ul,ol{margin:0;padding-left:1.2em;}
+.sub{color:#f7df00;font-weight:800;font-size:clamp(16px,1.7vw,22px);margin-top:8px;}
+.nt{color:var(--mu);font-size:clamp(10px,.95vw,13px);line-height:1.35;}
+.cal{background:#f0f9ff;border-left:5px solid var(--tur);padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.caw{background:#fffbe6;border-left:5px solid #e6a817;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cad{background:#fef2f2;border-left:5px solid #dc2626;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cag{background:#f0fdf4;border-left:5px solid #16a34a;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.tc{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(10px,1.4vw,20px);align-items:start;min-height:0;}
+.tce{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.4vw,20px);align-items:start;}
+.crd{background:#f8faff;border:1px solid #dde2f1;border-radius:8px;padding:clamp(8px,.9vw,12px);}
+.cod{font-family:ui-monospace,monospace;font-size:clamp(10px,.9vw,12.5px);line-height:1.5;background:#0b1020;color:#e5e7eb;border-radius:7px;padding:clamp(7px,.9vw,11px);white-space:pre-wrap;border:1px solid #1f2937;max-height:min(36vh,320px);overflow:auto;}
+.cm{color:#6b7280;}.cc{color:#7dd3fc;font-weight:bold;}.cs{color:#86efac;}
+.cn{color:#fde68a;}.cf{color:#c4b5fd;}
+.iw{width:100%;border-radius:7px;border:1px solid #dde2f1;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:clamp(10px,.95vw,13px);}
+th,td{border:1px solid #dde2f1;padding:clamp(4px,.7vw,8px);color:var(--txt);vertical-align:top;}
+th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);letter-spacing:.05em;color:var(--az);}
+.ft{display:flex;justify-content:space-between;align-items:center;padding-top:3px;border-top:1px solid #dde2f1;}
+.cov .ft{border-top:1px solid rgba(255,255,255,.15);margin-top:auto;}
+.ctr{font-weight:800;color:var(--az);font-size:clamp(11px,.95vw,13px);}
+.cov .ctr{color:#e5edf8;}
+.tnv{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;z-index:10;}
+.tnv button{pointer-events:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(221,226,241,.9);background:rgba(255,255,255,.9);color:var(--txt);font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.1);}
+#tnv{opacity:0;transition:.15s;}
+.stage:hover #tnv{opacity:1;}
+@media(hover:none){#tnv{opacity:1;}}
+.sq{opacity:0;transform:translateY(9px);transition:opacity .32s,transform .32s;}
+.sq.vs{opacity:1;transform:translateY(0);}
+</style>
 </head>
 <body>
+<div class="deck"><div class="stage" id="stage">
 
-<div class="presentation-container">
+<!-- Slide 1 · Portada -->
+<section class="slide cov active">
+<div class="inn"><div class="ct" style="justify-content:center;">
+<span class="hd">Sistemas Operativos · Unidad 3</span>
+<h1>Sesión 24</h1>
+<h1>Criptografía Aplicada y<br>Seguridad en Comunicaciones</h1>
+<div class="sub">SSH · TLS · GPG · Hashes · Certificados</div>
+<div class="cal" style="max-width:78%;margin-top:clamp(10px,1.4vw,18px);">
+<p style="color:var(--txt);">Del cifrado simétrico al asimétrico: cómo el sistema operativo protege la confidencialidad e integridad de los datos en tránsito y en reposo, y cómo el ingeniero aplica estas herramientas en la práctica diaria.</p>
+</div>
+<p class="nt" style="margin-top:auto;color:#201F4B;font-weight:bold;">&larr; &rarr; navegación · F pantalla completa</p>
+</div>
+<div class="ft"><span class="nt" style="color:#e5edf8;">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">1 / 21</span></div>
+</div>
+</section>
 
-    <!-- Slide 1 -->
-    <div class="slide active">
-        <h1 style="text-align:center; font-size: 6vw; margin-top: 15%; border: none;">Sesión 24:<br>Infraestructura como Código e IA</h1>
-        <p style="text-align:center; color: var(--highlight);">Culminación: Automatizando el Kernel y los Contenedores</p>
-    </div>
+<!-- Slide 2 · Propósito -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Propósito técnico de la sesión</div>
+<div class="ct tc">
+<div>
+<h2>Qué dominaremos hoy</h2>
+<ul>
+<li>Distinguir cifrado <strong>simétrico</strong> (AES) del <strong>asimétrico</strong> (RSA, Ed25519) y sus casos de uso.</li>
+<li>Comprender el rol de las <strong>funciones hash</strong> (SHA-256, SHA-3) en integridad y autenticación.</li>
+<li>Configurar y usar <strong>SSH con llave pública</strong> para autenticación segura sin contraseña.</li>
+<li>Entender el modelo de <strong>PKI y certificados TLS</strong> que protege las comunicaciones web.</li>
+<li>Usar <strong>GPG</strong> para firmar y cifrar archivos desde la terminal.</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Resultado observable</strong></p>
+<p>Al finalizar, el estudiante podrá generar un par de llaves SSH, configurar autenticación por llave en un servidor, verificar la integridad de un archivo con su hash SHA-256 y explicar cómo TLS protege una conexión HTTPS.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Propósito · Sesión 24</span><span class="ctr">2 / 21</span></div>
+</div>
+</section>
 
-    <!-- Slide 2 -->
-    <div class="slide">
-        <h1>Objetivos de la Sesión</h1>
-        <ul>
-            <li>Transicionar de comandos imperativos a sintaxis declarativa YAML/JSON.</li>
-            <li>Entender el flujo DevOps y CI/CD en sistemas modernos.</li>
-            <li>Implementar Ambientes de Desarrollo Efímeros (DevContainers).</li>
-            <li>Explorar el impacto de la Inteligencia Artificial (AIOps y LLMs) en la gestión de infraestructura.</li>
-            <li>Concluir la ruta de aprendizaje: Del Silicon al Cloud asistido por IA.</li>
-        </ul>
-    </div>
+<!-- Slide 3 · Activación -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Activación de conocimiento base</div>
+<div class="ct tc">
+<div>
+<h2>¿Qué vimos en S22 sobre criptografía?</h2>
+<p>En la Sesión 22 introdujimos amenazas y el rol del cifrado como defensa. Identificamos que:</p>
+<ul style="margin-top:.5em;">
+<li><strong>Hash</strong>: función unidireccional que produce un resumen de tamaño fijo (MD5 roto, SHA-256 vigente).</li>
+<li><strong>AES</strong>: cifrado simétrico — misma llave para cifrar y descifrar.</li>
+<li><strong>Ed25519 / RSA</strong>: cifrado asimétrico — llave pública para cifrar, llave privada para descifrar.</li>
+</ul>
+</div>
+<div class="caw sq">
+<h3>El problema de S22 sin resolver</h3>
+<p style="margin-top:.4em;">Saber que el cifrado <em>existe</em> no es suficiente. Un profesional de sistemas debe saber <strong>cuándo y cómo aplicarlo</strong>: qué algoritmo usar, cómo gestionar las llaves y cómo verificar que la comunicación es auténtica.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Activación · Sesión 24</span><span class="ctr">3 / 21</span></div>
+</div>
+</section>
 
-    <!-- Slide 3 -->
-    <div class="slide">
-        <h1>Recapitulación S23: El factor Humano</h1>
-        <div class="grid-layout">
-            <div>
-                <p>En S23 blindamos un sistema inyectando perfiles de Seccomp, Cap-Drops y banderas <code>--read-only</code>.</p>
-                <p><strong>El problema:</strong> Una infraestructura real tiene miles de contenedores, y los humanos olvidamos escribir una bandera de texto un viernes por la tarde, tirando por la borda todo el <i>Hardening</i>.</p>
-            </div>
-            <div class="box">
-                <h3 style="color:var(--highlight)">Solución: Inmutabilizar las Órdenes</h3>
-                <p>Los administradores no deberían escribir comandos en terminales en vivo (Pets). Todo lo debe desplegar un robot lector de código (Cattle).</p>
-            </div>
-        </div>
-    </div>
+<!-- Slide 4 · Hash y su uso práctico -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual A · Funciones Hash</div>
+<div class="ct">
+<h2>Integridad de datos: el hash como huella digital</h2>
+<p>Una <strong>función hash criptográfica</strong> mapea datos de cualquier tamaño a un valor fijo (digest). Es determinista, unidireccional y sensible a cualquier cambio mínimo en la entrada.</p>
+<div class="tce" style="margin-top:.5em;">
+<div>
+<p><strong>Demo completa — crear archivos y verificar integridad:</strong></p>
+<div class="cod" style="margin-top:.3em;"><span class="cm"># 1. Crear dos archivos de prueba</span>
+$ echo "Contenido original del informe" > original.txt
+$ cp original.txt copia.txt
 
-    <!-- Slide 4 -->
-    <div class="slide">
-        <h1>Infraestructura como Código (IaC)</h1>
-        <p>Práctica de aprovisionar y gestionar infraestructura a través de código y archivos de definición legible por máquina, en lugar de configuraciones interactivas manuales (clicks en GUIs o comandos bash al vuelo).</p>
-        <ul>
-            <li><strong>Imperativo (El Pasado):</strong> <i>"Crea contenedor A. Luego bájale la capacidad B. Luego conéctale red C."</i></li>
-            <li><strong>Declarativo (El Futuro Mágico):</strong> <i>"Necesito un servidor seguro con estas 3 especificaciones. Haz la magia técnica por detrás para que suceda."</i></li>
-        </ul>
-    </div>
+<span class="cm"># 2. Generar el hash de referencia</span>
+$ sha256sum original.txt
+<span class="cs">a3b4c5d6...  original.txt</span>
 
-    <!-- Slide 5 -->
-    <div class="slide">
-        <h1>De Bash a Compose (Docker-Compose)</h1>
-        <p>¿Recuerdan la pesadilla de alinear 15 banderas en un <code>docker run</code> larguísimo?</p>
-        <p><code>docker-compose</code> es el estándar declarativo local. Usamos archivos <strong>YAML</strong> para describir exactamente qué queremos, redificando aplicaciones multinivel en bloque y de forma atómica.</p>
-        <p style="text-align:center; font-style:italic;">Si un compañero baja el repositorio, el sistema levantará idéntico en 1 segundo.</p>
-    </div>
+<span class="cm"># 3. Simular manipulación del archivo</span>
+$ echo "datos extra" >> copia.txt
 
-    <!-- Slide 6 -->
-    <div class="slide">
-        <h1>Práctica 1: Refactorizando el Hardening</h1>
-        <p>Traduzcamos el comando doloroso de S23 (`--cap-drop=all --read-only`) a YAML limpio y documentado:</p>
-        <div class="code-block">
-# docker-compose.yml
-version: '3.8'
-services:
-  web_segura:
-    image: nginx:latest
-    read_only: true
-    cap_drop:
-      - ALL
-    ports:
-      - "8080:80"
-    tmpfs:
-      - /var/cache/nginx
-        </div>
-    </div>
+<span class="cm"># 4. Comparar: el hash debe diferir</span>
+$ sha256sum original.txt copia.txt
+<span class="cs">a3b4c5d6...  original.txt</span>
+<span class="cs">f9e8d7c6...  copia.txt</span>
 
-    <!-- Slide 7 -->
-    <div class="slide">
-        <h1>Análisis de la Práctica 1</h1>
-        <p>Ejecutar este archivo solo requiere: <code>docker-compose up -d</code></p>
-        <ul>
-            <li>El archivo se guarda en Git (Versionado).</li>
-            <li>Cualquiera en el equipo de Desarrollo y Operaciones sabe que este contenedor web carece de todos los poderes y es de solo-lectura total.</li>
-            <li>Si descubrimos un 0-Day, cambiamos el código, se guarda el commit, y el orquestador mata a la antigua red y sube la nueva versión sola.</li>
-        </ul>
-    </div>
+<span class="cm"># 5. Verificar con archivo de checksums</span>
+$ sha256sum original.txt > checksums.txt
+$ sha256sum --check checksums.txt
+<span class="cs">original.txt: OK</span></div>
+</div>
+<div class="crd">
+<h3>Propiedades de SHA-256</h3>
+<ul style="margin-top:.3em;">
+<li>Cambiar 1 bit en la entrada produce un digest completamente distinto.</li>
+<li>Es computacionalmente imposible encontrar dos entradas con el mismo hash (resistencia a colisiones).</li>
+<li>No puede revertirse para obtener la entrada original.</li>
+<li>Longitud fija de 256 bits, independiente del tamaño del input.</li>
+</ul>
+<p class="nt" style="margin-top:.3em;">Aplica igual a ISOs de varios GB o a un archivo de texto — el digest siempre tiene 64 caracteres hex.</p>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Hash · Sesión 24</span><span class="ctr">4 / 21</span></div>
+</div>
+</section>
 
-    <!-- Slide 8 -->
-    <div class="slide">
-        <h1>Cultura DevOps y GitOps</h1>
-        <div class="diagram-container">
-            <svg width="400" height="400" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="pulse-devops">
-                <!-- Infinity symbol representing devops -->
-                <path d="M 50 100 C 0 30, 100 30, 100 100 C 100 170, 200 170, 150 100 C 200 30, 100 30, 100 100 C 100 170, 0 170, 50 100" fill="none" stroke="#8b5cf6" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        </div>
-        <p style="text-align:center; margin-top:20px;">Ya no existe "Mi código anda, fallo del servidor".</p>
-        <p style="text-align:center;">El código ES el servidor. <strong>GitOps</strong> declara que Github (el repositorio) es la "Única Fuente de Verdad" de la infraestructura computacional.</p>
-    </div>
+<!-- Slide 5 · Simétrico vs Asimétrico -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual B · Cifrado simétrico vs asimétrico</div>
+<div class="ct">
+<h2>Dos paradigmas, dos problemas distintos</h2>
+<div class="tce" style="margin-top:.4em;">
+<div class="cal sq">
+<h3>Simétrico — AES</h3>
+<p style="margin-top:.3em;"><strong>Una sola llave</strong> para cifrar y descifrar. Muy rápido, ideal para grandes volúmenes de datos.</p>
+<div class="cod" style="margin-top:.3em;"><span class="cm"># Crear archivo de prueba</span>
+$ echo "datos confidenciales" > secreto.txt
 
-    <!-- Slide 9 -->
-    <div class="slide">
-        <h1>El problema del IDE local: "Dependencias Fantasma"</h1>
-        <p>Aunque Docker estandariza producción, los programadores todavía redactan código en el SO anfitrión de sus laptops.</p>
-        <ul>
-            <li>El estudiante A usa Windows 11 con Python 3.12 y Node 18.</li>
-            <li>El estudiante B usa Ubuntu 22.04 con Python 3.9 y Node 20.</li>
-            <li>Problema: El código falla al entregarse por dependencias ocultas no registradas. Ambos destruyen sus equipos instalando versiones globales colisionando herramientas.</li>
-        </ul>
-    </div>
+<span class="cm"># Cifrar con AES-256</span>
+$ openssl enc -aes-256-cbc \
+  -pbkdf2 -in secreto.txt \
+  -out secreto.enc
+<span class="cm"># Solicita contraseña (ej: "clave123")</span>
 
-    <!-- Slide 10 -->
-    <div class="slide">
-        <h1>DevContainers (Ambientes Efímeros de Desarrollo)</h1>
-        <p>Una tecnología popularizada por VS Code y GitHub Codespaces. ¿Por qué usar contenedores solo para el servidor final?</p>
-        <p><strong>El Paradigma DevContainer:</strong> Encerrar tu Editor de Código completo y tus herramientas de compilación ADENTRO de un contenedor de Docker.</p>
-        <p>Cada proyecto tiene su propio mini-sistema operativo efímero. Sales del proyecto, el contenedor muere.</p>
-    </div>
+<span class="cm"># Descifrar y verificar</span>
+$ openssl enc -aes-256-cbc -d \
+  -pbkdf2 -in secreto.enc \
+  -out secreto_recuperado.txt
+$ cat secreto_recuperado.txt
+<span class="cs">datos confidenciales</span></div>
+</div>
+<div class="cag sq">
+<h3>Asimétrico — RSA / Ed25519</h3>
+<p style="margin-top:.3em;"><strong>Par de llaves</strong>: pública (se comparte libremente) y privada (nunca sale del dispositivo).</p>
+<p style="margin-top:.3em;"><strong>Solución al problema:</strong> el remitente cifra con la llave pública del destinatario. Solo la llave privada del destinatario puede descifrar.</p>
+<p style="margin-top:.3em;"><strong>Costo:</strong> operacionalmente más lento que AES — se usa para intercambiar claves de sesión, no para cifrar datos masivos.</p>
+</div>
+</div>
+<div class="crd sq" style="margin-top:.3em;">
+<p><strong>En la práctica combinamos ambos:</strong> el cifrado asimétrico intercambia una clave de sesión AES de forma segura. Luego AES cifra los datos. Así funciona TLS.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Cifrado · Sesión 24</span><span class="ctr">5 / 21</span></div>
+</div>
+</section>
 
-    <!-- Slide 11 -->
-    <div class="slide">
-        <h1>Diseño Lógico del DevContainer</h1>
-        <div class="grid-layout">
-            <div>
-                <h3>Anfitrión Local (Tu PC)</h3>
-                <p>Solo necesitas tener instalado Docker Engine y VS Code vacío. <strong>NADA MÁS</strong>. Ni Python, ni C++, ni Node.</p>
-            </div>
-            <div>
-                <h3 style="color:var(--success)">El Contenedor (Guest)</h3>
-                <p>El código fuente se inyecta por volumen de montaje. VS Code inyecta un servidor remoto ("VS Code Server") dentro del entorno aislado manipulando archivos allí.</p>
-            </div>
-        </div>
-    </div>
+<!-- Slide 6 · Visual A — flujo TLS handshake -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Recurso visual A · Cómo funciona TLS (HTTPS)</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="flex:1;max-height:74%;">
+<svg viewBox="0 0 680 260" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="12">
+  <!-- Cliente -->
+  <rect x="20" y="40" width="120" height="50" rx="8" fill="#f0f9ff" stroke="#015583" stroke-width="2"/>
+  <text x="80" y="68" text-anchor="middle" fill="#015583" font-weight="bold" font-size="13">Navegador</text>
+  <text x="80" y="83" text-anchor="middle" fill="#374151">(cliente)</text>
+  <!-- Servidor -->
+  <rect x="540" y="40" width="120" height="50" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="600" y="68" text-anchor="middle" fill="#16a34a" font-weight="bold" font-size="13">Servidor</text>
+  <text x="600" y="83" text-anchor="middle" fill="#374151">(HTTPS)</text>
+  <!-- Flechas handshake -->
+  <line x1="145" y1="115" x2="535" y2="115" stroke="#015583" stroke-width="1.5" stroke-dasharray="4"/>
+  <polygon points="535,111 545,115 535,119" fill="#015583"/>
+  <text x="340" y="110" text-anchor="middle" fill="#015583" font-size="11">1. ClientHello (versión TLS, cipher suites)</text>
+  <line x1="535" y1="135" x2="145" y2="135" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4"/>
+  <polygon points="145,131 135,135 145,139" fill="#16a34a"/>
+  <text x="340" y="130" text-anchor="middle" fill="#16a34a" font-size="11">2. ServerHello + Certificado (llave pública RSA)</text>
+  <line x1="145" y1="155" x2="535" y2="155" stroke="#e6a817" stroke-width="1.5" stroke-dasharray="4"/>
+  <polygon points="535,151 545,155 535,159" fill="#e6a817"/>
+  <text x="340" y="150" text-anchor="middle" fill="#e6a817" font-size="11">3. Cliente verifica certificado con CA y genera Pre-Master Secret</text>
+  <line x1="145" y1="175" x2="535" y2="175" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4"/>
+  <polygon points="535,171 545,175 535,179" fill="#7c3aed"/>
+  <text x="340" y="170" text-anchor="middle" fill="#7c3aed" font-size="11">4. Pre-Master Secret cifrado con llave pública del servidor</text>
+  <line x1="145" y1="195" x2="535" y2="195" stroke="#16a34a" stroke-width="2"/>
+  <polygon points="535,191 545,195 535,199" fill="#16a34a"/>
+  <line x1="535" y1="195" x2="145" y2="195" stroke="#16a34a" stroke-width="2" marker-start="url(#arr)"/>
+  <text x="340" y="212" text-anchor="middle" fill="#16a34a" font-weight="bold" font-size="11">5. Ambos derivan la misma clave AES de sesion &rarr; canal cifrado</text>
+  <!-- CA box -->
+  <rect x="270" y="18" width="140" height="30" rx="6" fill="#fffbe6" stroke="#e6a817" stroke-width="1.5"/>
+  <text x="340" y="38" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">CA (Autoridad Certificadora)</text>
+  <!-- Lineas CA -->
+  <line x1="340" y1="48" x2="340" y2="65" stroke="#e6a817" stroke-width="1" stroke-dasharray="3"/>
+</svg>
+</div>
+<p class="nt" style="text-align:center;">TLS combina cifrado asimétrico (para intercambiar la clave de sesión) con cifrado simétrico AES (para el canal de datos). La CA garantiza la autenticidad del servidor.</p>
+</div>
+<div class="ft"><span class="nt">TLS Handshake · Sesión 24</span><span class="ctr">6 / 21</span></div>
+</div>
+</section>
 
-    <!-- Slide 12 -->
-    <div class="slide">
-        <h1>El archivo `devcontainer.json`</h1>
-        <p>El "cerebro" orquestador del proyecto que metes a la raíz de tu repo Git.</p>
-        <div class="code-block">
-{
-    "name": "Laboratorio OS",
-    "image": "mcr.microsoft.com/devcontainers/python:3.11",
-    "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-    },
-    "customizations": {
-        "vscode": { "extensions": ["ms-python.python"] }
-    }
-}
-        </div>
-    </div>
+<!-- Slide 7 · SSH: autenticación por llave pública -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual C · SSH y autenticación por llave pública</div>
+<div class="ct tc">
+<div>
+<h2>SSH: el protocolo seguro del SysAdmin</h2>
+<p><strong>SSH (Secure Shell)</strong>: protocolo de red criptográfico para operar servicios de red de forma segura sobre una red insegura. Reemplaza a Telnet y rlogin que transmitían en texto plano.</p>
+<p style="margin-top:.5em;">La autenticación por contraseña es vulnerable a ataques de fuerza bruta. La autenticación por <strong>llave pública</strong> es resistente a estos ataques y elimina el riesgo de contraseñas débiles o robadas.</p>
+<ul style="margin-top:.5em;">
+<li>La <strong>llave privada</strong> nunca abandona el equipo del usuario.</li>
+<li>La <strong>llave pública</strong> se copia al servidor en <code>~/.ssh/authorized_keys</code>.</li>
+<li>El servidor verifica que el cliente posee la llave privada mediante un desafío criptográfico.</li>
+</ul>
+</div>
+<div class="crd sq">
+<h3>Algoritmos recomendados (2025)</h3>
+<ul style="margin-top:.3em;">
+<li><strong>Ed25519</strong>: curva elíptica, llave corta (256 bits), muy rápido, preferido hoy.</li>
+<li><strong>ECDSA (P-256)</strong>: compatible con más sistemas legados.</li>
+<li><strong>RSA 4096</strong>: interoperable pero más lento; evitar RSA-1024 (inseguro).</li>
+</ul>
+<p class="nt" style="margin-top:.4em;">Evitar DSA (roto desde 2013) y los parámetros por defecto de RSA-2048 en contextos de alta seguridad.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">SSH · Sesión 24</span><span class="ctr">7 / 21</span></div>
+</div>
+</section>
 
-    <!-- Slide 13 -->
-    <div class="slide">
-        <h1>Práctica 2: Arrancando el DevContainer</h1>
-        <ol>
-            <li>Se crea la sub-carpeta `.devcontainer` y se añade el JSON anterior.</li>
-            <li>Se abre el proyecto en VS Code. Sugerirá: <i>"Reopen in Container"</i>.</li>
-            <li><strong>La magia ocurre:</strong> Docker descarga la imagen aislada de Python, instala las extensiones de linter específicas del proyecto, y lanza el IDE conectado a esa terminal virtual.</li>
-        </ol>
-        <p>Si el estudiante formatea el contenedor instalando algo dañino (rm -rf /), su anfitrión jamás se enterará. Reconstruye el contenedor en 1 minuto.</p>
-    </div>
+<!-- Slide 8 · SSH para GitHub en Git Bash (Windows) -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase 1 · SSH para GitHub desde Git Bash (Windows)</div>
+<div class="ct">
+<h2>Conectar tu máquina a GitHub sin contraseña</h2>
+<div class="tce">
+<div>
+<p><strong>Pasos en Git Bash (Windows):</strong></p>
+<div class="cod" style="margin-top:.3em;"><span class="cm"># 1. Generar par de llaves Ed25519</span>
+$ ssh-keygen -t ed25519 \
+  -C "tu_correo@ejemplo.com" \
+  -f ~/.ssh/id_ed25519
+<span class="cm"># Passphrase: recomendada, pero opcional en clase</span>
 
-    <!-- Slide 14 -->
-    <div class="slide">
-        <h1>Sistemas Cognitivos y AIOps (Inteligencia en Operaciones)</h1>
-        <p>Tenemos infraestructura declarada en texto (YAML) en lugar de botones. ¿Qué pasa ahora si texto = lógica estructurada y programable?</p>
-        <p>La IA Generativa moderna (LLMs) está devorando la escritura de IaC. En vez de buscar 2 semanas cómo escribir perfiles de Hardening Seccomp nativos... se lo pides a un agente.</p>
-    </div>
+<span class="cm"># 2. Iniciar el agente SSH</span>
+$ eval "$(ssh-agent -s)"
+<span class="cs">Agent pid 1234</span>
 
-    <!-- Slide 15 -->
-    <div class="slide">
-        <h1>GitHub Copilot y Herramientas Infraestructurales</h1>
-        <p>Si uso Terraform, Ansible, Kubernetes, o Compose, los asistentes de codificación se vuelven Co-pilotos de Arquitectura.</p>
-        <p>Al tipear <code>cap_drop:</code>, la IA infiere al instante las recomendaciones de mitigación sugeridas basándose en lecturas masivas de GitHub públicas sobre Hardening de bases de datos similares.</p>
-    </div>
+<span class="cm"># 3. Añadir la llave privada al agente</span>
+$ ssh-add ~/.ssh/id_ed25519
 
-    <!-- Slide 16 -->
-    <div class="slide">
-        <h1>Práctica 3: Generación Asistida de Hardening (Prompting)</h1>
-        <p>Un ingeniero de sistemas moderno debe dominar el <i>Prompt Engineering</i> para acotar la alucinación IA.</p>
-        <div class="box">
-            <p><strong>Mal Prompt:</strong> "Haz un docker de MySQL seguro"</p>
-            <br>
-            <p><strong>Buen Prompt SysAdmin:</strong> "Genera un yaml de Docker Compose para Postgres 14. Excluye escalamiento root, aplica `--cap-drop=ALL` preservando solo `CHOWN`, desactiva el reinicio automático tras tres fallos y asegúrate de no ejecutar el demonio de entrada como PID 1."</p>
-        </div>
-    </div>
+<span class="cm"># 4. Copiar la llave PÚBLICA al portapapeles</span>
+$ cat ~/.ssh/id_ed25519.pub
+<span class="cm"># Seleccionar todo y copiar (Ctrl+C)</span>
 
-    <!-- Slide 17 -->
-    <div class="slide">
-        <h1>El Peligro: Alucinación en IaC y CVEs Zombis</h1>
-        <p>Un modelo de lenguaje genera infraestructura "que luce" correcta, pero no evalúa factibilidad en tiempo real contra versiones de Hardware o parches recien descubiertos.</p>
-        <ul>
-            <li>La IA puede inyectar como dependencia una versión vieja de Nginx conocida por una vulnerabilidad CVE masiva.</li>
-            <li>Puede sugerir configuraciones de Seccomp que usaban sintaxis depreciada en el Kernel Linux 5.4 cuando tú compilas para la versión 6.5+.</li>
-        </ul>
-    </div>
+<span class="cm"># 5. Probar la conexión con GitHub</span>
+$ ssh -T git@github.com
+<span class="cs">Hi tu_usuario! You've successfully authenticated</span></div>
+</div>
+<div>
+<div class="crd sq">
+<h3>En GitHub (paso 4 en el navegador)</h3>
+<ol style="margin-top:.3em;">
+<li>Ir a <strong>github.com → Settings → SSH and GPG keys</strong></li>
+<li>Clic en <strong>"New SSH key"</strong></li>
+<li>Title: <code>Laptop clase 2026</code></li>
+<li>Key type: <strong>Authentication Key</strong></li>
+<li>Pegar el contenido de <code>id_ed25519.pub</code></li>
+<li>Clic en <strong>"Add SSH key"</strong></li>
+</ol>
+</div>
+<div class="cal sq" style="margin-top:.5em;">
+<h3>Clonar y hacer push sin contraseña</h3>
+<div class="cod" style="margin-top:.3em;"><span class="cm"># Clonar usando URL SSH (no HTTPS)</span>
+$ git clone git@github.com:usuario/repo.git
 
-    <!-- Slide 18 -->
-    <div class="slide">
-        <h1>La IA es un Co-Piloto, no un Piloto Automático</h1>
-        <p>Si un desarrollador delega el 100% ciegas confinando a un LLM el acceso de escritura directo a la infraestructura en la nube (AWS/Azure) vía API, el primer modelo que sugiera un `chmod 777` acabativo abrirá la base de datos entera al público en un bucle.</p>
-        <p style="color:var(--highlight); font-weight:bold;">Tú conoces los anillos (Ring 0), las ramificaciones (Namespaces) y el host. La IA no tiene comprensión situacional ética.</p>
-    </div>
+<span class="cm"># Si el repo ya existe con HTTPS, cambiar:</span>
+$ git remote set-url origin \
+  git@github.com:usuario/repo.git
 
-    <!-- Slide 19 -->
-    <div class="slide">
-        <h1>Revisión General del Curso (Trazando la Historia)</h1>
-        <ul>
-            <li><strong>Bare-Metal (Inicios):</strong> Trabajábamos con placas controlables por nosotros pero colapsables con un fallo en la memoria Swap (Kernels puros).</li>
-            <li><strong>Máquinas Virtuales (S20):</strong> Aislaron problemas, pero la emulación abarrotaba el disco y destruía eficiencia del Hypervisor.</li>
-        </ul>
-    </div>
+<span class="cm"># Verificar</span>
+$ git remote -v
+<span class="cs">origin  git@github.com:usuario/repo.git</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">SSH · GitHub · Git Bash · Sesión 24</span><span class="ctr">8 / 21</span></div>
+</div>
+</section>
 
-    <!-- Slide 20 -->
-    <div class="slide">
-        <h1>Revisión General del Curso (Pt.2)</h1>
-        <ul>
-            <li><strong>Contenedores (S21):</strong> Destruimos a la VM completa, reutilizamos el kernel e independizamos las apps consumiendo MBs en milisegundos.</li>
-            <li><strong>Amenazas y Breakouts (S22):</strong> Esa cercanía al Kernel expuso Ring 0, forzándonos a temer "El escape" vía rootkits de procesos.</li>
-        </ul>
-    </div>
+<!-- Slide 9 · known_hosts, TOFU y SSH jump hosts -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual C · known_hosts, TOFU y ProxyJump</div>
+<div class="ct tc">
+<div>
+<h2>Verificar la identidad del servidor: TOFU</h2>
+<p><strong>TOFU (Trust On First Use)</strong>: la primera vez que te conectas a un servidor, SSH guarda su huella pública en <code>~/.ssh/known_hosts</code>. En conexiones posteriores, SSH compara la huella recibida con la guardada.</p>
+<ul style="margin-top:.4em;">
+<li>Si la huella <strong>cambia</strong> sin aviso, SSH alerta: posible ataque MitM o servidor reinstalado.</li>
+<li>Para infraestructuras grandes, distribuir el <code>known_hosts</code> corporativo con Ansible o <code>/etc/ssh/ssh_known_hosts</code>.</li>
+</ul>
+<div class="cod" style="margin-top:.5em;"><span class="cm"># Ver el fingerprint del servidor antes de confiar</span>
+$ ssh-keyscan -H servidor.com | \
+  ssh-keygen -lf -
+<span class="cs">256 SHA256:ABC123... servidor.com (ED25519)</span>
 
-    <!-- Slide 21 -->
-    <div class="slide">
-        <h1>Revisión General del Curso (Pt.3)</h1>
-        <ul>
-            <li><strong>Hardening (S23):</strong> Recuperamos la defensa creando campos de fuerza con LSM (SELinux/AppArmor) y Syscalls (Seccomp), además de aislar permisos SUID.</li>
-            <li><strong>DevOps e IA (S24):</strong> Llevamos esos escudos a Código automatizado YAML. Metimos nuestra propia estación de trabajo allí (DevContainer) y logramos escalar ayudados por Inteligencia Artificial de forma declarativa.</li>
-        </ul>
-    </div>
+<span class="cm"># Eliminar entrada obsoleta (servidor reinstalado)</span>
+$ ssh-keygen -R servidor.com</div>
+</div>
+<div class="crd sq">
+<h3>SSH Jump Host / ProxyJump</h3>
+<p style="margin-top:.3em;">Un <strong>jump host</strong> (bastión) es un servidor intermedio que sirve como único punto de entrada a una red privada. Evita exponer servidores internos directamente a Internet.</p>
+<div class="cod" style="margin-top:.3em;"><span class="cm"># Conectar a host interno vía bastión</span>
+$ ssh -J usuario@bastion.com \
+  usuario@interno.local
 
-    <!-- Slide 22 -->
-    <div class="slide">
-        <h1>El Rol del Ingeniero de SO en la era de LLMs</h1>
-        <p>No eres un redactor de código yaml. No necesitas memorizar 800 banderas de Linux o comandos arcanos.</p>
-        <p>Tu rol en una empresa es ser: <strong>El Arquitecto Auditor</strong>.</p>
-        <p>Eres quien mira la salida de la IA generativa, identifica el fallo en capa TCP o en los Namespaces y aplica conocimiento fundacional para asegurar que el sistema no implosione.</p>
-    </div>
+<span class="cm"># En ~/.ssh/config (forma permanente)</span>
+<span class="cs">Host interno</span>
+  <span class="cn">HostName</span>       interno.local
+  <span class="cn">User</span>           deploy
+  <span class="cn">ProxyJump</span>      usuario@bastion.com
+  <span class="cn">IdentityFile</span>   ~/.ssh/id_ed25519</div>
+<p class="nt" style="margin-top:.3em;">Con <code>ForwardAgent no</code> en el bastión se evita que un bastión comprometido use tus llaves.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">known_hosts · ProxyJump · Sesión 24</span><span class="ctr">9 / 21</span></div>
+</div>
+</section>
 
-    <!-- Slide 23 -->
-    <div class="slide">
-        <h1>La Desaparición del Servidor Manual</h1>
-        <p>El futuro apunta fuertemente hacia "Serverless" y Sistemas Micro-Virtualizados.</p>
-        <p>Incluso el concepto de administrar un Linux subyacente comienza a diluirse al transferirlo a proveedores de nube. Entender que bajo ese mar de nube sigue existiendo un planificador de procesos en silicio te hace infinitamente superior a un programador de "Caja Negra".</p>
-    </div>
+<!-- Slide 10 · Cifrado de disco con LUKS -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual C · Cifrado de disco en reposo: LUKS</div>
+<div class="ct">
+<h2>Proteger datos cuando el disco cae en manos equivocadas</h2>
+<div class="tce">
+<div>
+<p>El cifrado en tránsito (TLS/SSH) no protege los datos cuando el atacante tiene acceso físico al disco. <strong>LUKS (Linux Unified Key Setup)</strong> cifra particiones completas con AES-256.</p>
+<div class="cod" style="margin-top:.4em;"><span class="cm"># Demo sin disco físico: usar archivo loopback</span>
+<span class="cm"># 1. Instalar herramienta</span>
+$ sudo apt install cryptsetup
 
-    <!-- Slide 24 -->
-    <div class="slide">
-        <h1>Cierre y Entrega de Laboratorios Finales</h1>
-        <div class="box">
-            <h3>Preparación para el Entorno Real</h3>
-            <p>Destruyan el miedo a romper sistemas utilizando Contenedores. Usen copilot responsablemente. No desplieguen nada a la red global que no corra con el Principio de Menor Privilegio.</p>
-        </div>
-    </div>
+<span class="cm"># 2. Crear imagen de 50 MB como disco virtual</span>
+$ truncate -s 50M disco_demo.img
 
-    <!-- Slide 25 -->
-    <div class="slide">
-        <h1 style="text-align: center; border:0; margin-top:20%">Fin del Curso de Sistemas Operativos</h1>
-        <p style="text-align: center; font-size:40px;">Ustedes son ahora Operadores Conscientes de la Infraestructura.</p>
-        <p style="text-align: center; color: var(--highlight); margin-top:50px;">Mucha suerte en su trayectoria profesional.</p>
-    </div>
+<span class="cm"># 3. Formatear como volumen LUKS2</span>
+$ sudo cryptsetup luksFormat \
+  --type luks2 \
+  --cipher aes-xts-plain64 \
+  --key-size 512 \
+  disco_demo.img
+<span class="cm"># Escribe YES y elige passphrase</span>
 
-    <!-- Controls -->
-    <div class="controls">
-        <button id="prevBtn" onclick="prevSlide()">Anterior</button>
-        <button id="nextBtn" onclick="nextSlide()">Siguiente</button>
-    </div>
-    <div class="progress-bar" id="progressBar"></div>
+<span class="cm"># 4. Abrir (desbloquear)</span>
+$ sudo cryptsetup open disco_demo.img datos_enc
 
+<span class="cm"># 5. Crear fs, montar y escribir</span>
+$ sudo mkfs.ext4 /dev/mapper/datos_enc
+$ sudo mount /dev/mapper/datos_enc /mnt/datos
+$ sudo sh -c 'echo "secreto" > /mnt/datos/prueba.txt'
+
+<span class="cm"># 6. Cerrar y bloquear</span>
+$ sudo umount /mnt/datos
+$ sudo cryptsetup close datos_enc
+<span class="cm"># Sin la passphrase, disco_demo.img es ilegible</span></div>
+</div>
+<div class="crd sq">
+<h3>Casos de uso en producción</h3>
+<ul style="margin-top:.3em;">
+<li><strong>Laptops corporativas</strong>: datos ilegibles sin passphrase si el equipo es robado.</li>
+<li><strong>Backups cifrados</strong>: combinar LUKS con rsync para backups externos seguros.</li>
+<li><strong>Cumplimiento normativo</strong>: GDPR, PCI-DSS exigen cifrado de datos sensibles en reposo.</li>
+</ul>
+<div class="caw" style="margin-top:.5em;">
+<p><strong>Respaldo del header:</strong> si se pierde la passphrase LUKS, los datos son irrecuperables. Siempre guardar un respaldo con <code>cryptsetup luksHeaderBackup disco_demo.img --header-backup-file header.bak</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">LUKS · Cifrado en reposo · Sesión 24</span><span class="ctr">10 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 10 · GPG y firma digital -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual D · GPG y firma digital</div>
+<div class="ct tc">
+<div>
+<h2>Autenticidad e integridad de documentos</h2>
+<p><strong>GPG (GNU Privacy Guard)</strong>: implementación libre del estándar OpenPGP. Permite cifrar archivos y mensajes, y firmarlos digitalmente para garantizar su autenticidad.</p>
+<p style="margin-top:.5em;"><strong>Firma digital:</strong> el remitente aplica una función hash al documento y cifra ese hash con su <em>llave privada</em>. El receptor verifica con la <em>llave pública</em>. Si coincide, el documento es auténtico y no fue alterado.</p>
+<ul style="margin-top:.5em;">
+<li>Los paquetes de distribuciones Linux (apt, dnf) se firman con GPG.</li>
+<li>Los commits de Git pueden firmarse con GPG para probar autoría.</li>
+</ul>
+</div>
+<div class="cod sq">
+<span class="cm"># 1. Generar par de llaves GPG</span>
+$ gpg --full-generate-key
+<span class="cm"># Elegir: RSA 4096. Nombre: "Juan Test". Email: juan@test.com</span>
+
+<span class="cm"># 2. Crear archivo de prueba</span>
+$ echo "Informe de auditoría — versión final" > reporte.txt
+
+<span class="cm"># 3. Firmar (genera reporte.txt.asc)</span>
+$ gpg --detach-sign --armor reporte.txt
+
+<span class="cm"># 4. Verificar firma</span>
+$ gpg --verify reporte.txt.asc reporte.txt
+<span class="cs">gpg: Good signature from "Juan Test"</span>
+
+<span class="cm"># 5. Alterar el archivo y re-verificar</span>
+$ echo "línea añadida" >> reporte.txt
+$ gpg --verify reporte.txt.asc reporte.txt
+<span class="cs">gpg: BAD signature from "Juan Test"</span>
+
+<span class="cm"># 6. Cifrar para el mismo destinatario</span>
+$ gpg --encrypt --armor \
+  --recipient juan@test.com reporte.txt</div>
+</div>
+<div class="ft"><span class="nt">GPG · Sesión 24</span><span class="ctr">11 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 11 · PKI y certificados -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual E · PKI: Infraestructura de Llave Pública</div>
+<div class="ct">
+<h2>¿Cómo confiar en una llave pública desconocida?</h2>
+<p>El cifrado asimétrico resuelve la confidencialidad, pero introduce una pregunta crítica: ¿cómo sé que la llave pública que recibí pertenece realmente a quien dice ser y no a un atacante en el medio?</p>
+<div class="tce" style="margin-top:.5em;">
+<div class="crd sq">
+<h3>Ataque Man-in-the-Middle (MitM)</h3>
+<p style="margin-top:.3em;">Sin verificación de identidad, un atacante puede interceptar la llave pública del servidor legítimo y sustituirla por la suya propia. El cliente cifra con la llave del atacante creyendo que es el servidor real.</p>
+</div>
+<div class="cag sq">
+<h3>La solución: Autoridades Certificadoras (CA)</h3>
+<p style="margin-top:.3em;">Una CA es una entidad de confianza que firma digitalmente certificados X.509. El certificado vincula una llave pública con una identidad verificada (dominio, organización).</p>
+<ul style="margin-top:.3em;">
+<li><strong>Root CA</strong>: anclada en el OS y navegadores.</li>
+<li><strong>Intermediate CA</strong>: emitida por la Root CA.</li>
+<li><strong>Leaf certificate</strong>: el del servidor web.</li>
+</ul>
+</div>
+</div>
+<div class="cal sq" style="margin-top:.4em;">
+<p><strong>Let's Encrypt</strong>: CA gratuita y automatizada que emite certificados TLS válidos en segundos mediante el protocolo ACME. Adoptada por más del 50% de los sitios HTTPS.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">PKI · Sesión 24</span><span class="ctr">12 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 12 · Visual B — árbol PKI -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Recurso visual B · Cadena de confianza PKI</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="flex:1;max-height:76%;">
+<svg viewBox="0 0 620 260" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="12">
+  <!-- Root CA -->
+  <rect x="220" y="10" width="180" height="44" rx="8" fill="#015583"/>
+  <text x="310" y="33" text-anchor="middle" fill="#fff" font-weight="bold" font-size="13">Root CA</text>
+  <text x="310" y="48" text-anchor="middle" fill="#cbd5e1" font-size="10">Pre-instalada en SO y navegadores</text>
+  <!-- Line -->
+  <line x1="310" y1="54" x2="150" y2="104" stroke="#015583" stroke-width="1.5"/>
+  <line x1="310" y1="54" x2="310" y2="104" stroke="#015583" stroke-width="1.5"/>
+  <line x1="310" y1="54" x2="470" y2="104" stroke="#015583" stroke-width="1.5"/>
+  <!-- Intermediate CAs -->
+  <rect x="60" y="104" width="180" height="40" rx="6" fill="#05ADBC"/>
+  <text x="150" y="122" text-anchor="middle" fill="#fff" font-weight="bold">Intermediate CA</text>
+  <text x="150" y="136" text-anchor="middle" fill="#e0f2fe" font-size="10">Let's Encrypt R11</text>
+  <rect x="220" y="104" width="180" height="40" rx="6" fill="#05ADBC"/>
+  <text x="310" y="122" text-anchor="middle" fill="#fff" font-weight="bold">Intermediate CA</text>
+  <text x="310" y="136" text-anchor="middle" fill="#e0f2fe" font-size="10">DigiCert Global</text>
+  <rect x="380" y="104" width="180" height="40" rx="6" fill="#05ADBC"/>
+  <text x="470" y="122" text-anchor="middle" fill="#fff" font-weight="bold">Intermediate CA</text>
+  <text x="470" y="136" text-anchor="middle" fill="#e0f2fe" font-size="10">Sectigo RSA</text>
+  <!-- Lines to leaf -->
+  <line x1="150" y1="144" x2="110" y2="194" stroke="#05ADBC" stroke-width="1.5"/>
+  <line x1="150" y1="144" x2="200" y2="194" stroke="#05ADBC" stroke-width="1.5"/>
+  <!-- Leaf certs -->
+  <rect x="50" y="194" width="130" height="40" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="115" y="212" text-anchor="middle" fill="#16a34a" font-weight="bold">Certificado</text>
+  <text x="115" y="226" text-anchor="middle" fill="#374151" font-size="10">mibanco.com</text>
+  <rect x="195" y="194" width="130" height="40" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="260" y="212" text-anchor="middle" fill="#16a34a" font-weight="bold">Certificado</text>
+  <text x="260" y="226" text-anchor="middle" fill="#374151" font-size="10">mipagina.com</text>
+  <!-- Verify arrow -->
+  <rect x="430" y="180" width="170" height="60" rx="8" fill="#fffbe6" stroke="#e6a817" stroke-width="1.5"/>
+  <text x="515" y="200" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">Verificación del navegador</text>
+  <text x="515" y="215" text-anchor="middle" fill="#374151" font-size="10">1. Leer cert del servidor</text>
+  <text x="515" y="228" text-anchor="middle" fill="#374151" font-size="10">2. Verificar firma de la CA</text>
+  <text x="515" y="241" text-anchor="middle" fill="#374151" font-size="10">3. CA está en la lista de confianza</text>
+</svg>
+</div>
+<p class="nt" style="text-align:center;">La confianza se delega en cascada: el SO confía en la Root CA → la Root CA certifica a la Intermediate CA → la Intermediate CA firma el certificado del servidor. Si cualquier eslabón es inválido, el navegador muestra advertencia.</p>
+</div>
+<div class="ft"><span class="nt">Cadena de confianza · Sesión 24</span><span class="ctr">13 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 13 · openssl en la terminal -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual E · Inspección de certificados con openssl</div>
+<div class="ct">
+<h2>Leer la información de un certificado TLS en vivo</h2>
+<div class="tce">
+<div class="cod">
+<span class="cm"># Demo A: inspeccionar cert de un servidor real</span>
+$ openssl s_client -connect google.com:443 \
+  -showcerts 2>/dev/null | \
+  openssl x509 -text -noout | \
+  grep -E "Subject:|Issuer:|Not After"
+
+<span class="cs">Subject: CN=*.google.com</span>
+<span class="cs">Issuer: C=US, O=Google Trust Services</span>
+<span class="cs">Not After: Sep  8 08:23:43 2025 GMT</span>
+
+<span class="cm"># Demo B: generar cert autofirmado y leerlo</span>
+$ openssl req -x509 -newkey rsa:2048 \
+  -keyout key.pem -out cert.pem \
+  -days 365 -nodes \
+  -subj "/CN=localhost/O=PascualBravo/C=CO"
+
+<span class="cm"># Leer el certificado generado</span>
+$ openssl x509 -in cert.pem -text -noout | \
+  grep -E "Subject:|Issuer:|Not After|Public Key"
+
+<span class="cm"># Ver el fingerprint SHA-256 del cert</span>
+$ openssl x509 -in cert.pem \
+  -fingerprint -sha256 -noout</div>
+<div class="crd">
+<h3>Campos clave en un certificado X.509</h3>
+<ul style="margin-top:.3em;">
+<li><strong>Subject</strong>: identidad que se certifica (dominio / organización).</li>
+<li><strong>Issuer</strong>: CA que firma el certificado.</li>
+<li><strong>Not Before / Not After</strong>: ventana de validez temporal.</li>
+<li><strong>Subject Alt Names (SAN)</strong>: dominios adicionales cubiertos.</li>
+<li><strong>Public Key</strong>: la llave pública del servidor incluida en el cert.</li>
+<li><strong>Signature</strong>: firma digital de la CA que autentica todo lo anterior.</li>
+</ul>
+<p class="nt" style="margin-top:.3em;">En cert autofirmado, Subject == Issuer — eso es lo que el navegador rechaza en producción.</p>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">openssl · Sesión 24</span><span class="ctr">14 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 14 · Práctica 2 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase · Auditoría criptográfica</div>
+<div class="ct">
+<h2>Tres ejercicios autocontenidos</h2>
+<div class="tce">
+<div>
+<div class="caw" style="margin-bottom:.5em;">
+<p><strong>Ejercicio 1 — Detectar archivo manipulado:</strong></p>
+<div class="cod" style="margin-top:.3em; font-size:clamp(9px,.82vw,11.5px);"><span class="cm"># Preparar los dos archivos</span>
+$ echo "Reporte financiero Q1 2026" > bueno.txt
+$ cp bueno.txt malo.txt
+$ echo "transferencia adicional" >> malo.txt
+$ sha256sum bueno.txt > referencia.txt
+<span class="cm"># Ahora verificar cada uno:</span>
+$ sha256sum --check referencia.txt
+<span class="cs">bueno.txt: OK</span>
+$ sed -i "s/bueno/malo/" referencia.txt
+$ sha256sum --check referencia.txt
+<span class="cs">malo.txt: FAILED</span></div>
+</div>
+<div class="caw">
+<p><strong>Ejercicio 2 — Verificar la llave SSH de GitHub:</strong></p>
+<div class="cod" style="margin-top:.3em; font-size:clamp(9px,.82vw,11.5px);"><span class="cm"># Ver fingerprint de la llave configurada</span>
+$ ssh-keygen -lf ~/.ssh/id_ed25519.pub
+<span class="cs">256 SHA256:XxYy... tu@correo (ED25519)</span>
+
+<span class="cm"># Comparar con el fingerprint que GitHub</span>
+<span class="cm"># muestra en Settings → SSH keys</span>
+<span class="cm"># Deben ser idénticos — si no, hay un problema</span>
+
+<span class="cm"># Probar la autenticación en vivo</span>
+$ ssh -T git@github.com
+<span class="cs">Hi usuario! You've successfully authenticated</span></div>
+</div>
+</div>
+<div>
+<div class="caw" style="margin-bottom:.5em;">
+<p><strong>Ejercicio 3 — Inspección TLS:</strong></p>
+<div class="cod" style="margin-top:.3em; font-size:clamp(9px,.82vw,11.5px);">$ openssl s_client \
+  -connect pascualbravo.edu.co:443 \
+  2>/dev/null | \
+  openssl x509 -noout \
+  -subject -issuer \
+  -dates -text | \
+  grep -E "Subject:|Issuer:|Not After|TLS"</div>
+<p class="nt" style="margin-top:.2em;">Anotar: Issuer, fecha de expiración y versión TLS negociada.</p>
+</div>
+<div class="cal">
+<p><strong>Pregunta de análisis:</strong></p>
+<p>Si el certificado expiró ayer, ¿el cifrado de la conexión deja de funcionar o solo el navegador emite advertencia? ¿Son cosas distintas? (Pista: el handshake TLS puede completarse técnicamente — ¿qué garantía se pierde?)</p>
+</div>
+</div>
+</div>
+<p class="nt" style="margin-top:.3em;">Actividad de práctica formativa en clase. No evaluativa. Todos los comandos son autocontenidos — no se requieren archivos externos.</p>
+</div>
+<div class="ft"><span class="nt">Práctica · Sesión 24</span><span class="ctr">15 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 15 · Gestión de llaves SSH en producción -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual F · Buenas prácticas en gestión de llaves</div>
+<div class="ct">
+<h2>Las llaves también son credenciales sensibles</h2>
+<table>
+<tr><th>Práctica</th><th>Por qué importa</th><th>Cómo implementarla</th></tr>
+<tr class="sq"><td>Añadir passphrase a una llave existente</td><td>Si generaste la llave sin passphrase (como en clase), puedes añadirla después sin regenerar</td><td><code>ssh-keygen -p -f ~/.ssh/id_ed25519</code></td></tr>
+<tr class="sq"><td>Llaves distintas por proyecto / servidor</td><td>Si una llave se compromete, el daño está contenido</td><td><code>-f ~/.ssh/id_github</code>, <code>-f ~/.ssh/id_trabajo</code> al generar</td></tr>
+<tr class="sq"><td>Configurar <code>~/.ssh/config</code> por host</td><td>Evita especificar <code>-i archivo</code> en cada conexión y documenta qué llave usa cada servicio</td><td><code>Host github.com</code> → <code>IdentityFile ~/.ssh/id_github</code></td></tr>
+<tr class="sq"><td>Rotar llaves periódicamente</td><td>Mitiga el riesgo de llaves exfiltradas sin detección</td><td>Nueva llave cada 12 meses; en GitHub: añadir nueva → verificar → eliminar la anterior</td></tr>
+<tr class="sq"><td>Revocar llaves de empleados que salen</td><td>Empleados desvinculados no deben mantener acceso</td><td>GitHub: eliminar la llave en Settings; servidor: eliminar la línea de <code>authorized_keys</code></td></tr>
+</table>
+</div>
+<div class="ft"><span class="nt">Gestión de llaves · Sesión 24</span><span class="ctr">16 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 16 · Errores comunes en criptografía -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Errores comunes en criptografía aplicada</div>
+<div class="ct">
+<h2>Patrones de error frecuentes y su corrección</h2>
+<table>
+<tr><th>Error</th><th>Consecuencia</th><th>Corrección</th></tr>
+<tr class="sq"><td>Usar MD5 o SHA-1 para verificar integridad</td><td>MD5 y SHA-1 tienen colisiones conocidas; un atacante puede sustituir el archivo</td><td>Usar SHA-256 o SHA-3 mínimo</td></tr>
+<tr class="sq"><td>Guardar la llave privada SSH sin passphrase en un repositorio</td><td>Cualquiera con acceso al repo tiene acceso a todos los servidores autorizados</td><td>Nunca versionar llaves privadas; usar <code>.gitignore</code> y gestores de secretos</td></tr>
+<tr class="sq"><td>Aceptar certificados autofirmados en producción sin validarlos</td><td>El navegador/cliente no puede verificar la identidad — abre la puerta a MitM</td><td>Usar certificados emitidos por una CA reconocida (Let's Encrypt en web pública)</td></tr>
+<tr class="sq"><td>Deshabilitar verificación de certificado (<code>-k</code> en curl)</td><td>Permite MitM silencioso — muy común en scripts de CI/CD mal configurados</td><td>Siempre verificar; en ambientes de prueba usar la CA interna correctamente</td></tr>
+</table>
+</div>
+<div class="ft"><span class="nt">Errores · Sesión 24</span><span class="ctr">17 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 17 · Conexión con S22 y S23 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Integración curricular · Sesiones 22, 23 y 24</div>
+<div class="ct">
+<h2>La criptografía como capa transversal</h2>
+<div class="tce" style="margin-top:.3em;">
+<div class="cad sq"><p><strong>S22 — Amenazas:</strong> los atacantes interceptan comunicaciones sin cifrar (sniffing), falsifican identidades (phishing/spoofing) y explotan CVEs en implementaciones criptográficas débiles (OpenSSL heartbleed, etc.).</p></div>
+<div class="cag sq"><p><strong>S23 — Hardening:</strong> deshabilitar PasswordAuthentication en sshd, forzar TLS 1.2+ en servicios web, verificar firmas GPG de paquetes antes de instalar. La criptografía es el mecanismo que hace funcionar el hardening.</p></div>
+</div>
+<div class="cal sq" style="margin-top:.4em;">
+<h3>S24 — Criptografía aplicada: cierra el ciclo</h3>
+<p style="margin-top:.3em;">Las herramientas (<code>ssh-keygen</code>, <code>openssl</code>, <code>gpg</code>) y los protocolos (TLS, SSH) son la implementación concreta de los conceptos de S22 y el mecanismo detrás del hardening de S23. Sin entender criptografía no se puede auditar si el hardening está bien hecho.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Integración · Sesión 24</span><span class="ctr">18 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 18 · Criptografía en el día a día del SysAdmin -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual G · Criptografía en el trabajo diario</div>
+<div class="ct">
+<h2>¿Cuándo aplica cada herramienta?</h2>
+<table>
+<tr><th>Escenario</th><th>Herramienta</th><th>Operación</th></tr>
+<tr class="sq"><td>Acceder a servidor remoto de forma segura</td><td>SSH + llave Ed25519</td><td><code>ssh -i ~/.ssh/id_ed25519 user@host</code></td></tr>
+<tr class="sq"><td>Verificar que un paquete descargado no fue alterado</td><td>sha256sum / GPG</td><td><code>sha256sum paquete.deb</code> o <code>gpg --verify paquete.deb.sig</code></td></tr>
+<tr class="sq"><td>Exponer una aplicación web con HTTPS</td><td>TLS (Let's Encrypt / openssl)</td><td>Configurar certbot + nginx/apache</td></tr>
+<tr class="sq"><td>Enviar un informe confidencial por correo</td><td>GPG cifrado asimétrico</td><td><code>gpg --encrypt --recipient ...</code></td></tr>
+<tr class="sq"><td>Cifrar un backup en disco externo</td><td>AES-256 con openssl o LUKS</td><td><code>openssl enc -aes-256-cbc ...</code> o <code>cryptsetup luksFormat</code></td></tr>
+<tr class="sq"><td>Firmar commits de Git para probar autoría</td><td>GPG o SSH signing</td><td><code>git config commit.gpgsign true</code></td></tr>
+</table>
+</div>
+<div class="ft"><span class="nt">Aplicaciones · Sesión 24</span><span class="ctr">19 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 19 · Cuestionario -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Cuestionario de comprensión</div>
+<div class="ct tc">
+<div>
+<h2>Preguntas de cierre técnico</h2>
+<ol>
+<li class="sq">Un colega te dice "no me complico, uso la misma llave SSH para todos mis servidores". ¿Cuál es el riesgo y cómo le explicarías la solución adecuada?</li>
+<li class="sq">¿Por qué TLS no puede reemplazarse simplemente con cifrado AES de extremo a extremo sin el handshake con la CA?</li>
+<li class="sq">Un servidor web tiene un certificado TLS válido pero firmado con SHA-1. ¿Aceptarías esa configuración en producción? Justifica técnicamente.</li>
+<li class="sq">¿En qué caso usarías <code>gpg --sign</code> en lugar de <code>sha256sum</code> para verificar la integridad de un archivo? ¿Cuál es la diferencia de garantía que ofrece cada método?</li>
+</ol>
+</div>
+<div class="cal sq">
+<p><strong>Para la próxima sesión (S25):</strong></p>
+<p>Gestión de usuarios, grupos y políticas de acceso en Linux y Windows. Las llaves SSH que configuramos hoy necesitan cuentas de sistema correctamente administradas para ser efectivas.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">20 / 21</span></div>
+</div>
+</section>
+
+<!-- Slide 20 · Cierre -->
+<section class="slide cov">
+<div class="inn"><div class="ct" style="justify-content:center;text-align:center;">
+<span class="hd">Sistemas Operativos · Unidad 3 · Sesión 24</span>
+<h1 style="margin-top:clamp(20px,3vw,40px);">Criptografía:</h1>
+<h1>Del Concepto a la Terminal</h1>
+<div class="sub" style="margin-top:clamp(14px,2vw,28px);">ssh-keygen · openssl · gpg · sha256sum</div>
+<p style="margin-top:clamp(20px,2.5vw,36px);font-size:clamp(14px,1.5vw,20px);color:#cbd5e1;">La criptografía no es magia negra — es matemática aplicada con herramientas concretas.<br>Quien no puede verificar la integridad de sus propias comunicaciones no puede administrar un sistema seguro.</p>
+</div>
+<div class="ft"><span class="nt" style="color:#e5edf8;">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">21 / 21</span></div>
+</div>
+</section>
+
+<div id="tnv" class="tnv">
+<button id="pb">&lt;</button>
+<button id="nb">&gt;</button>
 </div>
 
+</div></div>
 <script>
-    let currentSlide = 0;
-    const slides = document.querySelectorAll('.slide');
-    const progressBar = document.getElementById('progressBar');
-
-    function updatePresentation() {
-        slides.forEach((slide, index) => {
-            if (index === currentSlide) {
-                slide.classList.add('active');
-            } else {
-                slide.classList.remove('active');
-            }
-        });
-        
-        const progress = ((currentSlide + 1) / slides.length) * 100;
-        progressBar.style.width = progress + '%';
-        
-        document.getElementById('prevBtn').style.opacity = currentSlide === 0 ? '0.5' : '1';
-        document.getElementById('nextBtn').style.opacity = currentSlide === slides.length - 1 ? '0.5' : '1';
-    }
-
-    function nextSlide() {
-        if (currentSlide < slides.length - 1) {
-            currentSlide++;
-            updatePresentation();
-        }
-    }
-
-    function prevSlide() {
-        if (currentSlide > 0) {
-            currentSlide--;
-            updatePresentation();
-        }
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
-        if (e.key === 'ArrowLeft') prevSlide();
-    });
-
-    updatePresentation();
+const tg=document.getElementById("stage"),sl=document.querySelectorAll(".slide");
+let ci=0;
+function sw(n){
+sl[ci].classList.remove("active");
+ci=(n+sl.length)%sl.length;
+sl[ci].classList.add("active");
+const s=sl[ci].querySelectorAll(".sq");
+s.forEach(x=>x.classList.remove("vs"));
+let t=0; s.forEach(x=>{setTimeout(()=>x.classList.add("vs"),t); t+=200;});
+}
+document.getElementById("pb").onclick=(e)=>{e.stopPropagation();sw(ci-1);};
+document.getElementById("nb").onclick=(e)=>{e.stopPropagation();sw(ci+1);};
+document.addEventListener("keydown",e=>{
+if(e.key==="ArrowRight"||e.key==="Space"||e.key==="Enter"){e.preventDefault();sw(ci+1);}
+else if(e.key==="ArrowLeft"){e.preventDefault();sw(ci-1);}
+else if(e.key==="f"){
+if(!document.fullscreenElement) tg.requestFullscreen().catch(()=>{});
+else document.exitFullscreen();
+}
+});
+let ts=0;
+document.addEventListener("touchstart",e=>{ts=e.changedTouches[0].screenX;});
+document.addEventListener("touchend",e=>{
+let te=e.changedTouches[0].screenX;
+if(ts-te>40) sw(ci+1); else if(te-ts>40) sw(ci-1);
+});
+sw(0);
 </script>
 </body>
 </html>
