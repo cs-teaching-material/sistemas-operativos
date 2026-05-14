@@ -402,17 +402,26 @@ $ sudo aa-enforce /usr/sbin/nginx</div>
 <div class="ct">
 <h2>Verificar qué poderes tiene un contenedor estándar</h2>
 <div class="caw" style="margin-bottom:.6em;">
-<p><strong>Enunciado:</strong> lanzar un contenedor Alpine estándar e inspeccionar sus capabilities activas. Comparar con el contenedor <code>--privileged</code>.</p>
+<p><strong>Enunciado:</strong> lanzar un contenedor Alpine estándar e inspeccionar sus capabilities activas. Comparar con el contenedor <code>--privileged</code>. Se usa <code>/proc/self/status</code> (siempre disponible, sin instalar nada).</p>
 </div>
 <ol>
 <li class="sq">Descargar la imagen si no está en caché: <code>docker pull alpine:latest</code></li>
-<li class="sq">Lanzar el contenedor e instalar la herramienta:
+<li class="sq">Lanzar el contenedor y leer las capabilities desde el sistema de archivos del kernel:
 <div class="cod" style="margin-top:.3em;margin-bottom:.3em;">$ docker run --rm -it alpine sh
-/ # apk add --no-cache libcap-utils   <span class="cm"># provee capsh en Alpine</span></div></li>
-        <li class="sq">Ver capabilities actuales del proceso: <code>capsh --print</code> — observar la línea <code>Current:</code></li>
+<span class="cm"># /proc/self/status siempre existe — no requiere instalar nada</span>
+/ # grep Cap /proc/self/status
+<span class="cf">CapInh: 0000000000000000
+CapPrm: 00000000a80425fb
+CapEff: 00000000a80425fb
+CapBnd: 00000000a80425fb</span></div></li>
         <li class="sq">Salir (<code>exit</code>) y repetir con privileged:
           <div class="cod" style="margin-top:.3em;margin-bottom:.3em;">$ docker run --rm -it --privileged alpine sh
-/ # apk add --no-cache libcap-utils &amp;&amp; capsh --print</div></li>
+/ # grep Cap /proc/self/status
+<span class="cf">CapEff: 0000003fffffffff</span>   <span class="cm"># todos los bits en 1 = todas las caps activas</span></div></li>
+        <li class="sq">Decodificar los valores en el host (requiere <code>libcap2-bin</code> instalado en Ubuntu):
+          <div class="cod" style="margin-top:.3em;margin-bottom:.3em;"><span class="cm"># En el host Ubuntu (no dentro del contenedor):</span>
+$ capsh --decode=00000000a80425fb   <span class="cm"># contenedor normal</span>
+$ capsh --decode=0000003fffffffff   <span class="cm"># --privileged</span></div></li>
 <li class="sq"><strong>Pregunta de análisis:</strong> ¿Qué capacidades aparecen en <code>--privileged</code> que no estaban en el contenedor normal? Busca <code>cap_sys_admin</code>, <code>cap_sys_module</code>, <code>cap_sys_time</code>.</li>
 </ol>
 <p class="nt" style="margin-top:.5em;">Actividad de práctica formativa en clase. No evaluativa.</p>
@@ -652,12 +661,18 @@ $ docker run -d \
   postgres:16
 
 <span class="cm"># PASO 3 — Verificar que el contenedor no puede alcanzar internet:</span>
-$ docker exec postgres_db ping -c2 8.8.8.8
-<span class="cf">ping: connect: Network is unreachable</span>
+<span class="cm"># (bash builtin /dev/tcp — no requiere instalar nada)</span>
+$ docker exec postgres_db bash -c \
+  'timeout 2 bash -c "echo &gt; /dev/tcp/8.8.8.8/53" 2&gt;&amp;1 \
+   || echo "Network is unreachable"'
+<span class="cf">Network is unreachable</span>
 
 <span class="cm"># PASO 4 — Verificar que otro contenedor en la misma red sí puede comunicarse:</span>
+<span class="cm"># nc (netcat) viene incluido en Alpine sin necesidad de instalar nada:</span>
 $ docker run --rm --network red_interna alpine \
-  ping -c2 postgres_db   <span class="cm"># debe responder</span>
+  sh -c "nc -zv postgres_db 5432 &amp;&amp; echo OK"
+<span class="cf">postgres_db (172.x.x.x:5432) open
+OK</span>
 
 <span class="cm"># Limpiar:</span>
 $ docker stop postgres_db &amp;&amp; docker rm postgres_db
