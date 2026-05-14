@@ -408,11 +408,11 @@ $ sudo aa-enforce /usr/sbin/nginx</div>
 <li class="sq">Descargar la imagen si no está en caché: <code>docker pull alpine:latest</code></li>
 <li class="sq">Lanzar el contenedor e instalar la herramienta:
 <div class="cod" style="margin-top:.3em;margin-bottom:.3em;">$ docker run --rm -it alpine sh
-/ # apk add --no-cache libcap2   <span class="cm"># paquete correcto en Alpine</span></div></li>
-<li class="sq">Ver capabilities actuales del proceso: <code>capsh --print</code> — observar la línea <code>Current:</code></li>
-<li class="sq">Salir (<code>exit</code>) y repetir con privileged:
-<div class="cod" style="margin-top:.3em;margin-bottom:.3em;">$ docker run --rm -it --privileged alpine sh
-/ # apk add --no-cache libcap2 &amp;&amp; capsh --print</div></li>
+/ # apk add --no-cache libcap-utils   <span class="cm"># provee capsh en Alpine</span></div></li>
+        <li class="sq">Ver capabilities actuales del proceso: <code>capsh --print</code> — observar la línea <code>Current:</code></li>
+        <li class="sq">Salir (<code>exit</code>) y repetir con privileged:
+          <div class="cod" style="margin-top:.3em;margin-bottom:.3em;">$ docker run --rm -it --privileged alpine sh
+/ # apk add --no-cache libcap-utils &amp;&amp; capsh --print</div></li>
 <li class="sq"><strong>Pregunta de análisis:</strong> ¿Qué capacidades aparecen en <code>--privileged</code> que no estaban en el contenedor normal? Busca <code>cap_sys_admin</code>, <code>cap_sys_module</code>, <code>cap_sys_time</code>.</li>
 </ol>
 <p class="nt" style="margin-top:.5em;">Actividad de práctica formativa en clase. No evaluativa.</p>
