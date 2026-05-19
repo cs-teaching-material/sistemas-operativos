@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SO · S25 · Gestión de Usuarios, Grupos y Políticas de Acceso</title>
+<style>
+:root{
+--az:#015583;--tur:#05ADBC;--txt:#201F4B;--mu:#6b7280;
+--safe-top-cover:clamp(208px,9vh,128px);
+--safe-left-cover:clamp(585px,5.5vw,110px);
+--safe-right-cover:clamp(28px,3vw,72px);
+--safe-bottom-cover:clamp(54px,6vh,92px);
+--safe-top:clamp(100px,9vh,132px);
+--safe-side:clamp(66px,5.5vw,108px);
+--safe-bottom:clamp(52px,6vh,90px);
+}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;}
+.deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,20px);box-sizing:border-box;}
+.stage{width:min(96vw,calc(90vh*(16/9)));aspect-ratio:16/9;position:relative;}
+.slide{position:absolute;inset:0;display:none;box-shadow:0 12px 36px rgba(0,0,0,.3);overflow:hidden;}
+.slide.active{display:block;}
+.cov{background:url("../img/Portada.png") center/cover no-repeat,#015583;color:#fff;}
+.cnt{background:url("../img/Contenido.png") top left/contain no-repeat,#fff;color:var(--txt);}
+.inn{height:100%;box-sizing:border-box;padding:var(--safe-top) var(--safe-side) var(--safe-bottom);display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);}
+.cov .inn{padding:var(--safe-top-cover) var(--safe-right-cover) var(--safe-bottom-cover) var(--safe-left-cover);justify-content:center;}
+.ct{flex:1;display:flex;flex-direction:column;gap:clamp(8px,.9vw,14px);min-height:0;overflow:auto;overflow-x:hidden;}
+.hd{color:var(--tur);font-size:clamp(12px,1.1vw,15px);font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-bottom:2px solid var(--tur);padding-bottom:3px;}
+h1{margin:0;font-size:clamp(26px,3.2vw,44px);line-height:1.08;color:#fff;}
+h2{margin:0;font-size:clamp(18px,2vw,28px);line-height:1.15;color:var(--az);}
+h3{margin:0;font-size:clamp(14px,1.5vw,20px);color:var(--az);}
+p{margin:0;font-size:clamp(13px,1.2vw,17px);line-height:1.4;}
+li{font-size:clamp(13px,1.2vw,17px);line-height:1.4;margin-bottom:.5em;}
+ul,ol{margin:0;padding-left:1.2em;}
+.sub{color:#f7df00;font-weight:800;font-size:clamp(16px,1.7vw,22px);margin-top:8px;}
+.nt{color:var(--mu);font-size:clamp(10px,.95vw,13px);line-height:1.35;}
+.cal{background:#f0f9ff;border-left:5px solid var(--tur);padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.caw{background:#fffbe6;border-left:5px solid #e6a817;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cad{background:#fef2f2;border-left:5px solid #dc2626;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.cag{background:#f0fdf4;border-left:5px solid #16a34a;padding:clamp(7px,.9vw,11px);border-radius:6px;}
+.tc{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(10px,1.4vw,20px);align-items:start;min-height:0;}
+.tce{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.4vw,20px);align-items:start;}
+.crd{background:#f8faff;border:1px solid #dde2f1;border-radius:8px;padding:clamp(8px,.9vw,12px);}
+.cod{font-family:ui-monospace,monospace;font-size:clamp(10px,.9vw,12.5px);line-height:1.5;background:#0b1020;color:#e5e7eb;border-radius:7px;padding:clamp(7px,.9vw,11px);white-space:pre-wrap;border:1px solid #1f2937;max-height:min(36vh,320px);overflow:auto;}
+.cm{color:#6b7280;}.cc{color:#7dd3fc;font-weight:bold;}.cs{color:#86efac;}
+.cn{color:#fde68a;}.cf{color:#c4b5fd;}
+.iw{width:100%;border-radius:7px;border:1px solid #dde2f1;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:clamp(10px,.95vw,13px);}
+th,td{border:1px solid #dde2f1;padding:clamp(4px,.7vw,8px);color:var(--txt);vertical-align:top;}
+th{background:#f3f6fb;text-transform:uppercase;font-size:clamp(9px,.85vw,11px);letter-spacing:.05em;color:var(--az);}
+.ft{display:flex;justify-content:space-between;align-items:center;padding-top:3px;border-top:1px solid #dde2f1;}
+.cov .ft{border-top:1px solid rgba(255,255,255,.15);margin-top:auto;}
+.ctr{font-weight:800;color:var(--az);font-size:clamp(11px,.95vw,13px);}
+.cov .ctr{color:#e5edf8;}
+.tnv{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;z-index:10;}
+.tnv button{pointer-events:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(221,226,241,.9);background:rgba(255,255,255,.9);color:var(--txt);font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.1);}
+#tnv{opacity:0;transition:.15s;}
+.stage:hover #tnv{opacity:1;}
+@media(hover:none){#tnv{opacity:1;}}
+.sq{opacity:0;transform:translateY(9px);transition:opacity .32s,transform .32s;}
+.sq.vs{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+<div class="deck"><div class="stage" id="stage">
+
+<!-- Slide 1 · Portada -->
+<section class="slide cov active">
+<div class="inn"><div class="ct" style="justify-content:center;">
+<span class="hd">Sistemas Operativos · Unidad 3</span>
+<h1>Sesión 25</h1>
+<h1>Gestión de Usuarios, Grupos<br>y Políticas de Acceso</h1>
+<div class="sub">DAC · sudo · PAM · /etc/passwd · Active Directory</div>
+<div class="cal" style="max-width:78%;margin-top:clamp(10px,1.4vw,18px);">
+<p style="color:var(--txt);">El sistema operativo no conoce a las personas — conoce UIDs y GIDs. Aprender a modelar la estructura de usuarios y aplicar políticas de acceso es la forma en que el administrador convierte el Principio de Menor Privilegio en realidad operativa.</p>
+</div>
+<p class="nt" style="margin-top:auto;color:#201F4B;font-weight:bold;">&larr; &rarr; navegación · F pantalla completa</p>
+</div>
+<div class="ft"><span class="nt" style="color:#e5edf8;">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">1 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 2 · Propósito -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Propósito técnico de la sesión</div>
+<div class="ct tc">
+<div>
+<h2>Qué dominaremos hoy</h2>
+<ul>
+<li>Comprender la estructura de identidades del SO: <strong>UID, GID</strong> y su almacenamiento en <code>/etc/passwd</code> y <code>/etc/shadow</code>.</li>
+<li>Entender la estructura interna de <code>/etc/shadow</code>: formato de hashes, campos de expiración y lectura forense.</li>
+<li>Comprender <strong>nsswitch.conf</strong> y cómo el SO resuelve identidades desde múltiples fuentes (archivos locales, LDAP, SSSD).</li>
+<li>Configurar <strong>sudo</strong> con granularidad adecuada usando <code>sudoers</code> y <code>visudo</code>, extendiendo lo visto en S23.</li>
+<li>Entender el modelo <strong>DAC</strong> (Control de Acceso Discrecional) y sus limitaciones frente a <strong>MAC</strong>.</li>
+<li>Comparar la gestión de usuarios en <strong>Linux vs Windows</strong> (Local Users vs Active Directory).</li>
+</ul>
+</div>
+<div class="crd">
+<p><strong>Resultado observable</strong></p>
+<p>Al finalizar, el estudiante podrá crear un usuario de servicio sin shell de login, asignarle permisos específicos con sudo limitado, y explicar por qué los servicios del sistema no deben ejecutarse como root.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Propósito · Sesión 25</span><span class="ctr">2 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 3 · Activación -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Activación de conocimiento base</div>
+<div class="ct tc">
+<div>
+<h2>Lo que ya sabemos de sesiones anteriores</h2>
+<ul>
+<li><strong>S18</strong>: permisos POSIX (chmod, chown) — quién puede leer, escribir o ejecutar un archivo.</li>
+<li><strong>S23</strong>: hardening — deshabilitar cuentas innecesarias, PermitRootLogin no en SSH, Principio de Menor Privilegio.</li>
+<li><strong>S24</strong>: las llaves SSH se asocian a cuentas de sistema — si la cuenta no existe o tiene permisos inadecuados, la autenticación falla.</li>
+</ul>
+</div>
+<div class="caw sq">
+<h3>La pregunta que queda sin responder</h3>
+<p style="margin-top:.4em;">En S18 aprendimos a controlar permisos <em>sobre archivos</em>. Pero ¿cómo se crean y administran las <em>identidades</em> que tienen esos permisos? ¿Cómo limitamos qué puede hacer cada cuenta más allá de los permisos de archivos? ¿Cómo se delega el acceso administrativo sin entregar la contraseña de root?</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Activación · Sesión 25</span><span class="ctr">3 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 4 · UID, GID y archivos del sistema -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual A · Estructura de identidades en Linux</div>
+<div class="ct">
+<h2>El SO trabaja con números, no con nombres</h2>
+<div class="tce">
+<div>
+<p>Cada proceso y archivo en el sistema está asociado a un <strong>UID</strong> (User ID) y un <strong>GID</strong> (Group ID) numérico. El nombre de usuario es solo un alias legible para humanos.</p>
+<div class="cod" style="margin-top:.4em;"><span class="cm"># Anatomía de /etc/passwd</span>
+<span class="cm"># usuario:x:UID:GID:comentario:home:shell</span>
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+www-data:x:33:33::/var/www:/usr/sbin/nologin
+juan:x:1001:1001:Juan Estudiante:/home/juan:/bin/bash
+
+<span class="cm"># La 'x' en campo 2 significa que el hash</span>
+<span class="cm"># de contraseña está en /etc/shadow</span></div>
+</div>
+<div>
+<div class="crd sq">
+<h3>Rangos convencionales de UID</h3>
+<table style="margin-top:.3em;">
+<tr><th>Rango</th><th>Tipo</th></tr>
+<tr><td>0</td><td>root — superusuario</td></tr>
+<tr><td>1 – 99</td><td>Cuentas de sistema reservadas</td></tr>
+<tr><td>100 – 999</td><td>Usuarios de servicio (sin login)</td></tr>
+<tr><td>1000+</td><td>Usuarios humanos interactivos</td></tr>
+</table>
+</div>
+<div class="cal sq" style="margin-top:.5em;">
+<p><strong>/etc/shadow</strong>: almacena hashes de contraseñas y política de expiración. Solo accesible por root. Separar hashes de /etc/passwd evita que usuarios sin privilegios lean y ataquen los hashes.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">UID · GID · Sesión 25</span><span class="ctr">4 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 5 · /etc/shadow en profundidad -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual A · Anatomía de /etc/shadow y hashes de contraseñas</div>
+<div class="ct">
+<h2>Cómo Linux almacena y protege las contraseñas</h2>
+<div class="tce">
+<div>
+<p>En S23 aprendimos a usar <code>chage</code> y <code>passwd -l</code>. Hoy analizamos <em>por qué</em> funcionan: la estructura interna de <code>/etc/shadow</code> y lo que cada campo significa para el administrador.</p>
+<div class="cod" style="margin-top:.4em;"><span class="cm"># Formato de /etc/shadow:</span>
+<span class="cm"># usuario:hash:ult_cambio:min:max:aviso:inact:expira</span>
+ana:$6$rounds=5000$salt$hash...:19844:0:90:14:30::
+
+<span class="cm"># El prefijo del hash indica el algoritmo:</span>
+<span class="cm"># $1$  → MD5 (inseguro, obsoleto)</span>
+<span class="cm"># $5$  → SHA-256</span>
+<span class="cm"># $6$  → SHA-512 (estándar actual)</span>
+<span class="cm"># $y$  → yescrypt (Ubuntu 22.04+)</span>
+
+<span class="cm"># Ver la entrada de shadow de un usuario</span>
+$ sudo getent shadow ana
+
+<span class="cm"># Verificar qué algoritmo usa el sistema</span>
+$ sudo grep "^ENCRYPT_METHOD" /etc/login.defs
+<span class="cs">ENCRYPT_METHOD SHA512</span></div>
+</div>
+<div>
+<div class="crd sq">
+<h3>Lectura forense de un campo shadow</h3>
+<p style="margin-top:.3em;">El tercer campo (<em>último cambio</em>) es un número entero: días transcurridos desde el 1 de enero de 1970 (epoch Unix). Valor <strong>0</strong> significa que el usuario debe cambiar su contraseña en el próximo inicio de sesión.</p>
+<div class="cod" style="margin-top:.3em;"><span class="cm"># Convertir días epoch a fecha legible</span>
+$ python3 -c "
+import datetime
+dias = 19844
+print(datetime.date.fromordinal(
+  datetime.date(1970,1,1).toordinal() + dias
+))"
+<span class="cs">2054-04-19</span></div>
+</div>
+<div class="caw sq" style="margin-top:.4em;">
+<p><strong>Un hash comenzando con <code>!</code> o <code>*</code></strong> en el campo de contraseña indica cuenta bloqueada o sin contraseña habilitada. Las cuentas de servicio deben tener siempre <code>!</code> o <code>*</code> en este campo.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">/etc/shadow · Hashes · Sesión 25</span><span class="ctr">5 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 6 · nsswitch.conf y resolución de identidades -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual B · nsswitch.conf: cómo el SO busca usuarios</div>
+<div class="ct tc">
+<div>
+<h2>El mecanismo de resolución de nombres de usuario</h2>
+<p>Cuando un proceso llama a <code>getpwnam("ana")</code>, el kernel no consulta <code>/etc/passwd</code> directamente. Consulta el <strong>Name Service Switch (nsswitch)</strong>, que define el orden y las fuentes de búsqueda.</p>
+<div class="cod" style="margin-top:.4em;"><span class="cm"># /etc/nsswitch.conf</span>
+<span class="cm"># passwd: fuentes para usuarios</span>
+passwd:  files systemd sss ldap
+
+<span class="cm"># group: fuentes para grupos</span>
+group:   files systemd sss ldap
+
+<span class="cm"># shadow: fuentes para contraseñas</span>
+shadow:  files sss
+
+<span class="cm"># El orden importa: primero busca en</span>
+<span class="cm"># 'files' (/etc/passwd), luego systemd,</span>
+<span class="cm"># luego sss (SSSD → LDAP/AD), etc.</span>
+
+<span class="cm"># Herramienta de diagnóstico getent:</span>
+$ getent passwd ana       <span class="cm"># busca en todas las fuentes</span>
+$ getent group desarrollo
+$ getent hosts servidor.local</div>
+</div>
+<div class="crd sq">
+<h3>SSSD: conectar Linux a Active Directory</h3>
+<p style="margin-top:.3em;"><strong>SSSD (System Security Services Daemon)</strong>: servicio que actúa como proxy entre el sistema y directorios remotos (LDAP, Active Directory, Kerberos).</p>
+<div class="cod" style="margin-top:.3em;"><span class="cm"># Unir servidor Ubuntu a dominio AD</span>
+$ sudo apt install sssd realmd
+$ sudo realm join empresa.local \
+  -U administrador
+<span class="cm"># Ahora 'getent passwd' muestra</span>
+<span class="cm"># usuarios del dominio AD</span></div>
+<p class="nt" style="margin-top:.3em;">Con SSSD activo, el inicio de sesión funciona con credenciales de Active Directory sin cuentas locales adicionales.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">nsswitch · SSSD · Sesión 25</span><span class="ctr">6 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 7 · Visual A — modelo DAC -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Recurso visual A · Modelo DAC en Linux</div>
+<div class="ct" style="align-items:center;">
+<div class="iw" style="flex:1;max-height:75%;">
+<svg viewBox="0 0 660 255" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="12">
+  <!-- Usuario -->
+  <rect x="20" y="100" width="110" height="50" rx="8" fill="#015583"/>
+  <text x="75" y="123" text-anchor="middle" fill="#fff" font-weight="bold">Usuario: ana</text>
+  <text x="75" y="138" text-anchor="middle" fill="#cbd5e1" font-size="10">UID 1001</text>
+  <!-- Proceso -->
+  <rect x="190" y="100" width="110" height="50" rx="8" fill="#05ADBC"/>
+  <text x="245" y="123" text-anchor="middle" fill="#fff" font-weight="bold">Proceso</text>
+  <text x="245" y="138" text-anchor="middle" fill="#e0f2fe" font-size="10">heredada UID 1001</text>
+  <!-- Recurso -->
+  <rect x="380" y="60" width="120" height="40" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="440" y="78" text-anchor="middle" fill="#16a34a" font-weight="bold">archivo.txt</text>
+  <text x="440" y="93" text-anchor="middle" fill="#374151" font-size="10">owner: ana · grupo: dev</text>
+  <rect x="380" y="115" width="120" height="40" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="440" y="133" text-anchor="middle" fill="#dc2626" font-weight="bold">/etc/shadow</text>
+  <text x="440" y="148" text-anchor="middle" fill="#374151" font-size="10">owner: root · perms: 000</text>
+  <rect x="380" y="170" width="120" height="40" rx="6" fill="#fffbe6" stroke="#e6a817" stroke-width="1.5"/>
+  <text x="440" y="188" text-anchor="middle" fill="#92400e" font-weight="bold">/var/proyecto</text>
+  <text x="440" y="203" text-anchor="middle" fill="#374151" font-size="10">owner: root · grupo: dev · rwxrwx---</text>
+  <!-- Arrows -->
+  <line x1="130" y1="125" x2="190" y2="125" stroke="#015583" stroke-width="1.5"/>
+  <polygon points="185,121 195,125 185,129" fill="#015583"/>
+  <line x1="300" y1="115" x2="375" y2="85" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5"/>
+  <text x="330" y="96" fill="#16a34a" font-size="10">OK: ana es owner</text>
+  <line x1="300" y1="125" x2="375" y2="138" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5"/>
+  <text x="308" y="130" fill="#dc2626" font-size="10">DENEGADO</text>
+  <line x1="300" y1="130" x2="375" y2="190" stroke="#e6a817" stroke-width="1.5" stroke-dasharray="5"/>
+  <text x="315" y="175" fill="#e6a817" font-size="10">OK: ana está en dev</text>
+  <!-- DAC label -->
+  <rect x="530" y="90" width="120" height="75" rx="8" fill="#f8faff" stroke="#dde2f1"/>
+  <text x="590" y="112" text-anchor="middle" fill="#015583" font-weight="bold">DAC</text>
+  <text x="590" y="128" text-anchor="middle" fill="#374151" font-size="10">El dueño del recurso</text>
+  <text x="590" y="142" text-anchor="middle" fill="#374151" font-size="10">decide quién accede</text>
+  <text x="590" y="156" text-anchor="middle" fill="#374151" font-size="10">y con qué permisos</text>
+</svg>
+</div>
+<p class="nt" style="text-align:center;">En DAC (Control de Acceso Discrecional), el dueño del recurso controla el acceso. El kernel verifica UID/GID del proceso contra los metadatos del archivo. Si no coincide el dueño ni el grupo, aplican los permisos "otros" (o world).</p>
+</div>
+<div class="ft"><span class="nt">DAC · Sesión 25</span><span class="ctr">7 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 8 · sudo y sudoers -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual C · sudo y el archivo sudoers</div>
+<div class="ct">
+<h2>Delegar privilegios sin compartir la contraseña de root</h2>
+<p><strong>sudo</strong> (Superuser Do) permite ejecutar comandos con los privilegios de otro usuario (normalmente root) sin conocer su contraseña. Toda acción con sudo queda registrada en los logs del sistema.</p>
+<div class="tce" style="margin-top:.4em;">
+<div class="cod">
+<span class="cm"># Editar sudoers de forma segura</span>
+$ sudo visudo
+
+<span class="cm"># Formato: usuario HOST=(como_usuario) comandos</span>
+
+<span class="cm"># Acceso total (el grupo sudo por defecto)</span>
+%sudo ALL=(ALL:ALL) ALL
+
+<span class="cm"># Solo reiniciar nginx, sin contraseña</span>
+deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx
+
+<span class="cm"># Solo ver logs de sistema</span>
+soporte ALL=(root) /usr/bin/journalctl, /usr/bin/tail
+
+<span class="cm"># Ver permisos del usuario actual</span>
+$ sudo -l
+<span class="cs">User ana may run: (root) NOPASSWD: /usr/bin/systemctl restart nginx</span></div>
+<div class="crd">
+<h3>Principios clave de sudoers</h3>
+<ul style="margin-top:.3em;">
+<li><strong>Mínimo privilegio:</strong> listar solo los comandos necesarios, no <code>ALL</code> sin justificación.</li>
+<li><strong>NOPASSWD con cuidado:</strong> útil en automatización CI/CD, pero elimina la fricción intencional de seguridad.</li>
+<li><strong>Nunca dar sudo a editores de texto:</strong> <code>sudo vim</code> permite escalar a shell root con <code>:!bash</code>.</li>
+<li><strong>Usar <code>visudo</code>:</strong> valida la sintaxis antes de guardar — un sudoers roto puede dejar el sistema sin administración.</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">sudo · sudoers · Sesión 25</span><span class="ctr">8 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 9 · Práctica 1 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase 1 · Gestión de usuarios y sudo granular</div>
+<div class="ct">
+<h2>Configurar un entorno multiusuario controlado</h2>
+<div class="caw" style="margin-bottom:.5em;">
+<p><strong>Escenario:</strong> eres el administrador de un servidor de desarrollo. Debes crear cuentas para tres roles distintos con distintos niveles de acceso.</p>
+</div>
+<div class="tce">
+<div>
+<p><strong>Tareas:</strong></p>
+<ol style="margin-top:.3em;">
+<li class="sq">Crear grupo <code>devs</code> y usuario <code>carlos</code> en ese grupo con home y bash.</li>
+<li class="sq">Crear usuario de servicio <code>appserver</code> sin shell de login ni home.</li>
+<li class="sq">Crear directorio <code>/var/app</code> con propietario <code>appserver</code> y grupo <code>devs</code>, permisos <code>rwxrwx---</code>.</li>
+<li class="sq">Configurar con <code>visudo</code> que <code>carlos</code> pueda reiniciar el servicio <code>appserver.service</code> sin contraseña, pero nada más.</li>
+<li class="sq">Verificar con <code>sudo -l -U carlos</code> que los permisos son correctos.</li>
+</ol>
+</div>
+<div class="crd">
+<p><strong>Verificaciones esperadas:</strong></p>
+<ul style="margin-top:.3em;">
+<li><code>su - appserver</code> debe responder "This account is not available."</li>
+<li><code>ls -la /var/app</code> debe mostrar <code>rwxrwx---</code> y el propietario correcto.</li>
+<li><code>sudo -l -U carlos</code> debe mostrar solo el comando permitido.</li>
+<li>Intentar <code>sudo bash</code> como carlos debe ser denegado.</li>
+</ul>
+<p class="nt" style="margin-top:.4em;">Actividad de práctica formativa en clase. No evaluativa.</p>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Práctica 1 · Sesión 25</span><span class="ctr">9 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 10 · PAM -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual D · PAM: Módulos de Autenticación Conectables</div>
+<div class="ct tc">
+<div>
+<h2>PAM: la capa de autenticación unificada</h2>
+<p><strong>PAM (Pluggable Authentication Modules)</strong>: framework de Linux que abstrae la autenticación de las aplicaciones. Un programa como <code>login</code>, <code>sshd</code> o <code>sudo</code> no implementa su propia autenticación — delega a PAM.</p>
+<p style="margin-top:.5em;">PAM permite configurar:</p>
+<ul style="margin-top:.4em;">
+<li>Políticas de contraseñas (longitud mínima, complejidad, historial).</li>
+<li>Límites de intentos fallidos con bloqueo temporal.</li>
+<li>Autenticación multifactor (TOTP/Google Authenticator).</li>
+<li>Restricciones de horario de inicio de sesión.</li>
+</ul>
+</div>
+<div class="cod sq">
+<span class="cm"># /etc/security/pwquality.conf</span>
+<span class="cm"># Política de contraseñas</span>
+minlen = 12
+dcredit = -1   <span class="cm"># mínimo 1 dígito</span>
+ucredit = -1   <span class="cm"># mínimo 1 mayúscula</span>
+ocredit = -1   <span class="cm"># mínimo 1 especial</span>
+maxrepeat = 3  <span class="cm"># no más de 3 repeticiones</span>
+
+<span class="cm"># /etc/security/faillock.conf</span>
+<span class="cm"># Bloquear tras 5 intentos fallidos</span>
+deny = 5
+unlock_time = 900  <span class="cm"># 15 minutos</span>
+
+<span class="cm"># Ver cuentas bloqueadas</span>
+$ sudo faillock --user ana</div>
+</div>
+<div class="ft"><span class="nt">PAM · Sesión 25</span><span class="ctr">10 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 11 · Políticas de contraseñas en /etc/shadow -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual D · Política de expiración de contraseñas</div>
+<div class="ct">
+<h2>Envejecimiento de contraseñas con chage</h2>
+<div class="tce">
+<div class="cod">
+<span class="cm"># Ver política actual de un usuario</span>
+$ sudo chage -l ana
+<span class="cs">Last password change: May 01, 2026</span>
+<span class="cs">Password expires: Aug 01, 2026</span>
+<span class="cs">Account expires: never</span>
+
+<span class="cm"># Configurar política de expiración</span>
+$ sudo chage \
+  -M 90 \   <span class="cm"># máx 90 días de vigencia</span>
+  -m 1 \    <span class="cm"># mín 1 día antes de cambiar</span>
+  -W 14 \   <span class="cm"># aviso 14 días antes</span>
+  -I 30 \   <span class="cm"># inactividad: desactivar a los 30 días</span>
+  ana
+
+<span class="cm"># Forzar cambio de contraseña en próximo login</span>
+$ sudo chage -d 0 ana
+
+<span class="cm"># Expirar una cuenta en fecha específica</span>
+$ sudo usermod -e 2026-12-31 ana</div>
+<div class="crd">
+<h3>Campos de /etc/shadow</h3>
+<table style="margin-top:.3em;">
+<tr><th>Campo</th><th>Significado</th></tr>
+<tr><td>1</td><td>Nombre de usuario</td></tr>
+<tr><td>2</td><td>Hash de contraseña (SHA-512)</td></tr>
+<tr><td>3</td><td>Días desde 1970 del último cambio</td></tr>
+<tr><td>4</td><td>Días mínimos entre cambios</td></tr>
+<tr><td>5</td><td>Días máximos de vigencia</td></tr>
+<tr><td>6</td><td>Días de aviso antes de expirar</td></tr>
+<tr><td>7</td><td>Días de gracia tras expirar</td></tr>
+<tr><td>8</td><td>Fecha de expiración de la cuenta</td></tr>
+</table>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">chage · /etc/shadow · Sesión 25</span><span class="ctr">11 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 12 · Comparativa Linux vs Windows -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual E · Gestión de usuarios: Linux vs Windows</div>
+<div class="ct">
+<h2>Mismos conceptos, interfaces distintas</h2>
+<table>
+<tr><th>Concepto</th><th>Linux</th><th>Windows (local)</th></tr>
+<tr class="sq"><td>Identificador único</td><td>UID (número)</td><td>SID (S-1-5-21-...)</td></tr>
+<tr class="sq"><td>Superusuario</td><td>root (UID 0)</td><td>Administrador (SID predefinido)</td></tr>
+<tr class="sq"><td>Crear usuario</td><td><code>useradd</code> / <code>adduser</code></td><td><code>net user nombre /add</code> o Panel de Control</td></tr>
+<tr class="sq"><td>Grupos</td><td>/etc/group, <code>groupadd</code></td><td>Grupos locales, <code>net localgroup</code></td></tr>
+<tr class="sq"><td>Escalada de privilegios</td><td><code>sudo</code> configurable</td><td>UAC (User Account Control)</td></tr>
+<tr class="sq"><td>Política de contraseñas</td><td>PAM + <code>pwquality</code></td><td>Directiva de seguridad local (secpol.msc)</td></tr>
+<tr class="sq"><td>Auditoría de acceso</td><td>PAM + <code>journalctl</code></td><td>Visor de eventos (Event Viewer)</td></tr>
+<tr class="sq"><td>Gestión centralizada</td><td>LDAP / FreeIPA / Kerberos</td><td>Active Directory / Azure AD</td></tr>
+</table>
+</div>
+<div class="ft"><span class="nt">Linux vs Windows · Sesión 25</span><span class="ctr">12 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 13 · Active Directory conceptual -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual E · Active Directory: gestión centralizada</div>
+<div class="ct tc">
+<div>
+<h2>Active Directory: directorio de identidades empresariales</h2>
+<p><strong>Active Directory (AD)</strong>: servicio de directorio de Microsoft que centraliza la autenticación y autorización en redes Windows corporativas. Basado en LDAP y Kerberos.</p>
+<ul style="margin-top:.5em;">
+<li><strong>Dominio:</strong> conjunto de objetos (usuarios, equipos, grupos) bajo una política unificada.</li>
+<li><strong>GPO (Group Policy Object):</strong> configuraciones que se aplican automáticamente a equipos y usuarios al unirse al dominio.</li>
+<li><strong>Single Sign-On (SSO):</strong> el usuario se autentica una vez y accede a múltiples recursos del dominio.</li>
+<li><strong>OU (Organizational Unit):</strong> contenedor para organizar objetos del dominio y aplicar GPOs diferenciadas.</li>
+</ul>
+</div>
+<div class="crd sq">
+<h3>Equivalencias AD ↔ Linux</h3>
+<table style="margin-top:.3em;">
+<tr><th>Active Directory</th><th>Linux equivalente</th></tr>
+<tr><td>Domain Controller</td><td>FreeIPA / Samba DC</td></tr>
+<tr><td>GPO</td><td>Puppet / Ansible / cloud-init</td></tr>
+<tr><td>Kerberos tickets</td><td>Kerberos (mismo protocolo)</td></tr>
+<tr><td>LDAP</td><td>OpenLDAP / FreeIPA</td></tr>
+<tr><td>Azure AD</td><td>Okta / Keycloak</td></tr>
+</table>
+<p class="nt" style="margin-top:.3em;">En infraestructuras modernas híbridas, los servidores Linux se unen a dominios AD usando <code>sssd</code> + <code>realmd</code>.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Active Directory · Sesión 25</span><span class="ctr">13 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 14 · DAC vs MAC -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual F · DAC vs MAC</div>
+<div class="ct">
+<h2>Más allá de los permisos POSIX: Control de Acceso Obligatorio</h2>
+<div class="tce">
+<div class="cag sq">
+<h3>DAC — Discrecional (Linux por defecto)</h3>
+<p style="margin-top:.3em;"><strong>El dueño</strong> del recurso decide quién accede. El dueño puede dar permisos a quien quiera, incluyendo a todos los usuarios del sistema.</p>
+<p style="margin-top:.3em;"><strong>Limitación:</strong> un usuario comprometido puede cambiar los permisos de sus propios archivos y compartir información sensible. El kernel no limita las decisiones del dueño.</p>
+</div>
+<div class="cal sq">
+<h3>MAC — Obligatorio (SELinux / AppArmor)</h3>
+<p style="margin-top:.3em;"><strong>La política del sistema</strong> define el acceso. Ni el dueño del recurso ni el usuario root pueden saltarse las reglas de la política MAC sin modificarla explícitamente.</p>
+<p style="margin-top:.3em;"><strong>Ventaja:</strong> incluso si un proceso root es comprometido, MAC puede limitar a qué archivos, puertos y llamadas de sistema tiene acceso.</p>
+<p style="margin-top:.3em;"><strong>Herramientas:</strong> SELinux (Red Hat/CentOS), AppArmor (Ubuntu/Debian), ya vistos en S23.</p>
+</div>
+</div>
+<div class="crd sq" style="margin-top:.4em;">
+<p><strong>En la práctica:</strong> Linux usa DAC como capa base (siempre activo) y MAC como capa adicional obligatoria (SELinux/AppArmor). Un proceso debe pasar ambas para acceder a un recurso.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">DAC vs MAC · Sesión 25</span><span class="ctr">14 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 15 · Práctica 2 -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Práctica en clase 2 · Auditoría de cuentas del sistema</div>
+<div class="ct">
+<h2>Detectar cuentas problemáticas</h2>
+<div class="caw" style="margin-bottom:.5em;">
+<p><strong>Escenario:</strong> debes auditar el sistema para identificar posibles riesgos en la configuración de cuentas de usuario.</p>
+</div>
+<div class="tce">
+<div class="cod">
+<span class="cm"># 1. Usuarios con UID 0 (equivalentes a root)</span>
+$ awk -F: '($3 == 0) {print}' /etc/passwd
+
+<span class="cm"># 2. Cuentas con contraseña vacía</span>
+$ sudo awk -F: '($2 == "") {print $1}' /etc/shadow
+
+<span class="cm"># 3. Cuentas con shell interactivo pero sin contraseña</span>
+$ sudo awk -F: '($2 == "!" || $2 == "*") \
+  {print $1}' /etc/shadow
+
+<span class="cm"># 4. Usuarios que pueden usar sudo</span>
+$ grep -E "^%sudo|^sudo" /etc/sudoers
+$ getent group sudo
+
+<span class="cm"># 5. Últimos logins del sistema</span>
+$ last -20
+
+<span class="cm"># 6. Intentos de login fallidos</span>
+$ sudo lastb | head -20</div>
+<div>
+<div class="crd sq">
+<p><strong>Señales de alerta en la auditoría:</strong></p>
+<ul style="margin-top:.3em;">
+<li>Más de un usuario con UID 0.</li>
+<li>Cuentas de servicio con shell de bash.</li>
+<li>Usuarios en grupo <code>sudo</code> sin justificación documentada.</li>
+<li>Logins desde IPs o usuarios no reconocidos.</li>
+<li>Cuentas de ex-empleados aún activas.</li>
+</ul>
+</div>
+<p class="nt" style="margin-top:.5em;">Actividad de práctica formativa en clase. No evaluativa.</p>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Práctica 2 · Sesión 25</span><span class="ctr">15 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 16 · Gestión de usuarios en Windows -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual G · Gestión de usuarios en Windows</div>
+<div class="ct">
+<h2>Herramientas de administración de usuarios en Windows</h2>
+<div class="tce">
+<div class="cod">
+<span class="cm"># PowerShell: gestión de usuarios locales</span>
+
+<span class="cm"># Crear usuario</span>
+PS> New-LocalUser "soporte" `
+  -Password (ConvertTo-SecureString "P@ss1234" `
+    -AsPlainText -Force) `
+  -FullName "Soporte Técnico" `
+  -Description "Cuenta de soporte nivel 1"
+
+<span class="cm"># Agregar a grupo</span>
+PS> Add-LocalGroupMember `
+  -Group "Remote Desktop Users" `
+  -Member "soporte"
+
+<span class="cm"># Ver grupos del usuario</span>
+PS> Get-LocalGroup | Where-Object {
+  (Get-LocalGroupMember $_).Name -contains "soporte"
+}
+
+<span class="cm"># Ver usuarios del sistema</span>
+PS> Get-LocalUser | Select Name, Enabled, LastLogon</div>
+<div class="crd">
+<h3>Herramientas gráficas equivalentes</h3>
+<ul style="margin-top:.3em;">
+<li><strong>lusrmgr.msc</strong>: usuarios y grupos locales.</li>
+<li><strong>secpol.msc</strong>: directiva de seguridad local (política de contraseñas, auditoría, derechos de usuario).</li>
+<li><strong>compmgmt.msc</strong>: administración del equipo (incluye gestión de usuarios).</li>
+<li><strong>gpedit.msc</strong>: editor de directiva de grupo local.</li>
+</ul>
+<div class="caw" style="margin-top:.4em;">
+<p><strong>UAC (User Account Control)</strong>: mecanismo que solicita elevación explícita cuando un proceso no privilegiado necesita ejecutar operaciones administrativas. Equivalente conceptual de sudo.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Windows · PowerShell · Sesión 25</span><span class="ctr">16 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 17 · SID y estructura de identidades en Windows -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual G · SID: el UID de Windows</div>
+<div class="ct">
+<h2>Cómo Windows identifica usuarios internamente</h2>
+<div class="tce">
+<div>
+<p>En Windows el identificador único de un usuario o grupo es el <strong>SID (Security Identifier)</strong>, una cadena jerárquica que el kernel usa en cada decisión de acceso — exactamente como Linux usa el UID numérico.</p>
+<div class="cod" style="margin-top:.4em;"><span class="cm"># Ver el SID del usuario actual</span>
+PS> whoami /user
+<span class="cs">EQUIPO\ana  S-1-5-21-3847284093-1842372847-2938471923-1001</span>
+
+<span class="cm"># Ver SIDs de todos los grupos del usuario</span>
+PS> whoami /groups
+
+<span class="cm"># Estructura de un SID:</span>
+<span class="cm"># S-1-5-21-[dominio]-[RID]</span>
+<span class="cm"># S        = Security Identifier</span>
+<span class="cm"># 1        = revisión</span>
+<span class="cm"># 5        = autoridad NT</span>
+<span class="cm"># 21-...   = identificador del dominio/máquina</span>
+<span class="cm"># 1001     = RID — identificador relativo del usuario</span>
+
+<span class="cm"># SIDs predefinidos (equivalen a UIDs fijos en Linux)</span>
+<span class="cm"># S-1-5-18  → SYSTEM    (≈ root UID 0)</span>
+<span class="cm"># S-1-5-19  → LOCAL SERVICE</span>
+<span class="cm"># S-1-5-20  → NETWORK SERVICE</span>
+<span class="cm"># S-1-5-32-544 → grupo Administradores</span></div>
+</div>
+<div>
+<div class="crd sq">
+<h3>RID: el número que importa</h3>
+<p style="margin-top:.3em;">El <strong>RID (Relative Identifier)</strong> al final del SID es el equivalente funcional del UID en Linux. Por convención:</p>
+<table style="margin-top:.3em;">
+<tr><th>RID</th><th>Cuenta</th><th>Equivalente Linux</th></tr>
+<tr><td>500</td><td>Administrador built-in</td><td>root (UID 0)</td></tr>
+<tr><td>501</td><td>Invitado (Guest)</td><td>nobody</td></tr>
+<tr><td>1000+</td><td>Usuarios creados</td><td>UID 1000+</td></tr>
+</table>
+</div>
+<div class="cal sq" style="margin-top:.5em;">
+<p><strong>¿Por qué el SID no cambia al renombrar una cuenta?</strong> El nombre de usuario es solo un alias. Los permisos de archivos y los ACLs están vinculados al SID, no al nombre. Renombrar "Administrador" a "admin_backup" no cambia sus permisos ni su SID.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">SID · Windows · Sesión 25</span><span class="ctr">17 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 18 · Política de contraseñas y auditoría en Windows -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual G · Directiva de seguridad y auditoría en Windows</div>
+<div class="ct">
+<h2>El equivalente de PAM y faillock en Windows</h2>
+<div class="tce">
+<div>
+<p>Windows gestiona las políticas de contraseñas y bloqueo de cuentas mediante la <strong>Directiva de Seguridad Local</strong> (<code>secpol.msc</code>) o por GPO en dominios. El equivalente funcional de PAM/pwquality/faillock en Linux.</p>
+<div class="cod" style="margin-top:.4em;"><span class="cm"># PowerShell: ver política de contraseñas actual</span>
+PS> net accounts
+<span class="cs">Longitud mínima de contraseña:    8</span>
+<span class="cs">Máximo de contraseña:             42 días</span>
+<span class="cs">Umbral de bloqueo:                5 intentos</span>
+<span class="cs">Duración de bloqueo:              30 minutos</span>
+
+<span class="cm"># Modificar política vía net accounts</span>
+PS> net accounts /minpwlen:12 /maxpwage:90 /lockoutthreshold:5
+
+<span class="cm"># Ver cuentas bloqueadas</span>
+PS> Search-ADAccount -LockedOut  <span class="cm"># (en dominio AD)</span>
+PS> Get-LocalUser | Where-Object {$_.Enabled -eq $false}
+
+<span class="cm"># Desbloquear cuenta local</span>
+PS> Enable-LocalUser -Name "ana"
+
+<span class="cm"># Ver últimos eventos de autenticación (Visor de eventos)</span>
+PS> Get-WinEvent -LogName Security |
+  Where-Object {$_.Id -eq 4625} |  <span class="cm"># 4625 = login fallido</span>
+  Select-Object TimeCreated, Message |
+  Select-Object -First 10</span></div>
+</div>
+<div>
+<div class="crd sq">
+<h3>IDs de eventos de seguridad clave</h3>
+<table style="margin-top:.3em;">
+<tr><th>Event ID</th><th>Equivalente Linux</th><th>Significado</th></tr>
+<tr><td>4624</td><td>PAM: successful auth</td><td>Inicio de sesión exitoso</td></tr>
+<tr><td>4625</td><td>faillock: failed attempt</td><td>Login fallido</td></tr>
+<tr><td>4648</td><td>sudo log</td><td>Login con credenciales explícitas</td></tr>
+<tr><td>4720</td><td>useradd log</td><td>Cuenta de usuario creada</td></tr>
+<tr><td>4726</td><td>userdel log</td><td>Cuenta de usuario eliminada</td></tr>
+<tr><td>4732</td><td>usermod -aG log</td><td>Usuario añadido a grupo</td></tr>
+</table>
+<p class="nt" style="margin-top:.3em;">En Linux estos eventos van a journald / syslog. En Windows van al canal <em>Security</em> del Visor de Eventos.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Directiva de seguridad · Windows · Sesión 25</span><span class="ctr">18 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 19 · Usuarios de servicio y privilegios en Windows -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Bloque conceptual G · Cuentas de servicio en Windows</div>
+<div class="ct tc">
+<div>
+<h2>El equivalente de usuarios de servicio sin login</h2>
+<p>En Linux creamos usuarios de servicio con <code>--shell /usr/sbin/nologin</code>. Windows tiene un sistema análogo con cuentas especiales de servicio que no pueden iniciar sesión interactivamente.</p>
+<ul style="margin-top:.5em;">
+<li><strong>Local System (SYSTEM):</strong> privilegios máximos en la máquina local. Nunca usar para servicios de aplicación — es el equivalente de correr como root.</li>
+<li><strong>Network Service:</strong> privilegios reducidos, puede autenticarse en red con la identidad del equipo. Equivale a un usuario de servicio con permisos de red.</li>
+<li><strong>Local Service:</strong> privilegios mínimos, sin acceso a red. El más restrictivo — equivalente directo de un usuario <code>nologin</code> en Linux.</li>
+<li><strong>gMSA (Group Managed Service Account):</strong> cuenta de servicio con contraseña rotada automáticamente por AD. La forma moderna y correcta para servicios en dominio.</li>
+</ul>
+</div>
+<div class="cod sq">
+<span class="cm"># Crear cuenta de servicio con mínimos privilegios</span>
+PS> New-LocalUser "svc_webapp" `
+  -Password ([System.Security.SecureString]::new()) `
+  -PasswordNeverExpires $true `
+  -UserMayNotChangePassword $true `
+  -Description "Cuenta de servicio webapp - sin login interactivo"
+
+<span class="cm"># Denegar inicio de sesión interactivo (≈ nologin)</span>
+<span class="cm"># En secpol.msc → Directivas locales →</span>
+<span class="cm"># Asignación de derechos de usuario →</span>
+<span class="cm"># "Denegar el inicio de sesión localmente"</span>
+<span class="cm"># Añadir: svc_webapp</span>
+
+<span class="cm"># Ver bajo qué cuenta corre un servicio</span>
+PS> Get-WmiObject Win32_Service |
+  Where-Object {$_.Name -eq "nginx"} |
+  Select-Object Name, StartName
+<span class="cs">Name  StartName</span>
+<span class="cs">nginx NT AUTHORITY\LOCAL SERVICE</span>
+
+<span class="cm"># Cambiar cuenta de un servicio</span>
+PS> sc.exe config nginx obj= "NT AUTHORITY\LOCAL SERVICE"</div>
+</div>
+<div class="ft"><span class="nt">Cuentas de servicio · Windows · Sesión 25</span><span class="ctr">19 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 20 · Errores comunes -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Errores comunes en gestión de usuarios</div>
+<div class="ct">
+<h2>Patrones frecuentes de error y su corrección</h2>
+<table>
+<tr><th>Error</th><th>Consecuencia</th><th>Corrección</th></tr>
+<tr class="sq"><td>Dar acceso <code>sudo ALL</code> a todos los usuarios del equipo de desarrollo</td><td>Cualquier vulnerabilidad en su código o equipo escala a root del servidor</td><td>Listar exactamente los comandos necesarios con <code>visudo</code></td></tr>
+<tr class="sq"><td>No eliminar cuentas de empleados que abandonan la organización</td><td>Acceso no autorizado persistente al sistema</td><td>Proceso de offboarding con desactivación inmediata de cuentas y revocación de llaves SSH</td></tr>
+<tr class="sq"><td>Ejecutar un script de deploy como root</td><td>Un bug en el script puede eliminar archivos de sistema o comprometer el SO completo</td><td>Crear usuario de deploy con permisos mínimos sobre el directorio de la aplicación</td></tr>
+<tr class="sq"><td>Usar la cuenta root para trabajo cotidiano</td><td>Un error tipográfico puede ser catastrófico; expone el historial de shell de root</td><td>Usar cuenta personal con sudo solo cuando sea necesario</td></tr>
+<tr class="sq"><td>Contraseñas por defecto en cuentas de servicio</td><td>Vector de entrada trivial para atacantes</td><td>Eliminar contraseñas de cuentas de servicio; usar autenticación por llave SSH o credenciales rotadas automáticamente</td></tr>
+</table>
+</div>
+<div class="ft"><span class="nt">Errores · Sesión 25</span><span class="ctr">20 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 18 · Integración con sesiones anteriores -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Integración curricular · La cadena de control de acceso completa</div>
+<div class="ct">
+<h2>Cómo se ensamblan los conceptos de Unidad 3</h2>
+<div class="tce" style="margin-top:.3em;">
+<div class="cag sq"><p><strong>S18 — Permisos POSIX:</strong> chmod y chown definen quién puede leer/escribir/ejecutar. Los permisos son la capa de control a nivel de sistema de archivos.</p></div>
+<div class="cad sq"><p><strong>S22 — Amenazas:</strong> los atacantes buscan cuentas con contraseñas débiles, servicios corriendo como root y usuarios con sudo sin restricciones para escalar privilegios.</p></div>
+</div>
+<div class="tce" style="margin-top:.4em;">
+<div class="caw sq"><p><strong>S23 — Hardening:</strong> deshabilitar cuentas inactivas, PermitRootLogin no, AppArmor para confinamiento. Las herramientas de S25 son la sustancia de ese hardening.</p></div>
+<div class="cal sq"><p><strong>S24 — Criptografía:</strong> las llaves SSH necesitan cuentas correctamente configuradas. La gestión de usuarios es el prerrequisito para que SSH funcione de forma segura.</p></div>
+</div>
+<div class="crd sq" style="margin-top:.4em;">
+<p><strong>S25 — Gestión de usuarios:</strong> cierra el ciclo. Sin una estructura de identidades correcta (usuarios de servicio, sudo granular, PAM, políticas de contraseñas), todas las demás medidas de seguridad son incompletas.</p>
+</div>
+</div>
+<div class="ft"><span class="nt">Integración · Sesión 25</span><span class="ctr">21 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 19 · Checklist de auditoría -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Herramienta práctica · Checklist de gestión de usuarios segura</div>
+<div class="ct">
+<h2>Lista de verificación para un servidor en producción</h2>
+<div class="tce">
+<div>
+<p><strong>Cuentas:</strong></p>
+<ul style="margin-top:.3em;">
+<li class="sq">Solo un usuario con UID 0 (root).</li>
+<li class="sq">Cuentas de servicio con <code>nologin</code> o <code>false</code> como shell.</li>
+<li class="sq">Ninguna cuenta con contraseña vacía o por defecto.</li>
+<li class="sq">Cuentas de ex-empleados desactivadas o eliminadas.</li>
+<li class="sq">Política de expiración de contraseñas configurada con <code>chage</code>.</li>
+</ul>
+<p style="margin-top:.5em;"><strong>Grupos:</strong></p>
+<ul style="margin-top:.3em;">
+<li class="sq">Solo usuarios justificados en grupo <code>sudo</code> o <code>wheel</code>.</li>
+<li class="sq">Servicios web no están en grupo <code>docker</code>.</li>
+<li class="sq">Directorios de datos con propietarios de grupo correctos.</li>
+</ul>
+</div>
+<div>
+<p><strong>sudo:</strong></p>
+<ul style="margin-top:.3em;">
+<li class="sq">No existen entradas <code>ALL=(ALL) NOPASSWD: ALL</code> sin justificación.</li>
+<li class="sq">Comandos permitidos están en rutas absolutas.</li>
+<li class="sq">No se permite <code>sudo</code> a editores de texto generales.</li>
+</ul>
+<p style="margin-top:.5em;"><strong>PAM y políticas:</strong></p>
+<ul style="margin-top:.3em;">
+<li class="sq">Longitud mínima de contraseña ≥ 12 caracteres.</li>
+<li class="sq">Bloqueo tras 5 intentos fallidos (faillock).</li>
+<li class="sq">Autenticación SSH por llave pública, contraseña deshabilitada.</li>
+</ul>
+<p class="nt" style="margin-top:.5em;">Este checklist es parte del hardening del servidor y complementa el de S23.</p>
+</div>
+</div>
+</div>
+<div class="ft"><span class="nt">Checklist · Sesión 25</span><span class="ctr">22 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 20 · Cuestionario -->
+<section class="slide cnt">
+<div class="inn">
+<div class="hd">Cuestionario de comprensión</div>
+<div class="ct tc">
+<div>
+<h2>Preguntas de cierre técnico</h2>
+<ol>
+<li class="sq">Un desarrollador te pide acceso root completo al servidor de producción porque "es más cómodo". ¿Qué le propones como alternativa técnica y qué riesgos le explicas?</li>
+<li class="sq">¿Por qué ejecutar un servidor web (nginx, apache) como root es un error de seguridad, incluso si el servidor tiene firewall y permisos de archivos correctos?</li>
+<li class="sq">Explica la diferencia entre bloquear una cuenta con <code>usermod -L</code> y eliminarla con <code>userdel</code>. ¿Cuándo usarías cada opción?</li>
+<li class="sq">¿Por qué <code>sudo vim</code> con acceso <code>NOPASSWD</code> puede ser tan peligroso como dar acceso root directo?</li>
+</ol>
+</div>
+        <div class="cal sq">
+          <p><strong>Para el proyecto integrador:</strong></p>
+          <p>La gestión de identidades es transversal a todo el proyecto: los contenedores que desplieguen deben correr con usuarios de servicio sin privilegios, los directorios de datos deben tener propietarios correctos y las llaves SSH deben estar asociadas a cuentas bien definidas. Un sistema sin una estructura de identidades correcta no puede considerarse seguro.</p>
+        </div>
+</div>
+<div class="ft"><span class="nt">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">23 / 24</span></div>
+</div>
+</section>
+
+<!-- Slide 21 · Cierre -->
+<section class="slide cov">
+<div class="inn"><div class="ct" style="justify-content:center;text-align:center;">
+<span class="hd">Sistemas Operativos · Unidad 3 · Sesión 25</span>
+<h1 style="margin-top:clamp(20px,3vw,40px);">El Sistema No Conoce Personas —</h1>
+<h1>Conoce UIDs</h1>
+<div class="sub" style="margin-top:clamp(14px,2vw,28px);">useradd · sudo · PAM · /etc/shadow · chage</div>
+<p style="margin-top:clamp(20px,2.5vw,36px);font-size:clamp(14px,1.5vw,20px);color:#cbd5e1;">La administración de identidades no es burocracia — es la primera línea de defensa.<br>Quien controla qué cuentas existen y qué pueden hacer, controla el sistema.</p>
+</div>
+<div class="ft"><span class="nt" style="color:#e5edf8;">I.U. Pascual Bravo · Ing. de Sistemas</span><span class="ctr">24 / 24</span></div>
+</div>
+</section>
+
+<div id="tnv" class="tnv">
+<button id="pb">&lt;</button>
+<button id="nb">&gt;</button>
+</div>
+
+</div></div>
+<script>
+const tg=document.getElementById("stage"),sl=document.querySelectorAll(".slide");
+let ci=0;
+function sw(n){
+sl[ci].classList.remove("active");
+ci=(n+sl.length)%sl.length;
+sl[ci].classList.add("active");
+const s=sl[ci].querySelectorAll(".sq");
+s.forEach(x=>x.classList.remove("vs"));
+let t=0; s.forEach(x=>{setTimeout(()=>x.classList.add("vs"),t); t+=200;});
+}
+document.getElementById("pb").onclick=(e)=>{e.stopPropagation();sw(ci-1);};
+document.getElementById("nb").onclick=(e)=>{e.stopPropagation();sw(ci+1);};
+document.addEventListener("keydown",e=>{
+if(e.key==="ArrowRight"||e.key==="Space"||e.key==="Enter"){e.preventDefault();sw(ci+1);}
+else if(e.key==="ArrowLeft"){e.preventDefault();sw(ci-1);}
+else if(e.key==="f"){
+if(!document.fullscreenElement) tg.requestFullscreen().catch(()=>{});
+else document.exitFullscreen();
+}
+});
+let ts=0;
+document.addEventListener("touchstart",e=>{ts=e.changedTouches[0].screenX;});
+document.addEventListener("touchend",e=>{
+let te=e.changedTouches[0].screenX;
+if(ts-te>40) sw(ci+1); else if(te-ts>40) sw(ci-1);
+});
+sw(0);
+</script>
+</body>
+</html>
